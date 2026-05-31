@@ -839,6 +839,11 @@ export interface Database {
           hire_date: string;
           emergency_contact_name: string | null;
           emergency_contact_phone: string | null;
+          cedula: string | null;
+          bank_code: string | null;
+          bank_name: string | null;
+          bank_account_number: string | null;
+          bank_account_type: 'ahorros' | 'corriente' | null;
           created_at: string;
           updated_at: string;
         };
@@ -853,6 +858,11 @@ export interface Database {
           hire_date?: string;
           emergency_contact_name?: string | null;
           emergency_contact_phone?: string | null;
+          cedula?: string | null;
+          bank_code?: string | null;
+          bank_name?: string | null;
+          bank_account_number?: string | null;
+          bank_account_type?: 'ahorros' | 'corriente' | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -864,6 +874,11 @@ export interface Database {
           hire_date?: string;
           emergency_contact_name?: string | null;
           emergency_contact_phone?: string | null;
+          cedula?: string | null;
+          bank_code?: string | null;
+          bank_name?: string | null;
+          bank_account_number?: string | null;
+          bank_account_type?: 'ahorros' | 'corriente' | null;
           updated_at?: string;
         };
         Relationships: [

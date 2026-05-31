@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { generatePanamaACH, type ACHGenerationResult } from '@/lib/payroll/ach-generator';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,6 +36,11 @@ interface AgentPayroll {
 interface Toast {
   type: 'success' | 'error';
   msg: string;
+}
+
+interface ACHWarning {
+  agentName: string;
+  missingFields: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -77,6 +83,7 @@ export default function PayrollPeriodPage() {
   const [agents, setAgents] = useState<AgentPayroll[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<'recalc' | 'export' | 'close' | null>(null);
+  const [achWarnings, setAchWarnings] = useState<ACHWarning[]>([]);
   const [toast, setToast] = useState<Toast | null>(null);
 
   const debounceTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
@@ -248,28 +255,74 @@ export default function PayrollPeriodPage() {
     }
   }, [period, periodId, loadData]);
 
-  const handleExportACH = useCallback(() => {
+  const handleExportACH = useCallback(async () => {
+    if (!period) return;
     setActionLoading('export');
+    setAchWarnings([]);
 
-    const lines = agents.map((a) => {
-      const paddedName = a.agentName.padEnd(40).slice(0, 40);
-      const amount = a.net.toFixed(2).padStart(12, '0');
-      return `ACH|${a.userId.slice(0, 8)}|${paddedName}|${amount}|CTA_AHORRO`;
-    });
+    try {
+      const supabase = getSupabaseBrowserClient();
 
-    const header = `HDR|SecurOps|${period?.startDate ?? ''}|${period?.endDate ?? ''}|${agents.length}`;
-    const content = [header, ...lines].join('\n');
+      const userIds = agents.filter((a) => a.net > 0).map((a) => a.userId);
+      const { data: hrProfiles } = userIds.length > 0
+        ? await supabase
+            .from('hr_agent_profiles')
+            .select('user_id, cedula, bank_code, bank_name, bank_account_number, bank_account_type')
+            .in('user_id', userIds)
+        : { data: [] };
 
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ACH_${period?.startDate ?? 'periodo'}_${period?.endDate ?? ''}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+      const profileMap = new Map(
+        (hrProfiles ?? []).map((p) => [p.user_id, p]),
+      );
 
-    setActionLoading(null);
-    setToast({ type: 'success', msg: 'Archivo ACH descargado' });
+      const achAgents = agents
+        .filter((a) => a.net > 0)
+        .map((a) => {
+          const profile = profileMap.get(a.userId);
+          return {
+            cedula: profile?.cedula ?? null,
+            agentName: a.agentName,
+            bankCode: profile?.bank_code ?? null,
+            bankAccountNumber: profile?.bank_account_number ?? null,
+            bankAccountType: profile?.bank_account_type ?? null,
+            netSalary: a.net,
+          };
+        });
+
+      const periodLabel = `PLANILLA ${formatDate(period.startDate)} ${formatDate(period.endDate)}`;
+      const companyAccount = '0000000000';
+
+      const result: ACHGenerationResult = generatePanamaACH(achAgents, companyAccount, periodLabel);
+
+      if (result.missingBankData.length > 0) {
+        setAchWarnings(result.missingBankData);
+      }
+
+      if (result.agentCount === 0) {
+        setToast({ type: 'error', msg: 'Ningun agente tiene datos bancarios completos para exportar' });
+        setActionLoading(null);
+        return;
+      }
+
+      const blob = new Blob([result.content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.filename;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      setToast({
+        type: result.success ? 'success' : 'error',
+        msg: result.success
+          ? `ACH descargado: ${result.agentCount} agentes, B/.${result.totalAmount.toFixed(2)}`
+          : `ACH parcial: ${result.missingBankData.length} agentes sin datos bancarios`,
+      });
+    } catch {
+      setToast({ type: 'error', msg: 'Error al generar el archivo ACH' });
+    } finally {
+      setActionLoading(null);
+    }
   }, [agents, period]);
 
   const handleClosePeriod = useCallback(async () => {
@@ -388,6 +441,30 @@ export default function PayrollPeriodPage() {
         <KpiCard label="Deducciones" value={`B/.${formatCurrency(totalDeductions)}`} sub="SS 9.75% + SE 1.25%" accent="amber" />
         <KpiCard label="Neto a Pagar" value={`B/.${formatCurrency(totalNet)}`} sub="Monto ACH" accent="emerald" highlight />
       </div>
+
+      {/* ACH WARNINGS */}
+      {achWarnings.length > 0 && (
+        <div className="border-b border-amber-500/20 bg-amber-500/5 px-6 py-3">
+          <p className="text-sm font-semibold text-amber-400">
+            {achWarnings.length} agente{achWarnings.length > 1 ? 's' : ''} sin datos bancarios completos
+          </p>
+          <ul className="mt-2 space-y-1">
+            {achWarnings.map((w, i) => (
+              <li key={i} className="text-xs text-amber-300/80">
+                <span className="font-medium text-amber-300">{w.agentName}</span>
+                {' — Falta: '}
+                {w.missingFields.join(', ')}
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={() => setAchWarnings([])}
+            className="mt-2 text-xs text-amber-500/60 hover:text-amber-400 transition-colors cursor-pointer"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {/* TABLE */}
       <div className="flex-1 overflow-auto">
