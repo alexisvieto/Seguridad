@@ -428,29 +428,78 @@ function ChatResultData({ result }: { result: Record<string, unknown> }) {
     );
   }
 
-  // Payroll periods (overtime analysis)
-  if ('periods' in result && Array.isArray(result['periods'])) {
-    const periods = result['periods'] as Array<Record<string, unknown>>;
+  // Overtime breakdown (by agent + property + periods)
+  if ('byAgent' in result || ('periods' in result && Array.isArray(result['periods']))) {
+    const byAgent = (result['byAgent'] as Array<Record<string, unknown>> | undefined) ?? [];
+    const byProperty = (result['byProperty'] as Array<Record<string, unknown>> | undefined) ?? [];
+    const periods = (result['periods'] as Array<Record<string, unknown>> | undefined) ?? [];
 
     return (
-      <div className="mt-3">
-        {'title' in result && <p className="text-[11px] font-semibold text-zinc-400 mb-2">{String(result['title'] ?? '')}</p>}
-        <ul className="space-y-1">
-          {periods.map((p, i) => (
-            <li key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-3 py-2 text-xs">
-              <span className="text-zinc-200">{String(p['label'])}</span>
-              <div className="flex items-center gap-3">
-                <span className="text-zinc-400">{String(p['overtimeHours'])}h extra</span>
-                <span className="text-amber-400 font-semibold">B/.{String(p['otCost'])}</span>
-                <span className="text-zinc-500">{String(p['otRatio'])}%</span>
-              </div>
-            </li>
-          ))}
-        </ul>
+      <div className="mt-3 space-y-4">
+        {'title' in result && <p className="text-[11px] font-semibold text-zinc-400 mb-1">{String(result['title'] ?? '')}</p>}
+
+        {/* By Property — WHERE */}
+        {byProperty.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold tracking-widest text-amber-500/70 uppercase mb-1.5">Por propiedad (donde)</p>
+            <ul className="space-y-1">
+              {byProperty.map((p, i) => (
+                <li key={i} className="flex items-center justify-between rounded-lg bg-amber-500/5 border border-amber-500/10 px-3 py-2 text-xs">
+                  <div>
+                    <span className="text-zinc-200 font-medium">{String(p['property'])}</span>
+                    <span className="ml-2 text-zinc-500">{String(p['agents'])} agentes</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-zinc-400">{String(p['overtimeHours'])}h</span>
+                    <span className="text-amber-400 font-semibold">B/.{String(p['otCost'])}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* By Agent — WHO */}
+        {byAgent.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase mb-1.5">Por agente (quien)</p>
+            <ul className="space-y-1">
+              {byAgent.map((a, i) => (
+                <li key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-3 py-2 text-xs">
+                  <span className="text-zinc-200">{String(a['name'])}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-zinc-400">{String(a['overtimeHours'])}h</span>
+                    <span className="text-amber-400 font-semibold">B/.{String(a['otCost'])}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* By Period — WHEN */}
+        {periods.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase mb-1.5">Por periodo (cuando)</p>
+            <ul className="space-y-1">
+              {periods.map((p, i) => (
+                <li key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-3 py-2 text-xs">
+                  <span className="text-zinc-200">{String(p['label'])}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-zinc-400">{String(p['overtimeHours'])}h</span>
+                    <span className="text-amber-400">B/.{String(p['otCost'])}</span>
+                    <span className="text-zinc-600">{String(p['otRatio'])}%</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {result['totalOTCost'] !== undefined && (
-          <div className="mt-2 flex items-center justify-between border-t border-zinc-700/30 pt-2 text-xs">
+          <div className="flex items-center justify-between border-t border-zinc-700/30 pt-2 text-xs">
             <span className="text-zinc-400">Costo total extras</span>
-            <span className="font-semibold text-amber-400">B/.{String(result['totalOTCost'])}</span>
+            <span className="font-bold text-amber-400">B/.{String(result['totalOTCost'])}</span>
           </div>
         )}
       </div>

@@ -189,6 +189,97 @@ async function queryPayroll(
     };
   }).reverse();
 
+  // Overtime breakdown by agent and property
+  if (intent.includes('overtime') || intent.includes('profitability') || intent.includes('extras') || intent.includes('dinero')) {
+    const allRecs = consolidated ?? [];
+    const userIds = [...new Set(allRecs.map((r) => r.user_id))];
+
+    // Agent names
+    const { data: profiles } = userIds.length > 0
+      ? await supabase.from('profiles').select('id, full_name').in('id', userIds)
+      : { data: [] };
+    const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+
+    // Overtime by agent (across all periods)
+    const agentOT = new Map<string, { hours: number; cost: number }>();
+    for (const r of allRecs) {
+      const ot = Number(r.overtime_hours_accumulated);
+      const cost = ot * Number(r.rate_per_hour);
+      const prev = agentOT.get(r.user_id) ?? { hours: 0, cost: 0 };
+      agentOT.set(r.user_id, { hours: prev.hours + ot, cost: prev.cost + cost });
+    }
+
+    const byAgent = [...agentOT.entries()]
+      .map(([uid, data]) => ({
+        name: nameMap.get(uid) ?? 'Agente',
+        overtimeHours: Math.round(data.hours),
+        otCost: Math.round(data.cost * 100) / 100,
+      }))
+      .sort((a, b) => b.otCost - a.otCost);
+
+    // Overtime by property — trace shifts in the period range to properties
+    const periodStart = periods[periods.length - 1]?.start_date ?? '2026-01-01';
+    const periodEnd = periods[0]?.end_date ?? '2026-12-31';
+
+    const { data: shifts } = await supabase
+      .from('agent_shifts')
+      .select('user_id, work_station_id, clock_in, clock_out')
+      .eq('tenant_id', tenantId)
+      .gte('clock_in', `${periodStart}T00:00:00Z`)
+      .lte('clock_in', `${periodEnd}T23:59:59Z`)
+      .not('clock_out', 'is', null);
+
+    // Map stations to properties
+    const stationIds = [...new Set((shifts ?? []).map((s) => s.work_station_id))];
+    const { data: stations } = stationIds.length > 0
+      ? await supabase.from('work_stations').select('id, property_id, properties_ph(name)').in('id', stationIds)
+      : { data: [] };
+
+    const stationPropertyMap = new Map(
+      (stations ?? []).map((s) => [s.id, { propertyId: s.property_id, propertyName: s.properties_ph?.name ?? 'Propiedad' }]),
+    );
+
+    // Hours per agent per property
+    const agentPropertyHours = new Map<string, Map<string, number>>();
+    for (const s of shifts ?? []) {
+      if (!s.clock_out) continue;
+      const hours = (new Date(s.clock_out).getTime() - new Date(s.clock_in).getTime()) / 3600000;
+      const prop = stationPropertyMap.get(s.work_station_id);
+      if (!prop) continue;
+
+      const agentMap = agentPropertyHours.get(prop.propertyName) ?? new Map<string, number>();
+      agentMap.set(s.user_id, (agentMap.get(s.user_id) ?? 0) + hours);
+      agentPropertyHours.set(prop.propertyName, agentMap);
+    }
+
+    // Sum overtime cost by property
+    const byProperty = [...agentPropertyHours.entries()].map(([propName, agentHours]) => {
+      let totalOTHours = 0;
+      let totalOTCost = 0;
+      for (const [uid, hours] of agentHours) {
+        const overLimit = Math.max(0, hours - 96 * (periods.length / 2));
+        const rate = allRecs.find((r) => r.user_id === uid)?.rate_per_hour ?? 4.17;
+        totalOTHours += overLimit;
+        totalOTCost += overLimit * Number(rate);
+      }
+      return {
+        property: propName,
+        overtimeHours: Math.round(totalOTHours),
+        otCost: Math.round(totalOTCost * 100) / 100,
+        agents: agentHours.size,
+      };
+    }).sort((a, b) => b.otCost - a.otCost);
+
+    return {
+      type: 'overtime_breakdown',
+      title: 'Fuga de Rentabilidad por Horas Extras',
+      byAgent,
+      byProperty,
+      totalOTCost: Math.round(byAgent.reduce((s, a) => s + a.otCost, 0) * 100) / 100,
+      periods: periodStats,
+    };
+  }
+
   if (intent.includes('bradford') || intent.includes('ausentismo')) {
     // Bradford Factor calculation
     const { data: members } = await supabase
