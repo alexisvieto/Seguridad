@@ -103,6 +103,23 @@ export default function InventarioPage() {
   const [loanLoading, setLoanLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
 
+  // Create stock item modal
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [newCategory, setNewCategory] = useState('uniforme');
+  const [newItemName, setNewItemName] = useState('');
+  const [newQty, setNewQty] = useState(0);
+  const [newMinAlert, setNewMinAlert] = useState(5);
+  const [newLote, setNewLote] = useState('');
+  const [stockCreateLoading, setStockCreateLoading] = useState(false);
+
+  // Create asset modal
+  const [showAssetModal, setShowAssetModal] = useState(false);
+  const [assetStation, setAssetStation] = useState('');
+  const [assetName, setAssetName] = useState('');
+  const [assetImei, setAssetImei] = useState('');
+  const [assetCreateLoading, setAssetCreateLoading] = useState(false);
+  const [stationOptions, setStationOptions] = useState<{ id: string; name: string; property: string }[]>([]);
+
   // Toast auto-dismiss
   useEffect(() => {
     if (!toast) return;
@@ -219,6 +236,139 @@ export default function InventarioPage() {
       setDamageLoading(false);
     }
   }, [damageModal, damageNotes]);
+
+  // -------------------------------------------------------------------
+  // Submit loan
+  // -------------------------------------------------------------------
+
+  // -------------------------------------------------------------------
+  // Create stock item
+  // -------------------------------------------------------------------
+
+  const handleCreateStock = useCallback(async () => {
+    if (!tenantId || !newItemName.trim()) return;
+    setStockCreateLoading(true);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .insert({
+          tenant_id: tenantId,
+          item_name: newItemName.trim(),
+          category: newCategory as 'uniforme' | 'calzado' | 'comunicacion' | 'defensa' | 'otros',
+          size_or_model: newLote.trim() || null,
+          current_stock: newQty,
+          min_stock_alert: newMinAlert,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        setToast({ type: 'error', msg: 'Error al registrar el articulo' });
+        setStockCreateLoading(false);
+        return;
+      }
+
+      if (data) {
+        setInventory((prev) => [...prev, {
+          id: data.id,
+          itemName: data.item_name,
+          category: data.category,
+          sizeOrModel: data.size_or_model,
+          currentStock: data.current_stock,
+          minStockAlert: data.min_stock_alert,
+        }]);
+      }
+
+      setToast({ type: 'success', msg: 'Articulo ingresado a bodega' });
+      setShowStockModal(false);
+      setNewItemName('');
+      setNewQty(0);
+      setNewMinAlert(5);
+      setNewLote('');
+      setNewCategory('uniforme');
+    } catch {
+      setToast({ type: 'error', msg: 'Error al registrar el articulo' });
+    } finally {
+      setStockCreateLoading(false);
+    }
+  }, [tenantId, newItemName, newCategory, newQty, newMinAlert, newLote]);
+
+  // -------------------------------------------------------------------
+  // Create asset + load stations
+  // -------------------------------------------------------------------
+
+  const openAssetModal = useCallback(async () => {
+    if (!tenantId) return;
+    const supabase = getSupabaseBrowserClient();
+    const { data } = await supabase
+      .from('work_stations')
+      .select('id, name, properties_ph(name)')
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true)
+      .order('name');
+
+    setStationOptions((data ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      property: s.properties_ph?.name ?? '',
+    })));
+    setAssetStation('');
+    setAssetName('');
+    setAssetImei('');
+    setShowAssetModal(true);
+  }, [tenantId]);
+
+  const handleCreateAsset = useCallback(async () => {
+    if (!tenantId || !assetStation || !assetName.trim()) return;
+    setAssetCreateLoading(true);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase
+        .from('station_asset_custody')
+        .insert({
+          tenant_id: tenantId,
+          work_station_id: assetStation,
+          asset_name: assetName.trim(),
+          imei_or_serial: assetImei.trim() || null,
+        })
+        .select('*, work_stations(name, properties_ph(name))')
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          setToast({ type: 'error', msg: 'Ya existe un activo con ese IMEI/serial' });
+        } else {
+          setToast({ type: 'error', msg: 'Error al registrar el activo' });
+        }
+        setAssetCreateLoading(false);
+        return;
+      }
+
+      if (data) {
+        setAssets((prev) => [...prev, {
+          id: data.id,
+          stationId: data.work_station_id,
+          stationName: data.work_stations?.name ?? '',
+          propertyName: data.work_stations?.properties_ph?.name ?? '',
+          assetName: data.asset_name,
+          imei: data.imei_or_serial,
+          status: data.status,
+          lastInspection: data.last_inspection_at,
+          damageNotes: data.damage_report_notes,
+        }]);
+      }
+
+      setToast({ type: 'success', msg: 'Activo asignado al puesto' });
+      setShowAssetModal(false);
+    } catch {
+      setToast({ type: 'error', msg: 'Error al registrar el activo' });
+    } finally {
+      setAssetCreateLoading(false);
+    }
+  }, [tenantId, assetStation, assetName, assetImei]);
 
   // -------------------------------------------------------------------
   // Submit loan
@@ -361,6 +511,26 @@ export default function InventarioPage() {
         {/* ============================================================ */}
         {tab === 'stock' && (
           <div className="overflow-x-auto">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Bodega General</h2>
+              <button onClick={() => setShowStockModal(true)}
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer">
+                <PlusIcon /> Ingresar Mercancia
+              </button>
+            </div>
+            {inventory.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-800/60">
+                  <BoxIconLg />
+                </div>
+                <p className="text-sm font-medium text-zinc-400">Bodega vacia</p>
+                <p className="text-xs text-zinc-600">Ingrese el inventario inicial de uniformes, radios y equipos</p>
+                <button onClick={() => setShowStockModal(true)}
+                  className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer">
+                  <PlusIcon /> Ingresar Primera Mercancia
+                </button>
+              </div>
+            ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 text-left">
@@ -401,8 +571,6 @@ export default function InventarioPage() {
                 })}
               </tbody>
             </table>
-            {inventory.length === 0 && (
-              <p className="py-16 text-center text-sm text-zinc-600">No hay artículos registrados</p>
             )}
           </div>
         )}
@@ -411,6 +579,27 @@ export default function InventarioPage() {
         {/* TAB: Activos por Puesto                                       */}
         {/* ============================================================ */}
         {tab === 'assets' && (
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Equipos Asignados a Puestos</h2>
+              <button onClick={openAssetModal}
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer">
+                <PlusIcon /> Asignar Equipo a Puesto
+              </button>
+            </div>
+            {assets.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-800/60">
+                  <StationIcon />
+                </div>
+                <p className="text-sm font-medium text-zinc-400">Sin equipos asignados a puestos</p>
+                <p className="text-xs text-zinc-600">Asigne celulares, radios y equipos fijos a cada garita o puesto de vigilancia</p>
+                <button onClick={openAssetModal}
+                  className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer">
+                  <PlusIcon /> Asignar Primer Equipo
+                </button>
+              </div>
+            ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {assets.map((asset) => {
               const badge = assetStatusBadge[asset.status] ?? assetStatusBadge['bueno']!;
@@ -463,8 +652,7 @@ export default function InventarioPage() {
                 </div>
               );
             })}
-            {assets.length === 0 && (
-              <p className="col-span-full py-16 text-center text-sm text-zinc-600">No hay activos registrados</p>
+          </div>
             )}
           </div>
         )}
@@ -597,6 +785,106 @@ export default function InventarioPage() {
                 ) : (
                   'Confirmar Daño'
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STOCK CREATE MODAL */}
+      {showStockModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowStockModal(false); }}>
+          <div className="w-full max-w-md rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-zinc-100">Ingresar Mercancia a Bodega</h3>
+
+            <div className="mt-5 space-y-4">
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Categoria</span>
+                <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                  <option value="uniforme">Uniforme</option>
+                  <option value="calzado">Calzado</option>
+                  <option value="comunicacion">Radio / Comunicacion</option>
+                  <option value="defensa">Chaleco Balistico / Defensa</option>
+                  <option value="otros">Linterna / Otros</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Item / Descripcion</span>
+                <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Ej: Camisa Operativa Azul Talla L" maxLength={200}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+              </label>
+
+              <div className="grid grid-cols-2 gap-4">
+                <label className="block">
+                  <span className="text-xs font-medium text-zinc-400">Cantidad Inicial</span>
+                  <input type="number" min={0} value={newQty} onChange={(e) => setNewQty(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-medium text-zinc-400">Alerta Minima</span>
+                  <input type="number" min={0} value={newMinAlert} onChange={(e) => setNewMinAlert(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                </label>
+              </div>
+
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Lote / Factura (opcional)</span>
+                <input type="text" value={newLote} onChange={(e) => setNewLote(e.target.value)} placeholder="Referencia de compra"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+              </label>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => setShowStockModal(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
+              <button onClick={handleCreateStock} disabled={!newItemName.trim() || stockCreateLoading}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                {stockCreateLoading ? <SpinnerSm /> : 'Registrar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ASSET CREATE MODAL */}
+      {showAssetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowAssetModal(false); }}>
+          <div className="w-full max-w-md rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-zinc-100">Asignar Equipo a Puesto</h3>
+
+            <div className="mt-5 space-y-4">
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Puesto de Vigilancia</span>
+                <select value={assetStation} onChange={(e) => setAssetStation(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                  <option value="">Seleccionar puesto...</option>
+                  {stationOptions.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} — {s.property}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Nombre del Equipo</span>
+                <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)} placeholder="Ej: Celular Samsung A15, Radio Motorola" maxLength={200}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">IMEI / Serial (opcional)</span>
+                <input type="text" value={assetImei} onChange={(e) => setAssetImei(e.target.value)} placeholder="Identificador del dispositivo"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+              </label>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => setShowAssetModal(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
+              <button onClick={handleCreateAsset} disabled={!assetStation || !assetName.trim() || assetCreateLoading}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                {assetCreateLoading ? <SpinnerSm /> : 'Asignar Equipo'}
               </button>
             </div>
           </div>
@@ -741,6 +1029,34 @@ function DamageIcon() {
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
     </svg>
   );
+}
+
+function PlusIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+  );
+}
+
+function BoxIconLg() {
+  return (
+    <svg className="h-8 w-8 text-zinc-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+    </svg>
+  );
+}
+
+function StationIcon() {
+  return (
+    <svg className="h-8 w-8 text-zinc-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+    </svg>
+  );
+}
+
+function SpinnerSm() {
+  return <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />;
 }
 
 function CheckIcon() {
