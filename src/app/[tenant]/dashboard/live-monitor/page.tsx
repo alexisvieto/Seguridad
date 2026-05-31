@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { NotificationBanner } from './notification-banner';
 import { IncidentDetailModal, type IncidentDetail } from './incident-detail-modal';
 
 // ---------------------------------------------------------------------------
@@ -318,8 +317,7 @@ export default function LiveMonitorPage() {
   return (
     <div className="relative flex h-dvh flex-col bg-[#0A0E1A] text-zinc-100 overflow-hidden">
 
-      {/* ─── Notification Banner + Modal (Fase 2) ─── */}
-      <NotificationBanner incident={activeNotification} onBannerClick={() => setIsModalOpen(true)} />
+      {/* ─── Detail Modal (triggered from feed click) ─── */}
       <IncidentDetailModal
         incident={activeNotification}
         isOpen={isModalOpen}
