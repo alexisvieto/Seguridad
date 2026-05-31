@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
+} from 'recharts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -327,53 +330,90 @@ export default function ExecutiveDashboardPage() {
           </p>
 
           {periods.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center">
-              <p className="text-sm text-zinc-600">Sin periodos calculados aun</p>
+            <div className="flex flex-1 flex-col items-center justify-center gap-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-800/60">
+                <svg className="h-7 w-7 text-zinc-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                </svg>
+              </div>
+              <p className="text-sm text-zinc-500">Esperando cierre del primer periodo de planilla</p>
+              <p className="text-xs text-zinc-600">Los datos apareceran automaticamente al calcular nominas</p>
             </div>
           ) : (
-            <div className="mt-6 flex flex-1 items-end gap-8">
-              {periods.map((p) => {
-                const regularH = pct(p.regular, maxBarValue);
-                const overtimeH = pct(p.overtime, maxBarValue);
-
-                return (
-                  <div key={p.label} className="flex flex-1 flex-col items-center gap-2">
-                    <div className="flex w-full items-end gap-1.5" style={{ height: '100%', minHeight: 120 }}>
-                      {/* Regular */}
-                      <div className="relative flex-1 rounded-t-lg bg-emerald-500/20 transition-all duration-500"
-                        style={{ height: `${Math.max(regularH, 4)}%` }}>
-                        <div className="absolute inset-x-0 bottom-0 rounded-t-lg bg-emerald-500/40" style={{ height: '100%' }} />
-                        <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] tabular-nums text-emerald-400">
-                          {Math.round(p.regular)}h
-                        </span>
-                      </div>
-                      {/* Overtime */}
-                      <div className="relative flex-1 rounded-t-lg bg-amber-500/20 transition-all duration-500"
-                        style={{ height: `${Math.max(overtimeH, 4)}%` }}>
-                        <div className="absolute inset-x-0 bottom-0 rounded-t-lg bg-amber-500/40" style={{ height: '100%' }} />
-                        <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] tabular-nums text-amber-400">
-                          {Math.round(p.overtime)}h
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-xs text-zinc-500">{p.label}</span>
-                  </div>
-                );
-              })}
+            <div className="mt-4 flex-1">
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                <BarChart
+                  data={periods.map((p) => ({
+                    name: p.label,
+                    ordinarias: Math.round(p.regular),
+                    extras: Math.round(p.overtime),
+                    total: Math.round(p.regular + p.overtime),
+                    eficiencia: p.regular + p.overtime > 0
+                      ? Math.round((p.regular / (p.regular + p.overtime)) * 100)
+                      : 0,
+                  }))}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                  barGap={4}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: '#71717a', fontSize: 12 }}
+                    axisLine={{ stroke: '#27272a' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: '#52525b', fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v: number) => `${v}h`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#18181b',
+                      border: '1px solid #3f3f46',
+                      borderRadius: 12,
+                      padding: '12px 16px',
+                      fontSize: 13,
+                    }}
+                    labelStyle={{ color: '#e4e4e7', fontWeight: 600, marginBottom: 6 }}
+                    cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload || payload.length === 0) return null;
+                      const ord = (payload[0]?.value as number) ?? 0;
+                      const ext = (payload[1]?.value as number) ?? 0;
+                      const total = ord + ext;
+                      const eff = total > 0 ? Math.round((ord / total) * 100) : 0;
+                      return (
+                        <div style={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: 12, padding: '12px 16px', fontSize: 13 }}>
+                          <p style={{ color: '#e4e4e7', fontWeight: 600, marginBottom: 8 }}>Periodo {label}</p>
+                          <p style={{ color: '#10b981' }}>Ordinarias: {ord}h</p>
+                          <p style={{ color: '#f59e0b' }}>Extras planas: {ext}h</p>
+                          <div style={{ borderTop: '1px solid #27272a', marginTop: 8, paddingTop: 8 }}>
+                            <p style={{ color: '#a1a1aa' }}>Total: {total}h</p>
+                            <p style={{ color: eff >= 80 ? '#10b981' : eff >= 60 ? '#f59e0b' : '#ef4444', fontWeight: 600 }}>
+                              Eficiencia: {eff}%
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend
+                    iconType="square"
+                    iconSize={10}
+                    formatter={(value: string) => (
+                      <span style={{ color: '#71717a', fontSize: 11 }}>
+                        {value === 'ordinarias' ? 'Horas Ordinarias' : 'Horas Extras Planas'}
+                      </span>
+                    )}
+                  />
+                  <Bar dataKey="ordinarias" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                  <Bar dataKey="extras" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
-
-          {/* Legend */}
-          <div className="mt-4 flex items-center gap-6 border-t border-zinc-800/40 pt-3">
-            <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded bg-emerald-500/40" />
-              <span className="text-[11px] text-zinc-500">Horas Ordinarias</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded bg-amber-500/40" />
-              <span className="text-[11px] text-zinc-500">Horas Extras Planas</span>
-            </div>
-          </div>
         </div>
 
         {/* ============================================================ */}
