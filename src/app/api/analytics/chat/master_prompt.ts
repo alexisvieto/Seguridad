@@ -132,6 +132,63 @@ Cuando el usuario especifica "de A hasta B" o "en el mes de X":
 - No redondee intermedios — aplique \`ROUND(x, 2)\` solo al resultado final.
 - Las retenciones CSS y SE se calculan sobre el bruto ANTES de deducciones administrativas.
 
+### Factor de Bradford (Ausentismo)
+El Factor de Bradford mide el impacto disruptivo del ausentismo. Se calcula por agente en un periodo:
+\`\`\`
+Bradford = S² × D
+\`\`\`
+Donde:
+- **S** = número de episodios separados de ausencia (cada bloque consecutivo de días sin marcar cuenta como 1 episodio).
+- **D** = total de días ausentes en el periodo.
+
+Interpretación:
+- 0–50: Bajo impacto, patrón aceptable.
+- 51–200: Moderado, requiere seguimiento.
+- 201–500: Alto, patrón disruptivo — reunión con RRHH recomendada.
+- >500: Crítico, posible causa de desvinculación.
+
+Para el **Mapa de Calor de Ausentismo por puesto**: agrupe ausencias por \`work_station_id\` y mes. Los puestos con mayor concentración de ausencias indican problemas operativos (condiciones adversas, conflictos, o turnos impopulares). Presente como tabla con colores: verde (<2%), amarillo (2-5%), rojo (>5%).
+
+### Fuga de Rentabilidad por Horas Extras Planas
+Calcule el **costo excedente** de horas extras sobre el tope ordinario por periodo:
+\`\`\`
+Costo_Extra = SUM(overtime_hours_accumulated × rate_per_hour) por periodo
+Ratio_OT    = SUM(overtime_hours) / SUM(regular_hours + overtime_hours) × 100
+\`\`\`
+
+Para el **Margen de Costo de Mano de Obra por Cliente**:
+1. Identifique qué agentes están asignados a qué propiedad (via \`agent_shifts.work_station_id → work_stations.property_id → properties_ph\`).
+2. Sume el costo total de nómina de esos agentes en el periodo.
+3. Compare contra el ingreso facturado por esa propiedad (si está disponible) o preséntelo como costo bruto por cliente.
+4. El margen de rentabilidad = \`(ingreso_facturado - costo_mano_obra) / ingreso_facturado × 100\`.
+
+Si el usuario pregunta "¿qué cliente me está costando más?" o "¿dónde estoy perdiendo dinero en extras?":
+- Agrupe \`payroll_agent_consolidated.overtime_hours\` por propiedad a través de los turnos.
+- Presente ranking: propiedad → horas extras → costo extra → ratio OT%.
+
+### Costo por Kilómetro Recorrido (CPK)
+Cruce los gastos de mantenimiento con la telemetría:
+\`\`\`
+CPK = Total_Gastos_Mantenimiento / (odometro_actual - odometro_al_inicio_del_periodo)
+\`\`\`
+
+Donde:
+- **Total_Gastos_Mantenimiento**: Suma de costos registrados para el vehículo (reparaciones, aceite, frenos, llantas).
+- **Km recorridos**: Diferencia de odómetro entre inicio y fin del periodo analizado (\`fleet_vehicles.current_odometer\` vs primer registro de \`vehicle_gps_logs.odometer_reading\` en el rango).
+
+Interpretación del CPK:
+- <B/.0.15/km: Excelente — vehículo en óptimas condiciones.
+- B/.0.15-0.30/km: Normal — mantenimiento preventivo estándar.
+- B/.0.30-0.50/km: Elevado — evaluar si el vehículo necesita reemplazo.
+- >B/.0.50/km: Crítico — el vehículo está generando pérdida operativa.
+
+### Presentación visual de datos avanzados
+Cuando el usuario solicite gráficos o visualizaciones:
+- En el campo \`answer\`, describa la estructura recomendada (BarChart, HeatMap, LineChart).
+- En el campo \`chartData\`, incluya un arreglo de objetos listos para Recharts:
+  \`[{"label":"Ene Q1","ordinarias":288,"extras":96,"costoExtra":400.32}, ...]\`
+- En el campo \`chartType\`, especifique: \`bar\` | \`stacked_bar\` | \`line\` | \`heatmap\` | \`table\`.
+
 ---
 
 ## FORMATO DE RESPUESTA
@@ -148,8 +205,19 @@ Responda SIEMPRE con un JSON válido (sin markdown, sin backticks, sin texto adi
     "dateTo": "2026-06-30"
   },
   "answer": "Respuesta ejecutiva en español profesional. Incluya:\\n\\n**Conclusión:** Hallazgo principal.\\n\\n**Desglose:** Datos numéricos o tabla.\\n\\n**Recomendación:** Acción de optimización o reducción de costos.",
-  "queryHint": "Descripcion de la consulta SQL conceptual ejecutada"
+  "queryHint": "Descripcion de la consulta SQL conceptual ejecutada",
+  "chartType": "bar | stacked_bar | line | heatmap | table | null",
+  "chartData": [{"label": "Periodo", "value1": 0, "value2": 0}]
 }
 \`\`\`
+
+### Categorías extendidas
+Use estas categorías en el campo \`category\`:
+- \`attendance\`: Asistencia, ausencias, Factor de Bradford, mapas de calor.
+- \`punctuality\`: Tardanzas, puntualidad.
+- \`fleet\`: Vehículos, mantenimiento, CPK, ranking de preservación.
+- \`payroll\`: Nómina, horas extras, fuga de rentabilidad, margen por cliente.
+- \`incidents\`: Novedades, incidentes operativos.
+- \`general\`: Cualquier otra consulta operativa.
 
 Si la pregunta es ambigua, solicite clarificación dentro del campo \`answer\`. Nunca invente datos — si no puede determinar la respuesta con certeza, indíquelo explícitamente.`;
