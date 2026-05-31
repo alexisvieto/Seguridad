@@ -1588,6 +1588,24 @@ export interface Database {
           },
         ];
       };
+      commercial_clients: {
+        Row: { id: string; tenant_id: string; company_name: string; ruc: string | null; legal_rep: string | null; contact_email: string | null; contact_phone: string | null; status: string; created_at: string; updated_at: string };
+        Insert: { id?: string; tenant_id: string; company_name: string; ruc?: string | null; legal_rep?: string | null; contact_email?: string | null; contact_phone?: string | null; status?: string; created_at?: string; updated_at?: string };
+        Update: { company_name?: string; ruc?: string | null; legal_rep?: string | null; contact_email?: string | null; contact_phone?: string | null; status?: string; updated_at?: string };
+        Relationships: [{ foreignKeyName: 'commercial_clients_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
+      };
+      commercial_contracts: {
+        Row: { id: string; tenant_id: string; client_id: string; start_date: string; end_date: string | null; monthly_amount: number; agents_required: number; contract_pdf_url: string | null; status: string; notes: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; tenant_id: string; client_id: string; start_date: string; end_date?: string | null; monthly_amount: number; agents_required?: number; contract_pdf_url?: string | null; status?: string; notes?: string | null; created_at?: string; updated_at?: string };
+        Update: { client_id?: string; start_date?: string; end_date?: string | null; monthly_amount?: number; agents_required?: number; contract_pdf_url?: string | null; status?: string; notes?: string | null; updated_at?: string };
+        Relationships: [{ foreignKeyName: 'commercial_contracts_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }, { foreignKeyName: 'commercial_contracts_client_id_fkey'; columns: ['client_id']; isOneToOne: false; referencedRelation: 'commercial_clients'; referencedColumns: ['id'] }];
+      };
+      contract_properties: {
+        Row: { id: string; tenant_id: string; contract_id: string; property_id: string; created_at: string };
+        Insert: { id?: string; tenant_id: string; contract_id: string; property_id: string; created_at?: string };
+        Update: never;
+        Relationships: [{ foreignKeyName: 'contract_properties_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
+      };
     };
     Views: Record<string, never>;
     Functions: {
