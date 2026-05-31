@@ -300,6 +300,15 @@ export default function DashboardAnalyticsPage() {
           <div className="flex-1 overflow-y-auto px-5 py-4">
             {chatResult ? (
               <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] text-zinc-600">Resultado</p>
+                  <button
+                    onClick={() => { setChatResult(null); setChatQuestion(''); }}
+                    className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                  >
+                    Nueva consulta
+                  </button>
+                </div>
                 <div className="rounded-xl bg-zinc-700/30 px-4 py-3">
                   <p className="text-xs text-zinc-500">Pregunta</p>
                   <p className="mt-1 text-sm text-zinc-200">{chatResult.question}</p>
