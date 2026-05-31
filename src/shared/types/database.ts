@@ -58,6 +58,9 @@ export type HrContract = Database['public']['Tables']['hr_contracts']['Row'];
 export type HrDisciplinaryRecord = Database['public']['Tables']['hr_disciplinary_records']['Row'];
 export type HrAgentRequest = Database['public']['Tables']['hr_agent_requests']['Row'];
 export type HrEmployeeVault = Database['public']['Tables']['hr_employee_vault']['Row'];
+export type TrainingCourse = Database['public']['Tables']['training_courses']['Row'];
+export type AgentTrainingLog = Database['public']['Tables']['agent_training_logs']['Row'];
+export type StationRequiredTraining = Database['public']['Tables']['station_required_trainings']['Row'];
 
 export interface Database {
   public: {
@@ -1038,6 +1041,133 @@ export interface Database {
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      training_courses: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          course_name: string;
+          description: string | null;
+          validity_months: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          course_name: string;
+          description?: string | null;
+          validity_months?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          course_name?: string;
+          description?: string | null;
+          validity_months?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'training_courses_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      agent_training_logs: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          course_id: string;
+          completion_date: string;
+          expiry_date: string;
+          grade: string | null;
+          certificate_pdf_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          course_id: string;
+          completion_date: string;
+          expiry_date: string;
+          grade?: string | null;
+          certificate_pdf_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          completion_date?: string;
+          expiry_date?: string;
+          grade?: string | null;
+          certificate_pdf_url?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'agent_training_logs_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'agent_training_logs_course_id_fkey';
+            columns: ['course_id'];
+            isOneToOne: false;
+            referencedRelation: 'training_courses';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      station_required_trainings: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          work_station_id: string;
+          course_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          work_station_id: string;
+          course_id: string;
+          created_at?: string;
+        };
+        Update: {
+          work_station_id?: string;
+          course_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'station_required_trainings_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'station_required_trainings_work_station_id_fkey';
+            columns: ['work_station_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_stations';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'station_required_trainings_course_id_fkey';
+            columns: ['course_id'];
+            isOneToOne: false;
+            referencedRelation: 'training_courses';
             referencedColumns: ['id'];
           },
         ];
