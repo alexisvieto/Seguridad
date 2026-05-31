@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getCurrentTenant, getCurrentUserRole } from '@/lib/tenant/get-tenant';
+import { TenantSidebar } from './sidebar';
 
 interface TenantLayoutProps {
   children: React.ReactNode;
@@ -45,8 +46,11 @@ export default async function TenantLayout({
   }
 
   return (
-    <div data-tenant-id={tenant.id} data-tenant-slug={tenant.slug}>
-      {children}
+    <div className="flex h-dvh bg-[#0A0E1A]" data-tenant-id={tenant.id} data-tenant-slug={tenant.slug}>
+      <TenantSidebar tenantSlug={slug} tenantName={tenant.name} role={role} />
+      <main className="flex-1 overflow-hidden">
+        {children}
+      </main>
     </div>
   );
 }
