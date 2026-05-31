@@ -189,6 +189,46 @@ async function queryPayroll(
     };
   }).reverse();
 
+  // Top contracts by salary
+  if (intent.includes('top_contracts') || intent.includes('cliente') || intent.includes('contrato')) {
+    const { data: contracts } = await supabase
+      .from('hr_contracts')
+      .select('user_id, contract_type, base_salary, start_date, status')
+      .eq('tenant_id', tenantId)
+      .order('base_salary', { ascending: false });
+
+    const userIds = (contracts ?? []).map((c) => c.user_id);
+    const { data: profiles } = userIds.length > 0
+      ? await supabase.from('profiles').select('id, full_name').in('id', userIds)
+      : { data: [] };
+    const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+
+    const ranked = (contracts ?? []).map((c) => ({
+      name: nameMap.get(c.user_id) ?? 'Agente',
+      salary: Number(c.base_salary),
+      hourlyRate: Math.round((Number(c.base_salary) / 240) * 100) / 100,
+      type: c.contract_type === 'indefinido' ? 'Indefinido' : 'Definido',
+      status: c.status,
+      startDate: c.start_date,
+    }));
+
+    const totalPayroll = ranked.reduce((s, r) => s + r.salary, 0);
+
+    return {
+      type: 'top_contracts',
+      title: 'Contratos por Valor de Salario',
+      agents: ranked.slice(0, 10).map((r) => ({
+        name: r.name,
+        salary: `B/.${r.salary.toFixed(2)}`,
+        hourlyRate: `B/.${r.hourlyRate}/h`,
+        type: r.type,
+        status: r.status,
+      })),
+      totalMonthlyPayroll: Math.round(totalPayroll * 100) / 100,
+      agentCount: ranked.length,
+    };
+  }
+
   // Overtime breakdown by agent and property
   if (intent.includes('overtime') || intent.includes('profitability') || intent.includes('extras') || intent.includes('dinero')) {
     const allRecs = consolidated ?? [];
@@ -447,6 +487,11 @@ function classifyQuestion(question: string): AIResponse {
   // Attendance / asistencia / falto
   if (q.includes('asistencia') || q.includes('falto') || q.includes('falta') || q.includes('no falto') || q.includes('record')) {
     return { category: 'attendance', intent: 'perfect_attendance_2026', params: { year: 2026 }, answer: 'Buscando agentes con asistencia perfecta en 2026...' };
+  }
+
+  // Contracts / clientes / top / salarios altos
+  if (q.includes('contrato') || q.includes('cliente') || q.includes('salario mas alto') || q.includes('mas alto') || q.includes('top')) {
+    return { category: 'payroll', intent: 'top_contracts', params: {}, answer: 'Consultando contratos con mayor valor...' };
   }
 
   // Nomina / salario / pago

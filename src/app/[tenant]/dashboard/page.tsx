@@ -382,6 +382,9 @@ function ChatResultData({ result }: { result: Record<string, unknown> }) {
             <li key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-3 py-2 text-xs">
               <span className="text-zinc-200">{String(a['name'] ?? '')}</span>
               <div className="flex items-center gap-3">
+                {a['salary'] !== undefined && <span className="text-emerald-400 font-semibold">{String(a['salary'])}</span>}
+                {a['hourlyRate'] !== undefined && <span className="text-zinc-500">{String(a['hourlyRate'])}</span>}
+                {a['type'] !== undefined && !a['salary'] && <span className="text-zinc-500">{String(a['type'])}</span>}
                 {a['shifts'] !== undefined && <span className="text-emerald-400">{String(a['shifts'])} turnos</span>}
                 {a['lateCount'] !== undefined && Number(a['lateCount']) === 0 && <span className="text-blue-400">0 tardanzas</span>}
                 {isBradford && (
@@ -509,6 +512,12 @@ function ChatResultData({ result }: { result: Record<string, unknown> }) {
           <div className="flex items-center justify-between border-t border-zinc-700/30 pt-2 text-xs">
             <span className="text-zinc-400">Costo total extras</span>
             <span className="font-bold text-amber-400">B/.{String(result['totalOTCost'])}</span>
+          </div>
+        )}
+        {result['totalMonthlyPayroll'] !== undefined && (
+          <div className="flex items-center justify-between border-t border-zinc-700/30 pt-2 text-xs">
+            <span className="text-zinc-400">Planilla mensual total ({String(result['agentCount'] ?? '')} agentes)</span>
+            <span className="font-bold text-emerald-400">B/.{Number(result['totalMonthlyPayroll']).toLocaleString('es-PA', { minimumFractionDigits: 2 })}</span>
           </div>
         )}
       </div>
