@@ -62,6 +62,13 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       section: 'operations',
     },
     {
+      href: `${base}/dashboard/cambio-turno`,
+      label: 'Cambio de Turno',
+      icon: <SwapIcon />,
+      roles: ['owner', 'admin'],
+      section: 'operations',
+    },
+    {
       href: `${base}/dashboard/turnos`,
       label: 'Turnos',
       icon: <CalendarIcon />,
@@ -308,6 +315,14 @@ function ExpandIcon() {
   return (
     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" />
+    </svg>
+  );
+}
+
+function SwapIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
     </svg>
   );
 }

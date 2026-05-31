@@ -75,6 +75,8 @@ export type PayrollPeriod = Database['public']['Tables']['payroll_periods']['Row
 export type IncidentCategory = Database['public']['Tables']['incident_categories']['Row'];
 export type PayrollAgentConsolidated = Database['public']['Tables']['payroll_agent_consolidated']['Row'];
 export type ShiftAssignment = Database['public']['Tables']['shift_assignments']['Row'];
+export type ShiftChangeReport = Database['public']['Tables']['shift_change_reports']['Row'];
+export type ShiftChangeEvent = Database['public']['Tables']['shift_change_events']['Row'];
 
 export interface Database {
   public: {
@@ -1618,6 +1620,18 @@ export interface Database {
         Insert: { id?: string; tenant_id: string; user_id: string; work_station_id: string; assignment_type: 'fijo' | 'temporal' | 'mensual'; start_date: string; end_date?: string | null; start_time: string; end_time: string; notes?: string; created_by: string; created_at?: string; updated_at?: string };
         Update: { work_station_id?: string; assignment_type?: 'fijo' | 'temporal' | 'mensual'; start_date?: string; end_date?: string | null; start_time?: string; end_time?: string; notes?: string; updated_at?: string };
         Relationships: [{ foreignKeyName: 'shift_assignments_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }, { foreignKeyName: 'shift_assignments_work_station_id_fkey'; columns: ['work_station_id']; isOneToOne: false; referencedRelation: 'work_stations'; referencedColumns: ['id'] }];
+      };
+      shift_change_reports: {
+        Row: { id: string; tenant_id: string; shift_type: string; report_date: string; general_observations: string; free_personnel: string; status: string; created_by: string; sent_at: string | null; sent_to: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; tenant_id: string; shift_type: string; report_date: string; general_observations?: string; free_personnel?: string; status?: string; created_by: string; sent_at?: string | null; sent_to?: string | null; created_at?: string; updated_at?: string };
+        Update: { general_observations?: string; free_personnel?: string; status?: string; sent_at?: string | null; sent_to?: string | null; updated_at?: string };
+        Relationships: [{ foreignKeyName: 'shift_change_reports_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
+      };
+      shift_change_events: {
+        Row: { id: string; report_id: string; tenant_id: string; work_station_id: string; event_type: string; programmed_agent_id: string | null; actual_agent_id: string | null; narrative: string; arrival_time: string | null; waiting_agent_id: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; report_id: string; tenant_id: string; work_station_id: string; event_type: string; programmed_agent_id?: string | null; actual_agent_id?: string | null; narrative?: string; arrival_time?: string | null; waiting_agent_id?: string | null; created_at?: string; updated_at?: string };
+        Update: { event_type?: string; actual_agent_id?: string | null; narrative?: string; arrival_time?: string | null; waiting_agent_id?: string | null; updated_at?: string };
+        Relationships: [{ foreignKeyName: 'shift_change_events_report_id_fkey'; columns: ['report_id']; isOneToOne: false; referencedRelation: 'shift_change_reports'; referencedColumns: ['id'] }];
       };
     };
     Views: Record<string, never>;
