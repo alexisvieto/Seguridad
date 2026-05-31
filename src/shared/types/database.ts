@@ -1495,6 +1495,52 @@ export interface Database {
           },
         ];
       };
+      hr_medical_leaves: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          start_date: string;
+          days: number;
+          reason: string;
+          clinic: string | null;
+          doctor: string | null;
+          certificate_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          start_date: string;
+          days: number;
+          reason: string;
+          clinic?: string | null;
+          doctor?: string | null;
+          certificate_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          start_date?: string;
+          days?: number;
+          reason?: string;
+          clinic?: string | null;
+          doctor?: string | null;
+          certificate_url?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'hr_medical_leaves_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {

@@ -3,12 +3,30 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { FileUpload } from '@/lib/upload/file-upload';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type DetailTab = 'ficha' | 'contrato' | 'disciplina';
+type DetailTab = 'ficha' | 'contrato' | 'activos' | 'incapacidades' | 'disciplina';
+
+interface MedicalLeave {
+  id: string;
+  startDate: string;
+  days: number;
+  reason: string;
+  clinic: string | null;
+  doctor: string | null;
+  certificateUrl: string | null;
+}
+
+interface AssignedAsset {
+  type: 'firearm' | 'uniform' | 'equipment';
+  name: string;
+  detail: string;
+  serial: string | null;
+}
 
 interface AgentRow {
   userId: string;
@@ -81,6 +99,20 @@ export default function RRHHPage() {
   const [detailTab, setDetailTab] = useState<DetailTab>('ficha');
   const [disciplinary, setDisciplinary] = useState<DisciplinaryRow[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // Medical leaves + assets
+  const [medicalLeaves, setMedicalLeaves] = useState<MedicalLeave[]>([]);
+  const [assignedAssets, setAssignedAssets] = useState<AssignedAsset[]>([]);
+
+  // Medical leave form
+  const [showLeaveForm, setShowLeaveForm] = useState(false);
+  const [leaveStart, setLeaveStart] = useState('');
+  const [leaveDays, setLeaveDays] = useState(1);
+  const [leaveReason, setLeaveReason] = useState('');
+  const [leaveClinic, setLeaveClinic] = useState('');
+  const [leaveDoctor, setLeaveDoctor] = useState('');
+  const [leaveCertUrl, setLeaveCertUrl] = useState('');
+  const [leaveLoading, setLeaveLoading] = useState(false);
 
   // Amonestacion form
   const [showAmonForm, setShowAmonForm] = useState(false);
@@ -158,24 +190,50 @@ export default function RRHHPage() {
     setDetailTab('ficha');
     setDetailLoading(true);
     setShowAmonForm(false);
+    setShowLeaveForm(false);
 
     const supabase = getSupabaseBrowserClient();
-    const { data } = await supabase
-      .from('hr_disciplinary_records')
-      .select('id, record_type, description, start_date, end_date, registered_by, legal_validity_flag, created_at')
-      .eq('user_id', agent.userId)
-      .order('start_date', { ascending: false });
 
-    setDisciplinary((data ?? []).map((d) => ({
-      id: d.id,
-      type: d.record_type,
-      description: d.description,
-      startDate: d.start_date,
-      endDate: d.end_date,
-      registeredBy: d.registered_by,
-      legalFlag: d.legal_validity_flag,
-      createdAt: d.created_at,
+    const [discRes, leavesRes, firearmsRes, loansRes] = await Promise.all([
+      supabase.from('hr_disciplinary_records')
+        .select('id, record_type, description, start_date, end_date, registered_by, legal_validity_flag, created_at')
+        .eq('user_id', agent.userId).order('start_date', { ascending: false }),
+      supabase.from('hr_medical_leaves')
+        .select('id, start_date, days, reason, clinic, doctor, certificate_url')
+        .eq('user_id', agent.userId).order('start_date', { ascending: false }),
+      supabase.from('firearms_assignments')
+        .select('firearms_inventory(serial_number, brand, model, type, permit_number)')
+        .eq('user_id', agent.userId).is('returned_at', null),
+      supabase.from('agent_equipment_loans')
+        .select('quantity, inventory_items(item_name, category, size_or_model)')
+        .eq('user_id', agent.userId).eq('status', 'entregado'),
+    ]);
+
+    setDisciplinary((discRes.data ?? []).map((d) => ({
+      id: d.id, type: d.record_type, description: d.description,
+      startDate: d.start_date, endDate: d.end_date,
+      registeredBy: d.registered_by, legalFlag: d.legal_validity_flag, createdAt: d.created_at,
     })));
+
+    setMedicalLeaves((leavesRes.data ?? []).map((l) => ({
+      id: l.id, startDate: l.start_date, days: l.days, reason: l.reason,
+      clinic: l.clinic, doctor: l.doctor, certificateUrl: l.certificate_url,
+    })));
+
+    const assets: AssignedAsset[] = [];
+    for (const fa of firearmsRes.data ?? []) {
+      const f = fa.firearms_inventory;
+      if (f) {
+        assets.push({ type: 'firearm', name: `${f.brand} ${f.model}`, detail: `Permiso: ${f.permit_number}`, serial: f.serial_number });
+      }
+    }
+    for (const loan of loansRes.data ?? []) {
+      const item = loan.inventory_items;
+      if (item) {
+        assets.push({ type: 'equipment', name: `${item.item_name} (x${loan.quantity})`, detail: item.size_or_model ?? '', serial: null });
+      }
+    }
+    setAssignedAssets(assets);
 
     setDetailLoading(false);
   }, []);
@@ -183,6 +241,33 @@ export default function RRHHPage() {
   // -------------------------------------------------------------------
   // Register amonestacion
   // -------------------------------------------------------------------
+
+  const handleMedicalLeave = useCallback(async () => {
+    if (!selected || !tenantId || !leaveReason.trim() || !leaveStart) return;
+    setLeaveLoading(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.from('hr_medical_leaves').insert({
+        tenant_id: tenantId,
+        user_id: selected.userId,
+        start_date: leaveStart,
+        days: leaveDays,
+        reason: leaveReason.trim(),
+        clinic: leaveClinic.trim() || null,
+        doctor: leaveDoctor.trim() || null,
+        certificate_url: leaveCertUrl || null,
+      });
+      if (error) throw error;
+      setToast({ type: 'success', msg: 'Incapacidad registrada' });
+      setShowLeaveForm(false);
+      setLeaveReason(''); setLeaveStart(''); setLeaveDays(1); setLeaveClinic(''); setLeaveDoctor(''); setLeaveCertUrl('');
+      selectAgent(selected);
+    } catch {
+      setToast({ type: 'error', msg: 'Error al registrar incapacidad' });
+    } finally {
+      setLeaveLoading(false);
+    }
+  }, [selected, tenantId, leaveStart, leaveDays, leaveReason, leaveClinic, leaveDoctor, leaveCertUrl, selectAgent]);
 
   const handleAmonestacion = useCallback(async () => {
     if (!selected || !tenantId || !amonDesc.trim() || !amonDate) return;
@@ -306,11 +391,13 @@ export default function RRHHPage() {
               </div>
 
               {/* Tabs */}
-              <div className="flex gap-1 border-b border-zinc-800/60 px-6 pt-2">
+              <div className="flex gap-1 border-b border-zinc-800/60 px-6 pt-2 overflow-x-auto">
                 {([
-                  { key: 'ficha' as DetailTab, label: 'Ficha Operativa' },
+                  { key: 'ficha' as DetailTab, label: 'Ficha' },
                   { key: 'contrato' as DetailTab, label: 'Contrato' },
-                  { key: 'disciplina' as DetailTab, label: `Disciplinario (${disciplinary.length})` },
+                  { key: 'activos' as DetailTab, label: `Activos (${assignedAssets.length})` },
+                  { key: 'incapacidades' as DetailTab, label: `Incapac. (${medicalLeaves.length})` },
+                  { key: 'disciplina' as DetailTab, label: `Discip. (${disciplinary.length})` },
                 ]).map((t) => (
                   <button key={t.key} onClick={() => setDetailTab(t.key)}
                     className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer min-h-[40px] ${
@@ -368,6 +455,143 @@ export default function RRHHPage() {
                         </div>
                       </div>
                     </div>
+
+                    <div className="mt-4">
+                      <FileUpload
+                        bucket="hr-documents"
+                        basePath={`${tenantId}/${selected.userId}/contrato`}
+                        label="Adjuntar contrato sellado MITRADEL (PDF)"
+                        accept=".pdf"
+                        onUploaded={() => setToast({ type: 'success', msg: 'Contrato adjuntado' })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* ACTIVOS ASIGNADOS */}
+                {detailTab === 'activos' && (
+                  <div>
+                    <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase mb-3">Activos Asignados al Agente</p>
+                    {assignedAssets.length === 0 ? (
+                      <p className="py-8 text-center text-sm text-zinc-600">Sin activos asignados</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {assignedAssets.map((asset, i) => (
+                          <li key={i} className={`rounded-xl border px-5 py-4 ${
+                            asset.type === 'firearm' ? 'border-red-500/20 bg-red-500/5' : 'border-zinc-800/40 bg-zinc-800/20'
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                    asset.type === 'firearm' ? 'bg-red-500/15 text-red-400' : 'bg-zinc-700 text-zinc-400'
+                                  }`}>
+                                    {asset.type === 'firearm' ? 'Arma' : 'Equipo'}
+                                  </span>
+                                  <span className="text-sm font-medium text-zinc-100">{asset.name}</span>
+                                </div>
+                                {asset.detail && <p className="mt-0.5 text-xs text-zinc-500">{asset.detail}</p>}
+                              </div>
+                              {asset.serial && <span className="font-mono text-xs text-zinc-500">{asset.serial}</span>}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="mt-4">
+                      <FileUpload
+                        bucket="hr-documents"
+                        basePath={`${tenantId}/${selected.userId}/actas`}
+                        label="Adjuntar acta de entrega firmada"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onUploaded={() => setToast({ type: 'success', msg: 'Acta adjuntada' })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* INCAPACIDADES */}
+                {detailTab === 'incapacidades' && (
+                  <div>
+                    <div className="mb-4 flex items-center justify-between">
+                      <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Incapacidades Medicas</p>
+                      <button onClick={() => setShowLeaveForm(!showLeaveForm)}
+                        className="flex min-h-[40px] items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500 cursor-pointer">
+                        <PlusIcon /> {showLeaveForm ? 'Cancelar' : 'Registrar Incapacidad'}
+                      </button>
+                    </div>
+
+                    {showLeaveForm && (
+                      <div className="mb-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="block">
+                            <span className="text-xs font-medium text-zinc-400">Fecha de Inicio</span>
+                            <input type="date" value={leaveStart} onChange={(e) => setLeaveStart(e.target.value)}
+                              className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[44px] focus:border-blue-500 focus:outline-none" />
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-medium text-zinc-400">Dias de Incapacidad</span>
+                            <input type="number" min={1} value={leaveDays} onChange={(e) => setLeaveDays(Math.max(1, parseInt(e.target.value) || 1))}
+                              className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[44px] focus:border-blue-500 focus:outline-none" />
+                          </label>
+                        </div>
+                        <label className="block">
+                          <span className="text-xs font-medium text-zinc-400">Razon Medica / Diagnostico</span>
+                          <input type="text" value={leaveReason} onChange={(e) => setLeaveReason(e.target.value)} placeholder="Ej: Lumbalgia aguda, CIE-10: M54.5" maxLength={1000}
+                            className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[44px] focus:border-blue-500 focus:outline-none" />
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="block">
+                            <span className="text-xs font-medium text-zinc-400">Clinica / Centro Medico</span>
+                            <input type="text" value={leaveClinic} onChange={(e) => setLeaveClinic(e.target.value)} placeholder="Ej: CSS Complejo Metropolitano" maxLength={200}
+                              className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[44px] focus:border-blue-500 focus:outline-none" />
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-medium text-zinc-400">Medico que Expide</span>
+                            <input type="text" value={leaveDoctor} onChange={(e) => setLeaveDoctor(e.target.value)} placeholder="Dr. Nombre Apellido" maxLength={200}
+                              className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[44px] focus:border-blue-500 focus:outline-none" />
+                          </label>
+                        </div>
+                        <FileUpload
+                          bucket="hr-documents"
+                          basePath={`${tenantId}/${selected.userId}/incapacidades`}
+                          label="Adjuntar certificado oficial de incapacidad"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onUploaded={(path) => setLeaveCertUrl(path)}
+                        />
+                        <button onClick={handleMedicalLeave} disabled={!leaveReason.trim() || !leaveStart || leaveLoading}
+                          className="flex w-full min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-40 cursor-pointer">
+                          {leaveLoading ? <Spinner /> : 'Registrar Incapacidad'}
+                        </button>
+                      </div>
+                    )}
+
+                    {medicalLeaves.length === 0 && !showLeaveForm ? (
+                      <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                        <CheckIcon />
+                        <p className="text-sm text-zinc-500">Sin incapacidades registradas</p>
+                      </div>
+                    ) : (
+                      <ul className="space-y-2">
+                        {medicalLeaves.map((l) => (
+                          <li key={l.id} className="rounded-xl border border-zinc-800/40 bg-zinc-800/20 px-5 py-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="rounded-full bg-blue-500/15 px-2.5 py-0.5 text-[11px] font-medium text-blue-400">{l.days} dias</span>
+                                <span className="text-xs text-zinc-500">{formatDate(l.startDate)}</span>
+                              </div>
+                              {l.certificateUrl && <span className="text-[10px] text-emerald-500">Certificado adjunto</span>}
+                            </div>
+                            <p className="mt-2 text-sm text-zinc-300">{l.reason}</p>
+                            {(l.clinic || l.doctor) && (
+                              <p className="mt-1 text-xs text-zinc-500">
+                                {l.clinic}{l.clinic && l.doctor ? ' — ' : ''}{l.doctor}
+                              </p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
 
@@ -404,6 +628,13 @@ export default function RRHHPage() {
                           <input type="date" value={amonDate} onChange={(e) => setAmonDate(e.target.value)}
                             className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[44px] focus:border-red-500 focus:outline-none" />
                         </label>
+                        <FileUpload
+                          bucket="hr-documents"
+                          basePath={`${tenantId}/${selected.userId}/amonestaciones`}
+                          label="Adjuntar evidencia fotografica o documento"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onUploaded={() => {}}
+                        />
                         <button onClick={handleAmonestacion} disabled={!amonDesc.trim() || !amonDate || amonLoading}
                           className="flex w-full min-h-[44px] items-center justify-center rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-40 cursor-pointer">
                           {amonLoading ? <Spinner /> : 'Confirmar Registro'}
