@@ -105,8 +105,8 @@ export default function ComercialPage() {
   const [ctClient, setCtClient] = useState('');
   const [ctStart, setCtStart] = useState('');
   const [ctEnd, setCtEnd] = useState('');
-  const [ctAmount, setCtAmount] = useState(0);
-  const [ctAgents, setCtAgents] = useState(1);
+  const [ctAmount, setCtAmount] = useState('');
+  const [ctAgents, setCtAgents] = useState('');
   const [ctNotes, setCtNotes] = useState('');
   const [contractLoading, setContractLoading] = useState(false);
 
@@ -208,18 +208,20 @@ export default function ComercialPage() {
 
   // Create contract
   const handleCreateContract = useCallback(async () => {
-    if (!tenantId || !ctClient || !ctStart || ctAmount <= 0) return;
+    const amount = parseFloat(ctAmount) || 0;
+    const agents = parseInt(ctAgents) || 1;
+    if (!tenantId || !ctClient || !ctStart || amount <= 0) return;
     setContractLoading(true);
     try {
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.from('commercial_contracts').insert({
         tenant_id: tenantId, client_id: ctClient, start_date: ctStart,
-        end_date: ctEnd || null, monthly_amount: ctAmount, agents_required: ctAgents,
+        end_date: ctEnd || null, monthly_amount: amount, agents_required: agents,
         notes: ctNotes.trim() || null,
       });
       if (error) throw error;
       setToast({ type: 'success', msg: 'Contrato registrado' });
-      setShowContractForm(false); setCtClient(''); setCtStart(''); setCtEnd(''); setCtAmount(0); setCtAgents(1); setCtNotes('');
+      setShowContractForm(false); setCtClient(''); setCtStart(''); setCtEnd(''); setCtAmount(''); setCtAgents(''); setCtNotes('');
       loadData();
     } catch { setToast({ type: 'error', msg: 'Error al registrar contrato' }); }
     finally { setContractLoading(false); }
@@ -445,16 +447,16 @@ export default function ComercialPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block"><span className="text-xs font-medium text-zinc-400">Monto Mensual (B/.)</span>
-                  <input type="number" min={0} step="0.01" value={ctAmount} onChange={(e) => setCtAmount(Math.max(0, parseFloat(e.target.value) || 0))} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                  <input type="text" inputMode="decimal" value={ctAmount} onChange={(e) => setCtAmount(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0.00" className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
                 <label className="block"><span className="text-xs font-medium text-zinc-400">Agentes Requeridos</span>
-                  <input type="number" min={1} value={ctAgents} onChange={(e) => setCtAgents(Math.max(1, parseInt(e.target.value) || 1))} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                  <input type="text" inputMode="numeric" value={ctAgents} onChange={(e) => setCtAgents(e.target.value.replace(/[^0-9]/g, ''))} placeholder="1" className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
               </div>
               <label className="block"><span className="text-xs font-medium text-zinc-400">Notas</span>
                 <textarea value={ctNotes} onChange={(e) => setCtNotes(e.target.value)} rows={2} className="mt-1 block w-full resize-none rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none" /></label>
             </div>
             <div className="mt-6 flex gap-3">
               <button onClick={() => setShowContractForm(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
-              <button onClick={handleCreateContract} disabled={!ctClient || !ctStart || ctAmount <= 0 || contractLoading} className="flex flex-1 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+              <button onClick={handleCreateContract} disabled={!ctClient || !ctStart || !ctAmount || parseFloat(ctAmount) <= 0 || contractLoading} className="flex flex-1 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
                 {contractLoading ? <Spinner /> : 'Crear Contrato'}
               </button>
             </div>
