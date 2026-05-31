@@ -73,29 +73,22 @@ export default function LoginPage() {
       const protocol = rootDomain.includes('localhost') ? 'http' : 'https';
       const isLocalhost = rootDomain.includes('localhost');
 
-      let targetUrl: string;
+      let dashboardPath: string;
 
       if (membership.role === 'owner' || membership.role === 'admin') {
-        // Admin/Owner → NOC Monitor dashboard
-        if (isLocalhost) {
-          targetUrl = `${protocol}://${tenantSlug}.localhost:3000/dashboard/live-monitor`;
-        } else {
-          targetUrl = `${protocol}://${tenantSlug}.${rootDomain}/dashboard/live-monitor`;
-        }
+        dashboardPath = '/dashboard/live-monitor';
       } else if (membership.role === 'viewer') {
-        // Viewer (client PH admin) → Client portal
-        if (isLocalhost) {
-          targetUrl = `${protocol}://${tenantSlug}.localhost:3000/cliente`;
-        } else {
-          targetUrl = `${protocol}://${tenantSlug}.${rootDomain}/cliente`;
-        }
+        dashboardPath = '/cliente';
       } else {
-        // Editor (field agent) → Agent station page
-        if (isLocalhost) {
-          targetUrl = `${protocol}://${tenantSlug}.localhost:3000/puesto`;
-        } else {
-          targetUrl = `${protocol}://${tenantSlug}.${rootDomain}/puesto`;
-        }
+        dashboardPath = '/puesto';
+      }
+
+      let targetUrl: string;
+
+      if (isLocalhost) {
+        targetUrl = `${protocol}://${rootDomain}/${tenantSlug}${dashboardPath}`;
+      } else {
+        targetUrl = `${protocol}://${tenantSlug}.${rootDomain}${dashboardPath}`;
       }
 
       window.location.href = targetUrl;
