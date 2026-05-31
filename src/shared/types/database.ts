@@ -22,6 +22,7 @@ export type TicketStatus = 'abierto' | 'en_proceso' | 'resuelto' | 'cerrado';
 export type DamageResponsible = 'agente_seguridad' | 'residente' | 'proveedor_externo' | 'desconocido';
 export type DamageStatus = 'bajo_investigacion' | 'aceptado_empresa' | 'rechazado_con_pruebas' | 'reparado';
 export type PayrollPeriodStatus = 'abierto' | 'calculado' | 'cerrado_pagado';
+export type IncidentSeverity = 'baja' | 'media' | 'alta' | 'critica';
 
 export interface JsonBlock {
   type: string;
@@ -71,6 +72,7 @@ export type ClientTicket = Database['public']['Tables']['client_tickets']['Row']
 export type ClientDamageReport = Database['public']['Tables']['client_damage_reports']['Row'];
 export type PayrollConfig = Database['public']['Tables']['payroll_configs']['Row'];
 export type PayrollPeriod = Database['public']['Tables']['payroll_periods']['Row'];
+export type IncidentCategory = Database['public']['Tables']['incident_categories']['Row'];
 export type PayrollAgentConsolidated = Database['public']['Tables']['payroll_agent_consolidated']['Row'];
 
 export interface Database {
@@ -1458,6 +1460,41 @@ export interface Database {
           },
         ];
       };
+      incident_categories: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          code: string;
+          label: string;
+          severity: IncidentSeverity;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          code: string;
+          label: string;
+          severity?: IncidentSeverity;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          code?: string;
+          label?: string;
+          severity?: IncidentSeverity;
+          is_active?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'incident_categories_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -1503,6 +1540,7 @@ export interface Database {
       damage_responsible: DamageResponsible;
       damage_status: DamageStatus;
       payroll_period_status: PayrollPeriodStatus;
+      incident_severity: IncidentSeverity;
     };
     CompositeTypes: Record<string, never>;
   };
