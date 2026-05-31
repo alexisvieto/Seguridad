@@ -1,6 +1,8 @@
 export type MembershipRole = 'owner' | 'admin' | 'editor' | 'viewer';
 export type TenantPlan = 'free' | 'pro' | 'enterprise';
 export type IncidentStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+export type FirearmType = 'revolver' | 'pistola' | 'escopeta';
+export type FirearmStatus = 'operativa' | 'mantenimiento' | 'retirada';
 
 export interface JsonBlock {
   type: string;
@@ -29,6 +31,9 @@ export type PropertyPh = Database['public']['Tables']['properties_ph']['Row'];
 export type WorkStation = Database['public']['Tables']['work_stations']['Row'];
 export type AgentShift = Database['public']['Tables']['agent_shifts']['Row'];
 export type IncidentLog = Database['public']['Tables']['incidents_log']['Row'];
+export type FirearmInventory = Database['public']['Tables']['firearms_inventory']['Row'];
+export type AgentCompliance = Database['public']['Tables']['agent_compliance']['Row'];
+export type FirearmAssignment = Database['public']['Tables']['firearms_assignments']['Row'];
 
 export interface Database {
   public: {
@@ -368,6 +373,147 @@ export interface Database {
           },
         ];
       };
+      firearms_inventory: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          serial_number: string;
+          type: FirearmType;
+          brand: string;
+          model: string;
+          status: FirearmStatus;
+          permit_number: string;
+          permit_expiry_date: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          serial_number: string;
+          type: FirearmType;
+          brand: string;
+          model: string;
+          status?: FirearmStatus;
+          permit_number: string;
+          permit_expiry_date: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          serial_number?: string;
+          type?: FirearmType;
+          brand?: string;
+          model?: string;
+          status?: FirearmStatus;
+          permit_number?: string;
+          permit_expiry_date?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'firearms_inventory_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      agent_compliance: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          shooting_test_expiry: string;
+          psych_test_expiry: string;
+          doping_test_expiry: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          shooting_test_expiry: string;
+          psych_test_expiry: string;
+          doping_test_expiry: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          shooting_test_expiry?: string;
+          psych_test_expiry?: string;
+          doping_test_expiry?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'agent_compliance_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      firearms_assignments: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          firearm_id: string;
+          work_station_id: string | null;
+          user_id: string | null;
+          assigned_at: string;
+          returned_at: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          firearm_id: string;
+          work_station_id?: string | null;
+          user_id?: string | null;
+          assigned_at?: string;
+          returned_at?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          firearm_id?: string;
+          work_station_id?: string | null;
+          user_id?: string | null;
+          returned_at?: string | null;
+          notes?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'firearms_assignments_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'firearms_assignments_firearm_id_fkey';
+            columns: ['firearm_id'];
+            isOneToOne: false;
+            referencedRelation: 'firearms_inventory';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'firearms_assignments_work_station_id_fkey';
+            columns: ['work_station_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_stations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -384,6 +530,8 @@ export interface Database {
       membership_role: MembershipRole;
       tenant_plan: TenantPlan;
       incident_status: IncidentStatus;
+      firearm_type: FirearmType;
+      firearm_status: FirearmStatus;
     };
     CompositeTypes: Record<string, never>;
   };
