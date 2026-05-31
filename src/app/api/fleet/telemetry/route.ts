@@ -165,7 +165,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await Promise.all(operations);
+  try {
+    await Promise.all(operations);
+  } catch (dbError) {
+    console.error('[Telemetry] DB write error:', dbError);
+    return NextResponse.json(
+      { error: 'INTERNAL_ERROR', message: 'Failed to persist telemetry data' },
+      { status: 500 },
+    );
+  }
 
   // 6. Respond fast
   return NextResponse.json({
