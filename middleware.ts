@@ -1,39 +1,31 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import {
-  createSupabaseMiddlewareClient,
-  applySessionCookies,
-} from '@/lib/supabase/middleware';
 
 // ---------------------------------------------------------------------------
-// Configuration
+// Edge-compatible middleware — zero external dependencies
+// Only parses URL/hostname for subdomain routing. No DB calls, no Supabase.
+// Auth validation happens in [tenant]/layout.tsx via Server Components.
 // ---------------------------------------------------------------------------
 
 const RESERVED_SUBDOMAINS = new Set(['www', 'api', 'app', 'admin', 'mail']);
 
-const PUBLIC_PATHS = new Set(['/login', '/register', '/api/health']);
+const PUBLIC_PATHS = new Set(['/', '/login', '/register']);
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
-  for (const p of PUBLIC_PATHS) {
-    if (pathname.startsWith(`${p}/`)) return true;
-  }
+  if (pathname.startsWith('/api/')) return true;
+  if (pathname.startsWith('/login/')) return true;
+  if (pathname.startsWith('/register/')) return true;
   return false;
 }
-
-// ---------------------------------------------------------------------------
-// Subdomain extraction
-// ---------------------------------------------------------------------------
 
 function extractTenantSlug(hostname: string, rootDomain: string): string | null {
   const host = hostname.split(':')[0] ?? '';
   const root = rootDomain.split(':')[0] ?? '';
 
-  // Bare root domain, localhost, or IP → no tenant
   if (host === root || host === 'localhost' || host === '127.0.0.1') {
     return null;
   }
 
-  // Development: *.localhost pattern (e.g. alfa-seguridad.localhost:3000)
   if (host.endsWith('.localhost')) {
     const slug = host.replace('.localhost', '');
     if (slug && !slug.includes('.') && !RESERVED_SUBDOMAINS.has(slug)) {
@@ -42,7 +34,6 @@ function extractTenantSlug(hostname: string, rootDomain: string): string | null 
     return null;
   }
 
-  // Production: slug.tudominio.com
   if (root && host.endsWith(`.${root}`)) {
     const slug = host.replace(`.${root}`, '');
     if (slug && !slug.includes('.') && !RESERVED_SUBDOMAINS.has(slug)) {
@@ -53,75 +44,41 @@ function extractTenantSlug(hostname: string, rootDomain: string): string | null 
   return null;
 }
 
-// ---------------------------------------------------------------------------
-// Middleware
-// ---------------------------------------------------------------------------
-
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // 1. Refresh Supabase session (JWT) on every request
-  const { response: sessionResponse, user } =
-    await createSupabaseMiddlewareClient(request);
-
-  // 2. Extract tenant slug from the hostname
   const hostname = request.headers.get('host') ?? '';
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost:3000';
+
   const tenantSlug = extractTenantSlug(hostname, rootDomain);
 
   // ------------------------------------------------------------------
-  // A) No tenant subdomain → landing / global routes
+  // A) No tenant subdomain → pass through to global routes
   // ------------------------------------------------------------------
   if (!tenantSlug) {
-    if (!user && !isPublicPath(pathname) && pathname !== '/') {
-      const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = '/login';
-      return applySessionCookies(sessionResponse, NextResponse.redirect(loginUrl));
-    }
-    return sessionResponse;
+    return NextResponse.next();
   }
 
   // ------------------------------------------------------------------
-  // B) Tenant subdomain detected → rewrite to /[tenant]/...
+  // B) Tenant subdomain detected
   // ------------------------------------------------------------------
 
-  // API routes and public paths are global — don't rewrite
-  if (pathname.startsWith('/api/') || isPublicPath(pathname) || pathname === '/') {
-    return sessionResponse;
+  // Public paths and API routes are global — never rewrite
+  if (isPublicPath(pathname)) {
+    return NextResponse.next();
   }
 
-  // Unauthenticated → redirect to login on the tenant subdomain
-  if (!user) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = '/login';
-    return applySessionCookies(sessionResponse, NextResponse.redirect(loginUrl));
-  }
-
-  // Build the internal rewrite URL:
-  //   alfa-seguridad.midominio.com/dashboard
-  //     → internally serves /alfa-seguridad/dashboard
-  //   alfa-seguridad.midominio.com/
-  //     → internally serves /alfa-seguridad
+  // Rewrite to /[tenant]/... without changing the browser URL
   const rewriteUrl = request.nextUrl.clone();
-  rewriteUrl.pathname = pathname === '/'
-    ? `/${tenantSlug}`
-    : `/${tenantSlug}${pathname}`;
+  rewriteUrl.pathname = `/${tenantSlug}${pathname}`;
 
-  const rewriteResponse = NextResponse.rewrite(rewriteUrl);
+  const response = NextResponse.rewrite(rewriteUrl);
+  response.headers.set('x-tenant-slug', tenantSlug);
 
-  // Propagate the tenant slug via header for Server Components
-  rewriteResponse.headers.set('x-tenant-slug', tenantSlug);
-
-  // Propagate refreshed auth cookies onto the rewrite response
-  return applySessionCookies(sessionResponse, rewriteResponse);
+  return response;
 }
-
-// ---------------------------------------------------------------------------
-// Matcher — skip static assets
-// ---------------------------------------------------------------------------
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|xml|txt)$).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|xml|txt|json|woff|woff2|ttf|css|js|map)$).*)',
   ],
 };
