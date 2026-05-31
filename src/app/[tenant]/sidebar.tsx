@@ -68,6 +68,13 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       section: 'resources',
     },
     {
+      href: `${base}/dashboard/flota`,
+      label: 'Flota',
+      icon: <TruckIcon />,
+      roles: ['owner', 'admin'],
+      section: 'resources',
+    },
+    {
       href: `${base}/dashboard/capacitaciones`,
       label: 'Capacitaciones',
       icon: <CertIcon />,
@@ -232,6 +239,14 @@ function CollapseIcon() {
   return (
     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+    </svg>
+  );
+}
+
+function TruckIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H18.75M3.375 14.25h.008v.008h-.008v-.008zm0 0V4.875c0-.621.504-1.125 1.125-1.125h9.75c.621 0 1.125.504 1.125 1.125v8.25M18.75 14.25l-3-6h-4.5" />
     </svg>
   );
 }
