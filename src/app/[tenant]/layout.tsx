@@ -50,7 +50,9 @@ export default async function TenantLayout({
     <div className="flex h-dvh bg-[#0A0E1A]" data-tenant-id={tenant.id} data-tenant-slug={tenant.slug}>
       <TenantSidebar tenantSlug={slug} tenantName={tenant.name} role={role} />
       <main className="relative flex-1 overflow-hidden">
-        <RealtimeAlerts tenantId={tenant.id} tenantSlug={slug} />
+        {(role === 'owner' || role === 'admin') && (
+          <RealtimeAlerts tenantId={tenant.id} tenantSlug={slug} />
+        )}
         {children}
       </main>
     </div>
