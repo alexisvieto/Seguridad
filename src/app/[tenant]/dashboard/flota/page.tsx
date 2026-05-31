@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+
+const FleetMap = lazy(() => import('./map'));
 
 // ---------------------------------------------------------------------------
 // Types
@@ -323,46 +325,56 @@ export default function FlotaPage() {
           vehicles.length === 0 ? (
             <EmptyState icon={<TruckLgIcon />} title="Sin vehiculos registrados" subtitle="Registre la flota vehicular de su empresa para activar el rastreo GPS" action="Registrar Primer Vehiculo" onAction={() => setShowCreateModal(true)} />
           ) : (
-            <div className="flex gap-6">
+            <div className="flex gap-4 h-full">
               {/* Table */}
-              <div className="flex-1 overflow-x-auto">
+              <div className="w-[45%] shrink-0 overflow-y-auto">
                 <table className="w-full text-sm">
-                  <thead>
+                  <thead className="sticky top-0 bg-[#0A0E1A] z-10">
                     <tr className="border-b border-zinc-800 text-left">
-                      <th className="px-4 py-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">Placa</th>
-                      <th className="px-4 py-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">Vehiculo</th>
-                      <th className="px-4 py-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">Odometro</th>
-                      <th className="px-4 py-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">GPS</th>
-                      <th className="px-4 py-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase text-center">Estado</th>
+                      <th className="px-3 py-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">Placa</th>
+                      <th className="px-3 py-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">Vehiculo</th>
+                      <th className="px-3 py-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase text-right">Vel.</th>
+                      <th className="px-3 py-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase text-right">Odometro</th>
+                      <th className="px-3 py-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase text-center">Estado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {vehicles.map((v) => {
                       const badge = statusBadge[v.status] ?? statusBadge['activo']!;
-                      const nearMaint = v.currentOdometer >= v.nextMaintenance - 500;
+                      const isMoving = v.lastSpeed !== null && v.lastSpeed > 1;
+                      const liveStatus = v.status !== 'activo'
+                        ? badge
+                        : isMoving
+                          ? { label: 'En Ruta', cls: 'bg-emerald-500/15 text-emerald-400' }
+                          : { label: 'Detenido', cls: 'bg-amber-500/15 text-amber-400' };
+
                       return (
-                        <tr key={v.id} className="border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors">
-                          <td className="px-4 py-3 font-mono font-semibold text-zinc-100">{v.plateNumber}</td>
-                          <td className="px-4 py-3">
-                            <p className="text-zinc-200">{v.brandModel}</p>
-                            <p className="text-xs text-zinc-500">{typeLabels[v.vehicleType] ?? v.vehicleType}</p>
+                        <tr key={v.id} className="border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors cursor-pointer"
+                          onClick={() => {/* future: center map */}}>
+                          <td className="px-3 py-3 font-mono font-semibold text-zinc-100 text-sm">{v.plateNumber}</td>
+                          <td className="px-3 py-3">
+                            <p className="text-zinc-200 text-sm">{v.brandModel}</p>
+                            <p className="text-[10px] text-zinc-500">
+                              {typeLabels[v.vehicleType] ?? v.vehicleType}
+                              {v.lastSeen ? ` · ${timeAgo(v.lastSeen)}` : ''}
+                            </p>
                           </td>
-                          <td className="px-4 py-3">
-                            <p className={`tabular-nums ${nearMaint ? 'text-amber-400 font-semibold' : 'text-zinc-300'}`}>{formatKm(v.currentOdometer)}</p>
-                            <p className="text-[10px] text-zinc-600">Prox: {formatKm(v.nextMaintenance)}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            {v.lastSeen ? (
-                              <div>
-                                <p className="text-xs text-zinc-300">{v.lastLat?.toFixed(4)}, {v.lastLng?.toFixed(4)}</p>
-                                <p className="text-[10px] text-zinc-600">{v.lastSpeed?.toFixed(0)} km/h · {timeAgo(v.lastSeen)}</p>
-                              </div>
+                          <td className="px-3 py-3 text-right">
+                            {v.lastSpeed !== null ? (
+                              <span className={`tabular-nums text-sm font-medium ${
+                                v.lastSpeed > 80 ? 'text-red-400' : v.lastSpeed > 1 ? 'text-emerald-400' : 'text-zinc-500'
+                              }`}>
+                                {v.lastSpeed.toFixed(0)}
+                              </span>
                             ) : (
-                              <span className="text-xs text-zinc-600">{v.gpsDeviceId ? 'Sin datos' : 'Sin GPS'}</span>
+                              <span className="text-xs text-zinc-600">—</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${badge.cls}`}>{badge.label}</span>
+                          <td className="px-3 py-3 text-right">
+                            <p className="tabular-nums text-sm text-zinc-300">{formatKm(v.currentOdometer)}</p>
+                          </td>
+                          <td className="px-3 py-3 text-center">
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${liveStatus.cls}`}>{liveStatus.label}</span>
                           </td>
                         </tr>
                       );
@@ -371,25 +383,27 @@ export default function FlotaPage() {
                 </table>
               </div>
 
-              {/* Map placeholder */}
-              <div className="hidden w-[340px] shrink-0 flex-col rounded-2xl border border-zinc-800/40 bg-zinc-800/20 lg:flex">
-                <div className="border-b border-zinc-800/40 px-4 py-3">
-                  <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Mapa en Vivo</p>
-                  <p className="text-[10px] text-zinc-600">Ciudad de Panama</p>
-                </div>
-                <div className="flex flex-1 items-center justify-center p-4">
-                  <div className="relative h-full w-full rounded-xl bg-zinc-900 overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <MapPinIcon />
-                        <p className="mt-2 text-xs text-zinc-500">{vehicles.filter((v) => v.lastLat).length} vehiculos con posicion</p>
-                        <p className="mt-1 text-[10px] text-zinc-600">8.98°N, 79.52°W — Panama City</p>
-                      </div>
-                    </div>
-                    {/* Grid lines for map feel */}
-                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(to right, #555 1px, transparent 1px), linear-gradient(to bottom, #555 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+              {/* Live Map */}
+              <div className="flex-1 rounded-2xl border border-zinc-800/40 overflow-hidden">
+                <Suspense fallback={
+                  <div className="flex h-full items-center justify-center bg-zinc-900">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
                   </div>
-                </div>
+                }>
+                  <FleetMap
+                    vehicles={vehicles
+                      .filter((v) => v.lastLat !== null && v.lastLng !== null)
+                      .map((v) => ({
+                        id: v.id,
+                        plateNumber: v.plateNumber,
+                        brandModel: v.brandModel,
+                        lat: v.lastLat!,
+                        lng: v.lastLng!,
+                        speed: v.lastSpeed ?? 0,
+                        status: v.status,
+                      }))}
+                  />
+                </Suspense>
               </div>
             </div>
           )
