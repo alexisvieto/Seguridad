@@ -25,7 +25,6 @@ function sanitizeText(text: string): string {
   return text
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
-    .replace(/[ñÑ]/g, (c) => (c === 'ñ' ? 'n' : 'N'))
     .replace(/[,;"'\\]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
@@ -73,8 +72,8 @@ export function generatePanamaACH(
     const line = [
       sanitizeCedula(agent.cedula!),
       sanitizeText(agent.agentName),
-      agent.bankCode!,
-      agent.bankAccountNumber!,
+      sanitizeCedula(agent.bankCode!),
+      sanitizeCedula(agent.bankAccountNumber!),
       formatAccountType(agent.bankAccountType!),
       formatAmount(agent.netSalary),
       sanitizeText(periodLabel),

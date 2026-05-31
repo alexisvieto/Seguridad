@@ -217,8 +217,7 @@ export default function CapacitacionesPage() {
           return;
         }
 
-        const { data: urlData } = supabase.storage.from('hr-documents').getPublicUrl(path);
-        certUrl = urlData.publicUrl;
+        certUrl = path;
       }
 
       // Get course validity to compute expiry

@@ -72,7 +72,7 @@ export async function processFortnightPayroll(
     // ------------------------------------------------------------------
 
     const config = await loadConfig(client, tenantId);
-    const period = await loadPeriod(client, periodId);
+    const period = await loadPeriod(client, tenantId, periodId);
 
     console.info(`[Payroll] Period: ${period.startDate} → ${period.endDate}`);
     console.info(`[Payroll] Config: limit=${config.ordinaryHoursLimit}h, flatOT=${config.overtimeFlatRate}, SS=${config.ssRate}, EI=${config.eiRate}`);
@@ -193,11 +193,12 @@ async function loadConfig(client: Client, tenantId: string): Promise<PayrollConf
 // Step 1b: Load period
 // ---------------------------------------------------------------------------
 
-async function loadPeriod(client: Client, periodId: string): Promise<PeriodDates> {
+async function loadPeriod(client: Client, tenantId: string, periodId: string): Promise<PeriodDates> {
   const { data, error } = await client
     .from('payroll_periods')
     .select('start_date, end_date, status')
     .eq('id', periodId)
+    .eq('tenant_id', tenantId)
     .maybeSingle();
 
   if (error || !data) {
@@ -404,10 +405,13 @@ function calculateFinancials(
     holidayPay = round2(holidayHours * ratePerHour);
   }
 
-  const gross = round2(regularPay + overtimePay + holidayPay + adjustmentAddition - adjustmentDeduction);
-  const ssDed = round2(gross * config.ssRate);
-  const eiDed = round2(gross * config.eiRate);
-  const net = round2(gross - ssDed - eiDed);
+  // Gross before deductions = base pay + additions (CSS/SE base per Panama law)
+  const grossBeforeDeductions = round2(regularPay + overtimePay + holidayPay + adjustmentAddition);
+  const ssDed = round2(grossBeforeDeductions * config.ssRate);
+  const eiDed = round2(grossBeforeDeductions * config.eiRate);
+  // Net = gross - retenciones legales - deducciones administrativas
+  const gross = round2(grossBeforeDeductions);
+  const net = round2(grossBeforeDeductions - ssDed - eiDed - adjustmentDeduction);
 
   return {
     gross: Math.max(0, gross),

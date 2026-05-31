@@ -259,7 +259,7 @@ export async function adjustAgentPayroll(
 ) {
   const { data: current } = await client
     .from('payroll_agent_consolidated')
-    .select('gross_salary, social_security_deduction, educational_insurance_deduction, adjustments_addition, adjustments_deduction')
+    .select('rate_per_hour, regular_hours_accumulated, overtime_hours_accumulated, holiday_hours_accumulated, adjustments_addition, adjustments_deduction')
     .eq('id', consolidatedId)
     .maybeSingle();
 
@@ -267,20 +267,29 @@ export async function adjustAgentPayroll(
     throw new AppError('NOT_FOUND', 'Registro de nomina no encontrado');
   }
 
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+
   const newAddition = input.adjustments_addition ?? Number(current.adjustments_addition);
   const newDeduction = input.adjustments_deduction ?? Number(current.adjustments_deduction);
-  const gross = Number(current.gross_salary) + newAddition - Number(current.adjustments_addition);
-  const adjustedGross = gross - newDeduction + Number(current.adjustments_deduction);
-  const ss = Number(current.social_security_deduction);
-  const ei = Number(current.educational_insurance_deduction);
-  const net = Math.round((adjustedGross - ss - ei) * 100) / 100;
+
+  const totalHours = Number(current.regular_hours_accumulated)
+    + Number(current.overtime_hours_accumulated)
+    + Number(current.holiday_hours_accumulated);
+  const basePay = r2(totalHours * Number(current.rate_per_hour));
+  const gross = r2(basePay + newAddition);
+  const ss = r2(gross * 0.0975);
+  const ei = r2(gross * 0.0125);
+  const net = r2(Math.max(0, gross - ss - ei - newDeduction));
 
   const { data, error } = await client
     .from('payroll_agent_consolidated')
     .update({
       adjustments_addition: newAddition,
       adjustments_deduction: newDeduction,
-      net_salary: Math.max(0, net),
+      gross_salary: gross,
+      social_security_deduction: ss,
+      educational_insurance_deduction: ei,
+      net_salary: net,
     })
     .eq('id', consolidatedId)
     .select()

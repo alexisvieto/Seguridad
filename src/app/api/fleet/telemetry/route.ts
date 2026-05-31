@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { timingSafeEqual } from 'crypto';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 
 const SPEED_LIMIT_KMH = 80;
@@ -18,12 +19,20 @@ const bodySchema = z.union([
   z.array(pointSchema).min(1).max(500),
 ]);
 
+function verifyToken(token: string | null, secret: string): boolean {
+  if (!token) return false;
+  const tokenBuf = Buffer.from(token);
+  const secretBuf = Buffer.from(secret);
+  if (tokenBuf.length !== secretBuf.length) return false;
+  return timingSafeEqual(tokenBuf, secretBuf);
+}
+
 export async function POST(request: NextRequest) {
-  // 1. Auth — validate provider token
+  // 1. Auth — validate provider token (timing-safe comparison)
   const token = request.headers.get('x-gps-auth-token');
   const secret = process.env.GPS_PROVIDER_SECRET;
 
-  if (!secret || token !== secret) {
+  if (!secret || !verifyToken(token, secret)) {
     return NextResponse.json(
       { error: 'UNAUTHORIZED', message: 'Invalid or missing x-gps-auth-token' },
       { status: 401 },
@@ -143,13 +152,13 @@ export async function POST(request: NextRequest) {
 
   if (gpsRows.length > 0) {
     operations.push(
-      supabase.from('vehicle_gps_logs').insert(gpsRows).then(() => {}),
+      supabase.from('vehicle_gps_logs').insert(gpsRows).then(({ error }) => { if (error) throw error; }),
     );
   }
 
   if (speedViolations.length > 0) {
     operations.push(
-      supabase.from('geofence_violations').insert(speedViolations).then(() => {}),
+      supabase.from('geofence_violations').insert(speedViolations).then(({ error }) => { if (error) throw error; }),
     );
   }
 
@@ -161,7 +170,7 @@ export async function POST(request: NextRequest) {
         .update({ status: 'taller' as const })
         .in('id', flagIds)
         .eq('status', 'activo')
-        .then(() => {}),
+        .then(({ error }) => { if (error) throw error; }),
     );
   }
 

@@ -87,6 +87,15 @@ export default function PayrollPeriodPage() {
   const [toast, setToast] = useState<Toast | null>(null);
 
   const debounceTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const agentsRef = useRef(agents);
+  useEffect(() => { agentsRef.current = agents; }, [agents]);
+
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      debounceTimers.current.forEach((t) => clearTimeout(t));
+    };
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -165,6 +174,7 @@ export default function PayrollPeriodPage() {
     field: 'addition' | 'deduction',
     value: number,
   ) => {
+    // Optimistic local update with correct CSS/SE calculation (before deductions)
     setAgents((prev) =>
       prev.map((a) => {
         if (a.id !== agentId) return a;
@@ -174,50 +184,40 @@ export default function PayrollPeriodPage() {
 
         const totalHours = a.regularHours + a.overtimeHours + a.holidayHours;
         const basePay = r2(totalHours * a.ratePerHour);
-        const gross = r2(basePay + newAddition - newDeduction);
+        const gross = r2(basePay + newAddition);
         const ss = r2(gross * SS_RATE);
         const ei = r2(gross * EI_RATE);
-        const net = r2(Math.max(0, gross - ss - ei));
+        const net = r2(Math.max(0, gross - ss - ei - newDeduction));
 
         return { ...a, addition: newAddition, deduction: newDeduction, gross, ss, ei, net };
       }),
     );
 
-    // Debounced DB save
+    // Debounced DB save — uses ref to avoid stale closure
     const existing = debounceTimers.current.get(agentId);
     if (existing) clearTimeout(existing);
 
     debounceTimers.current.set(
       agentId,
       setTimeout(async () => {
-        const agent = agents.find((a) => a.id === agentId);
+        const agent = agentsRef.current.find((a) => a.id === agentId);
         if (!agent) return;
-
-        const newAddition = field === 'addition' ? value : agent.addition;
-        const newDeduction = field === 'deduction' ? value : agent.deduction;
-
-        const totalHours = agent.regularHours + agent.overtimeHours + agent.holidayHours;
-        const basePay = r2(totalHours * agent.ratePerHour);
-        const gross = r2(basePay + newAddition - newDeduction);
-        const ss = r2(gross * SS_RATE);
-        const ei = r2(gross * EI_RATE);
-        const net = r2(Math.max(0, gross - ss - ei));
 
         const supabase = getSupabaseBrowserClient();
         await supabase
           .from('payroll_agent_consolidated')
           .update({
-            adjustments_addition: newAddition,
-            adjustments_deduction: newDeduction,
-            gross_salary: gross,
-            social_security_deduction: ss,
-            educational_insurance_deduction: ei,
-            net_salary: net,
+            adjustments_addition: agent.addition,
+            adjustments_deduction: agent.deduction,
+            gross_salary: agent.gross,
+            social_security_deduction: agent.ss,
+            educational_insurance_deduction: agent.ei,
+            net_salary: agent.net,
           })
           .eq('id', agentId);
       }, 800),
     );
-  }, [agents]);
+  }, []);
 
   // -------------------------------------------------------------------
   // Actions
