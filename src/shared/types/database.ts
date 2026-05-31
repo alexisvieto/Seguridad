@@ -10,6 +10,9 @@ export type VehicleType = 'auto' | 'moto' | 'scooter' | 'bicicleta';
 export type VehicleStatus = 'activo' | 'taller' | 'siniestrado';
 export type ViolationType = 'salida_de_zona' | 'exceso_velocidad' | 'parada_prolongada_no_autorizada';
 export type ViolationStatus = 'pendiente' | 'justificado' | 'notificado';
+export type ContractType = 'definido' | 'indefinido';
+export type ContractStatus = 'activo' | 'vencido' | 'terminado';
+export type DisciplinaryType = 'llamado_atencion' | 'falta' | 'suspension';
 
 export interface JsonBlock {
   type: string;
@@ -47,6 +50,9 @@ export type EquipmentLoan = Database['public']['Tables']['agent_equipment_loans'
 export type FleetVehicle = Database['public']['Tables']['fleet_vehicles']['Row'];
 export type VehicleGpsLog = Database['public']['Tables']['vehicle_gps_logs']['Row'];
 export type GeofenceViolation = Database['public']['Tables']['geofence_violations']['Row'];
+export type HrAgentProfile = Database['public']['Tables']['hr_agent_profiles']['Row'];
+export type HrContract = Database['public']['Tables']['hr_contracts']['Row'];
+export type HrDisciplinaryRecord = Database['public']['Tables']['hr_disciplinary_records']['Row'];
 
 export interface Database {
   public: {
@@ -802,6 +808,143 @@ export interface Database {
           },
         ];
       };
+      hr_agent_profiles: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          css_number: string | null;
+          life_insurance_policy: string | null;
+          security_carnet_number: string | null;
+          carnet_expiry_date: string | null;
+          hire_date: string;
+          emergency_contact_name: string | null;
+          emergency_contact_phone: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          css_number?: string | null;
+          life_insurance_policy?: string | null;
+          security_carnet_number?: string | null;
+          carnet_expiry_date?: string | null;
+          hire_date?: string;
+          emergency_contact_name?: string | null;
+          emergency_contact_phone?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          css_number?: string | null;
+          life_insurance_policy?: string | null;
+          security_carnet_number?: string | null;
+          carnet_expiry_date?: string | null;
+          hire_date?: string;
+          emergency_contact_name?: string | null;
+          emergency_contact_phone?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'hr_agent_profiles_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      hr_contracts: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          contract_type: ContractType;
+          start_date: string;
+          end_date: string | null;
+          base_salary: number;
+          status: ContractStatus;
+          termination_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          contract_type: ContractType;
+          start_date: string;
+          end_date?: string | null;
+          base_salary: number;
+          status?: ContractStatus;
+          termination_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          contract_type?: ContractType;
+          start_date?: string;
+          end_date?: string | null;
+          base_salary?: number;
+          status?: ContractStatus;
+          termination_reason?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'hr_contracts_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      hr_disciplinary_records: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          record_type: DisciplinaryType;
+          description: string;
+          start_date: string;
+          end_date: string | null;
+          registered_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          record_type: DisciplinaryType;
+          description: string;
+          start_date: string;
+          end_date?: string | null;
+          registered_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          record_type?: DisciplinaryType;
+          description?: string;
+          start_date?: string;
+          end_date?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'hr_disciplinary_records_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -835,6 +978,9 @@ export interface Database {
       vehicle_status: VehicleStatus;
       violation_type: ViolationType;
       violation_status: ViolationStatus;
+      contract_type: ContractType;
+      contract_status: ContractStatus;
+      disciplinary_type: DisciplinaryType;
     };
     CompositeTypes: Record<string, never>;
   };
