@@ -456,6 +456,139 @@ async function queryFleetCPK(
   };
 }
 
+async function queryHR(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  tenantId: string,
+  intent: string,
+) {
+  if (intent.includes('turnover') || intent.includes('rotacion')) {
+    const { data: contracts } = await supabase.from('hr_contracts').select('status').eq('tenant_id', tenantId);
+    const active = (contracts ?? []).filter((c) => c.status === 'activo').length;
+    const terminated = (contracts ?? []).filter((c) => c.status === 'terminado').length;
+    const total = contracts?.length ?? 0;
+    const rate = total > 0 ? Math.round((terminated / total) * 100) : 0;
+    return { type: 'hr_turnover', title: 'Tasa de Rotacion de Personal', agents: [
+      { name: 'Contratos activos', shifts: active },
+      { name: 'Contratos terminados', shifts: terminated },
+      { name: `Tasa de rotacion: ${rate}%`, shifts: total },
+    ]};
+  }
+
+  if (intent.includes('tenure') || intent.includes('antiguedad')) {
+    const { data } = await supabase.from('hr_agent_profiles').select('user_id, hire_date').eq('tenant_id', tenantId).order('hire_date');
+    const userIds = (data ?? []).map((d) => d.user_id);
+    const { data: profiles } = userIds.length > 0 ? await supabase.from('profiles').select('id, full_name').in('id', userIds) : { data: [] };
+    const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+    const today = Date.now();
+    return { type: 'hr_tenure', title: 'Ranking de Antiguedad', agents: (data ?? []).map((d) => {
+      const days = Math.floor((today - new Date(d.hire_date).getTime()) / 86400000);
+      return { name: nameMap.get(d.user_id) ?? 'Agente', shifts: days, salary: `${Math.floor(days/365)}a ${Math.floor((days%365)/30)}m` };
+    })};
+  }
+
+  if (intent.includes('mitradel') || intent.includes('sello')) {
+    const { count } = await supabase.from('hr_contracts').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'pendiente_sello');
+    return { type: 'hr_mitradel', title: 'Contratos Pendientes MITRADEL', agents: [{ name: `${count ?? 0} contratos sin sello MITRADEL`, shifts: count ?? 0 }]};
+  }
+
+  if (intent.includes('disciplin') || intent.includes('amonestacion')) {
+    const { data } = await supabase.from('hr_disciplinary_records').select('user_id, record_type').eq('tenant_id', tenantId);
+    const counts = new Map<string, number>();
+    for (const d of data ?? []) { counts.set(d.user_id, (counts.get(d.user_id) ?? 0) + 1); }
+    const userIds = [...counts.keys()];
+    const { data: profiles } = userIds.length > 0 ? await supabase.from('profiles').select('id, full_name').in('id', userIds) : { data: [] };
+    const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+    const ranked = [...counts.entries()].map(([uid, count]) => ({ name: nameMap.get(uid) ?? 'Agente', shifts: count })).sort((a, b) => b.shifts - a.shifts);
+    return { type: 'hr_disciplinary', title: 'Historial Disciplinario', agents: ranked.length > 0 ? ranked : [{ name: 'Sin registros disciplinarios', shifts: 0 }]};
+  }
+
+  if (intent.includes('medical') || intent.includes('incapacidad')) {
+    const { data } = await supabase.from('hr_medical_leaves').select('user_id, days').eq('tenant_id', tenantId);
+    const counts = new Map<string, number>();
+    for (const d of data ?? []) { counts.set(d.user_id, (counts.get(d.user_id) ?? 0) + d.days); }
+    const userIds = [...counts.keys()];
+    const { data: profiles } = userIds.length > 0 ? await supabase.from('profiles').select('id, full_name').in('id', userIds) : { data: [] };
+    const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+    const ranked = [...counts.entries()].map(([uid, days]) => ({ name: nameMap.get(uid) ?? 'Agente', shifts: days, salary: `${days} dias` })).sort((a, b) => b.shifts - a.shifts);
+    return { type: 'hr_medical', title: 'Incapacidades Acumuladas', agents: ranked.length > 0 ? ranked : [{ name: 'Sin incapacidades registradas', shifts: 0 }]};
+  }
+
+  if (intent.includes('training') || intent.includes('compliance') || intent.includes('capacitacion')) {
+    const today = new Date().toISOString().split('T')[0]!;
+    const { data: logs } = await supabase.from('agent_training_logs').select('user_id, expiry_date').eq('tenant_id', tenantId);
+    const valid = new Set((logs ?? []).filter((l) => l.expiry_date >= today).map((l) => l.user_id));
+    const expired = new Set((logs ?? []).filter((l) => l.expiry_date < today).map((l) => l.user_id));
+    const { count: totalAgents } = await supabase.from('memberships').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId);
+    return { type: 'hr_training', title: 'Cumplimiento de Capacitaciones', agents: [
+      { name: 'Agentes con certificaciones vigentes', shifts: valid.size },
+      { name: 'Agentes con certificaciones vencidas', shifts: expired.size },
+      { name: 'Total agentes', shifts: totalAgents ?? 0 },
+    ]};
+  }
+
+  if (intent.includes('permit') || intent.includes('arma')) {
+    const today = new Date().toISOString().split('T')[0]!;
+    const { data } = await supabase.from('firearms_inventory').select('serial_number, brand, model, permit_expiry_date').eq('tenant_id', tenantId).neq('status', 'retirada');
+    const atRisk = (data ?? []).filter((f) => f.permit_expiry_date <= today || new Date(f.permit_expiry_date).getTime() - Date.now() < 60 * 86400000);
+    return { type: 'hr_permits', title: 'Permisos de Armas', vehicles: atRisk.map((f) => ({ plate: f.serial_number, model: `${f.brand} ${f.model}`, incidents: Math.ceil((new Date(f.permit_expiry_date).getTime() - Date.now()) / 86400000) }))};
+  }
+
+  return { type: 'info', message: 'Consultando datos de RRHH...' };
+}
+
+async function queryIncidents(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  tenantId: string,
+) {
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+  const { data } = await supabase.from('incidents_log').select('status, created_at').eq('tenant_id', tenantId).gte('created_at', thirtyDaysAgo);
+  const total = data?.length ?? 0;
+  const open = (data ?? []).filter((i) => i.status === 'open').length;
+  const resolved = (data ?? []).filter((i) => i.status === 'resolved').length;
+  const closed = (data ?? []).filter((i) => i.status === 'closed').length;
+  return { type: 'incident_summary', title: 'Incidentes (ultimos 30 dias)', agents: [
+    { name: 'Total incidentes', shifts: total },
+    { name: 'Abiertos', shifts: open },
+    { name: 'Resueltos', shifts: resolved },
+    { name: 'Cerrados', shifts: closed },
+  ]};
+}
+
+async function queryClients(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  tenantId: string,
+) {
+  const { data: tickets } = await supabase.from('client_tickets').select('property_id, status, properties_ph(name)').eq('tenant_id', tenantId);
+  const byProperty = new Map<string, { name: string; open: number; total: number }>();
+  for (const t of tickets ?? []) {
+    const propName = t.properties_ph?.name ?? 'Propiedad';
+    const entry = byProperty.get(t.property_id) ?? { name: propName, open: 0, total: 0 };
+    entry.total++;
+    if (t.status === 'abierto' || t.status === 'en_proceso') entry.open++;
+    byProperty.set(t.property_id, entry);
+  }
+  const ranked = [...byProperty.values()].sort((a, b) => b.open - a.open);
+  const { data: damages } = await supabase.from('client_damage_reports').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'bajo_investigacion');
+  return { type: 'client_tickets', title: 'Quejas y Tickets por Propiedad', agents: [
+    ...ranked.map((r) => ({ name: r.name, shifts: r.open, salary: `${r.total} total` })),
+    { name: 'Danos bajo investigacion', shifts: damages?.length ?? 0 },
+  ]};
+}
+
+async function queryInventory(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  tenantId: string,
+) {
+  const { data } = await supabase.from('inventory_items').select('item_name, category, current_stock, min_stock_alert').eq('tenant_id', tenantId).order('current_stock');
+  const lowStock = (data ?? []).filter((i) => i.current_stock <= i.min_stock_alert);
+  const outOfStock = (data ?? []).filter((i) => i.current_stock === 0);
+  return { type: 'inventory_status', title: 'Estado del Inventario', agents: [
+    { name: `${outOfStock.length} articulos agotados`, shifts: outOfStock.length },
+    { name: `${lowStock.length} articulos bajo minimo`, shifts: lowStock.length },
+    ...(data ?? []).map((i) => ({ name: `${i.item_name}`, shifts: i.current_stock, salary: `min: ${i.min_stock_alert}` })),
+  ]};
+}
+
 function classifyQuestion(question: string): AIResponse {
   const q = question.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -497,6 +630,52 @@ function classifyQuestion(question: string): AIResponse {
   // Nomina / salario / pago
   if (q.includes('nomina') || q.includes('salario') || q.includes('planilla') || q.includes('pago') || q.includes('neto')) {
     return { category: 'payroll', intent: 'payroll_summary', params: {}, answer: 'Generando resumen de nomina...' };
+  }
+
+  // HR
+  if (q.includes('rotacion') || q.includes('renunci') || q.includes('despido') || q.includes('terminado')) {
+    return { category: 'hr', intent: 'turnover_rate', params: {}, answer: 'Calculando tasa de rotacion...' };
+  }
+  if (q.includes('antiguedad') || q.includes('antiguo') || q.includes('veterano') || q.includes('mas tiempo')) {
+    return { category: 'hr', intent: 'tenure_ranking', params: {}, answer: 'Identificando agentes con mayor antiguedad...' };
+  }
+  if (q.includes('documentacion') || q.includes('incompleto') || q.includes('expediente')) {
+    return { category: 'hr', intent: 'compliance_gaps', params: {}, answer: 'Verificando documentacion...' };
+  }
+  if (q.includes('incapacidad') || q.includes('enferm') || q.includes('licencia medica')) {
+    return { category: 'hr', intent: 'medical_leaves', params: {}, answer: 'Analizando incapacidades...' };
+  }
+  if (q.includes('amonestacion') || q.includes('disciplin') || q.includes('suspension') || q.includes('problematico')) {
+    return { category: 'hr', intent: 'disciplinary_report', params: {}, answer: 'Consultando historial disciplinario...' };
+  }
+  if (q.includes('capacitacion') || q.includes('certificacion') || q.includes('curso') || q.includes('diasp') || q.includes('carnet')) {
+    return { category: 'hr', intent: 'training_compliance', params: {}, answer: 'Verificando capacitaciones...' };
+  }
+  if (q.includes('mitradel') || q.includes('sello') || q.includes('sin sellar')) {
+    return { category: 'hr', intent: 'mitradel_pending', params: {}, answer: 'Contratos sin sello MITRADEL...' };
+  }
+  if (q.includes('permiso') || q.includes('arma')) {
+    return { category: 'hr', intent: 'permit_expiry', params: {}, answer: 'Verificando permisos de armas...' };
+  }
+
+  // Incidents
+  if (q.includes('incidente') || q.includes('novedad') || q.includes('critico') || q.includes('seguridad')) {
+    return { category: 'incidents', intent: 'incident_summary', params: {}, answer: 'Resumen de incidentes...' };
+  }
+
+  // Clients
+  if (q.includes('queja') || q.includes('ticket') || q.includes('reclamo') || q.includes('pqr')) {
+    return { category: 'clients', intent: 'complaint_ranking', params: {}, answer: 'Analizando quejas...' };
+  }
+
+  // Inventory
+  if (q.includes('stock') || q.includes('inventario') || q.includes('bodega') || q.includes('agotado')) {
+    return { category: 'inventory', intent: 'low_stock', params: {}, answer: 'Verificando inventario...' };
+  }
+
+  // Cobertura
+  if (q.includes('puesto') || q.includes('cobertura') || q.includes('sin cubrir') || q.includes('vacio')) {
+    return { category: 'attendance', intent: 'coverage_gaps', params: {}, answer: 'Analizando cobertura de puestos...' };
   }
 
   // Default
@@ -565,6 +744,18 @@ export async function POST(request: NextRequest) {
         break;
       case 'payroll':
         queryResult = await queryPayroll(supabase, tenantId, aiResponse.intent);
+        break;
+      case 'hr':
+        queryResult = await queryHR(supabase, tenantId, aiResponse.intent);
+        break;
+      case 'incidents':
+        queryResult = await queryIncidents(supabase, tenantId);
+        break;
+      case 'clients':
+        queryResult = await queryClients(supabase, tenantId);
+        break;
+      case 'inventory':
+        queryResult = await queryInventory(supabase, tenantId);
         break;
       default:
         queryResult = { type: 'info', message: aiResponse.answer };

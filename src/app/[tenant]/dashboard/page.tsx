@@ -325,12 +325,9 @@ export default function DashboardAnalyticsPage() {
                 <p className="text-xs text-zinc-500">Ejemplos de preguntas:</p>
                 <div className="space-y-1.5">
                   {[
-                    '¿Quien no falto en todo el año?',
-                    '¿Quien llega siempre a tiempo?',
                     '¿Donde pierdo dinero en horas extras?',
-                    '¿Cual es el Factor de Bradford?',
-                    '¿Cual vehiculo cuesta mas por kilometro?',
-                    '¿Cual vehiculo tiene menos daños?',
+                    '¿Cuantos contratos estan sin sellar en MITRADEL?',
+                    '¿Cual es el estado del inventario?',
                   ].map((q) => (
                     <button key={q} onClick={() => { setChatQuestion(q); }}
                       className="block w-full rounded-lg bg-zinc-800/50 px-3 py-2 text-left text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors cursor-pointer">
