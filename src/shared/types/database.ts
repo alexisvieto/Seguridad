@@ -6,6 +6,10 @@ export type FirearmStatus = 'operativa' | 'mantenimiento' | 'retirada';
 export type InventoryCategory = 'uniforme' | 'calzado' | 'comunicacion' | 'defensa' | 'otros';
 export type AssetStatus = 'bueno' | 'dañado' | 'en_reparacion';
 export type LoanStatus = 'entregado' | 'devuelto' | 'descontado_por_perdida';
+export type VehicleType = 'auto' | 'moto' | 'scooter' | 'bicicleta';
+export type VehicleStatus = 'activo' | 'taller' | 'siniestrado';
+export type ViolationType = 'salida_de_zona' | 'exceso_velocidad' | 'parada_prolongada_no_autorizada';
+export type ViolationStatus = 'pendiente' | 'justificado' | 'notificado';
 
 export interface JsonBlock {
   type: string;
@@ -40,6 +44,9 @@ export type FirearmAssignment = Database['public']['Tables']['firearms_assignmen
 export type InventoryItem = Database['public']['Tables']['inventory_items']['Row'];
 export type StationAsset = Database['public']['Tables']['station_asset_custody']['Row'];
 export type EquipmentLoan = Database['public']['Tables']['agent_equipment_loans']['Row'];
+export type FleetVehicle = Database['public']['Tables']['fleet_vehicles']['Row'];
+export type VehicleGpsLog = Database['public']['Tables']['vehicle_gps_logs']['Row'];
+export type GeofenceViolation = Database['public']['Tables']['geofence_violations']['Row'];
 
 export interface Database {
   public: {
@@ -656,6 +663,145 @@ export interface Database {
           },
         ];
       };
+      fleet_vehicles: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          plate_number: string;
+          vehicle_type: VehicleType;
+          brand_model: string;
+          gps_device_id: string | null;
+          current_odometer: number;
+          next_maintenance_odometer: number;
+          status: VehicleStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          plate_number: string;
+          vehicle_type: VehicleType;
+          brand_model: string;
+          gps_device_id?: string | null;
+          current_odometer?: number;
+          next_maintenance_odometer: number;
+          status?: VehicleStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          plate_number?: string;
+          vehicle_type?: VehicleType;
+          brand_model?: string;
+          gps_device_id?: string | null;
+          current_odometer?: number;
+          next_maintenance_odometer?: number;
+          status?: VehicleStatus;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'fleet_vehicles_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      vehicle_gps_logs: {
+        Row: {
+          id: number;
+          tenant_id: string;
+          vehicle_id: string;
+          latitude: number;
+          longitude: number;
+          speed_kmh: number;
+          odometer_reading: number | null;
+          recorded_at: string;
+          created_at: string;
+        };
+        Insert: {
+          tenant_id: string;
+          vehicle_id: string;
+          latitude: number;
+          longitude: number;
+          speed_kmh?: number;
+          odometer_reading?: number | null;
+          recorded_at: string;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: 'vehicle_gps_logs_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_gps_logs_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'fleet_vehicles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      geofence_violations: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          vehicle_id: string;
+          property_id: string | null;
+          violation_type: ViolationType;
+          description: string;
+          status: ViolationStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          vehicle_id: string;
+          property_id?: string | null;
+          violation_type: ViolationType;
+          description: string;
+          status?: ViolationStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          description?: string;
+          status?: ViolationStatus;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'geofence_violations_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'geofence_violations_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'fleet_vehicles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'geofence_violations_property_id_fkey';
+            columns: ['property_id'];
+            isOneToOne: false;
+            referencedRelation: 'properties_ph';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -685,6 +831,10 @@ export interface Database {
       inventory_category: InventoryCategory;
       asset_status: AssetStatus;
       loan_status: LoanStatus;
+      vehicle_type: VehicleType;
+      vehicle_status: VehicleStatus;
+      violation_type: ViolationType;
+      violation_status: ViolationStatus;
     };
     CompositeTypes: Record<string, never>;
   };
