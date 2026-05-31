@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SecurOps ERP | Plataforma de Gestión para Seguridad Privada",
+  title: "NexGuard360 | Plataforma de Gestión para Seguridad Privada",
   description: "ERP multi-tenant para empresas de seguridad privada. Control operativo en tiempo real, bitácoras con IA, blindaje legal, telemetría GPS y gestión de RRHH.",
 };
 

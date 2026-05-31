@@ -86,7 +86,7 @@ export function generatePanamaACH(
 
   const header = [
     'HDR',
-    sanitizeText('SECUROPS ERP'),
+    sanitizeText('NEXGUARD360'),
     companyAccountNumber,
     new Date().toISOString().split('T')[0],
     String(validRecords.length),

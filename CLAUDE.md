@@ -1,4 +1,4 @@
-# SecurOps ERP — CLAUDE.md
+# NexGuard360 — CLAUDE.md
 
 ## Qué es este proyecto
 

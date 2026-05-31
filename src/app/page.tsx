@@ -13,7 +13,7 @@ export default function LandingPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
               <ShieldIcon />
             </div>
-            <span className="text-lg font-bold tracking-tight">SecurOps</span>
+            <span className="text-lg font-bold tracking-tight">NexGuard360</span>
           </div>
           <div className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
             <a href="#features" className="transition-colors hover:text-zinc-100">Funcionalidades</a>
@@ -233,7 +233,7 @@ export default function LandingPage() {
             <div className="flex h-6 w-6 items-center justify-center rounded bg-emerald-600">
               <ShieldIconSm />
             </div>
-            <span className="text-sm font-semibold text-zinc-400">SecurOps ERP</span>
+            <span className="text-sm font-semibold text-zinc-400">NexGuard360 ERP</span>
           </div>
           <p className="text-xs text-zinc-600">Panama — Todos los derechos reservados</p>
         </div>
