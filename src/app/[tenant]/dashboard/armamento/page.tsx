@@ -134,6 +134,17 @@ export default function ArmamentoPage() {
   const [assignLoading, setAssignLoading] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
+  // Create firearm modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newType, setNewType] = useState<'revolver' | 'pistola' | 'escopeta'>('pistola');
+  const [newBrand, setNewBrand] = useState('');
+  const [newModel, setNewModel] = useState('');
+  const [newSerial, setNewSerial] = useState('');
+  const [newPermit, setNewPermit] = useState('');
+  const [newPermitExpiry, setNewPermitExpiry] = useState('');
+  const [newStatus, setNewStatus] = useState<'operativa' | 'mantenimiento' | 'retirada'>('operativa');
+  const [createLoading, setCreateLoading] = useState(false);
+
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Toast auto-dismiss
@@ -345,6 +356,78 @@ export default function ArmamentoPage() {
   }, [selected, selectFirearm]);
 
   // -------------------------------------------------------------------
+  // Create firearm
+  // -------------------------------------------------------------------
+
+  const resetCreateForm = useCallback(() => {
+    setNewType('pistola');
+    setNewBrand('');
+    setNewModel('');
+    setNewSerial('');
+    setNewPermit('');
+    setNewPermitExpiry('');
+    setNewStatus('operativa');
+  }, []);
+
+  const handleCreateFirearm = useCallback(async () => {
+    if (!tenantId || !newBrand.trim() || !newModel.trim() || !newSerial.trim() || !newPermit.trim() || !newPermitExpiry) return;
+    setCreateLoading(true);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase
+        .from('firearms_inventory')
+        .insert({
+          tenant_id: tenantId,
+          type: newType,
+          brand: newBrand.trim(),
+          model: newModel.trim(),
+          serial_number: newSerial.trim(),
+          permit_number: newPermit.trim(),
+          permit_expiry_date: newPermitExpiry,
+          status: newStatus,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          setToast({ type: 'error', msg: 'Ya existe un arma con ese numero de serie' });
+        } else {
+          setToast({ type: 'error', msg: 'Error al registrar el arma' });
+        }
+        setCreateLoading(false);
+        return;
+      }
+
+      if (data) {
+        const newFirearm: FirearmRow = {
+          id: data.id,
+          serialNumber: data.serial_number,
+          type: data.type,
+          brand: data.brand,
+          model: data.model,
+          status: data.status,
+          permitNumber: data.permit_number,
+          permitExpiry: data.permit_expiry_date,
+          permitAlert: alertLevel(data.permit_expiry_date),
+          daysToExpiry: daysUntil(data.permit_expiry_date),
+        };
+        setFirearms((prev) => [...prev, newFirearm]);
+        setSelected(newFirearm);
+      }
+
+      setToast({ type: 'success', msg: 'Arma registrada exitosamente' });
+      setShowCreateModal(false);
+      resetCreateForm();
+    } catch {
+      setToast({ type: 'error', msg: 'Error al registrar el arma' });
+    } finally {
+      setCreateLoading(false);
+    }
+  }, [tenantId, newType, newBrand, newModel, newSerial, newPermit, newPermitExpiry, newStatus, resetCreateForm]);
+
+  // -------------------------------------------------------------------
   // KPIs
   // -------------------------------------------------------------------
 
@@ -384,9 +467,15 @@ export default function ArmamentoPage() {
         <div className="flex items-center gap-3">
           <ShieldIcon />
           <h1 className="text-lg font-semibold tracking-wide">Control de Armamento</h1>
-          <span className="text-sm text-zinc-500">{tenantSlug}</span>
+          <span className="text-sm text-zinc-500">{firearms.length} arma{firearms.length !== 1 ? 's' : ''}</span>
         </div>
-        <span className="text-xs text-zinc-600">{firearms.length} arma{firearms.length !== 1 ? 's' : ''} registrada{firearms.length !== 1 ? 's' : ''}</span>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer"
+        >
+          <PlusIcon />
+          Agregar Arma
+        </button>
       </header>
 
       {/* ============================================================ */}
@@ -448,8 +537,21 @@ export default function ArmamentoPage() {
         {/* MASTER LIST (40%) */}
         <div className="w-[40%] shrink-0 overflow-y-auto border-r border-zinc-800/60">
           {firearms.length === 0 ? (
-            <div className="flex h-full items-center justify-center">
-              <p className="text-sm text-zinc-600">No hay armas registradas</p>
+            <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-800/60">
+                <ShieldIcon size="lg" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-400">No hay armas registradas en el bunker</p>
+                <p className="mt-1 text-xs text-zinc-600">Registre el inventario de armamento de su empresa</p>
+              </div>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer"
+              >
+                <PlusIcon />
+                Agregar Primera Arma
+              </button>
             </div>
           ) : (
             <ul>
@@ -694,6 +796,100 @@ export default function ArmamentoPage() {
         </div>
       )}
 
+      {/* ============================================================ */}
+      {/* CREATE FIREARM MODAL                                          */}
+      {/* ============================================================ */}
+      {showCreateModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowCreateModal(false); resetCreateForm(); } }}
+        >
+          <div className="w-full max-w-lg rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-zinc-100">Registrar Arma de Fuego</h3>
+            <p className="mt-1 text-xs text-zinc-500">Todos los campos son obligatorios</p>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {/* Type */}
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Tipo de Arma</span>
+                <select value={newType} onChange={(e) => setNewType(e.target.value as typeof newType)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                  <option value="pistola">Pistola</option>
+                  <option value="revolver">Revolver</option>
+                  <option value="escopeta">Escopeta</option>
+                </select>
+              </label>
+
+              {/* Status */}
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Estado Actual</span>
+                <select value={newStatus} onChange={(e) => setNewStatus(e.target.value as typeof newStatus)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                  <option value="operativa">Operativa</option>
+                  <option value="mantenimiento">En Mantenimiento</option>
+                  <option value="retirada">Retirada</option>
+                </select>
+              </label>
+
+              {/* Brand */}
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Marca</span>
+                <input type="text" value={newBrand} onChange={(e) => setNewBrand(e.target.value)} placeholder="Ej: Glock, Taurus" maxLength={100}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+              </label>
+
+              {/* Model */}
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Modelo</span>
+                <input type="text" value={newModel} onChange={(e) => setNewModel(e.target.value)} placeholder="Ej: G17 Gen5" maxLength={100}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+              </label>
+
+              {/* Serial Number */}
+              <label className="block sm:col-span-2">
+                <span className="text-xs font-medium text-zinc-400">Numero de Serie</span>
+                <input type="text" value={newSerial} onChange={(e) => setNewSerial(e.target.value)} placeholder="Numero unico del arma" maxLength={100}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+              </label>
+
+              {/* Permit Number */}
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Permiso DIASP</span>
+                <input type="text" value={newPermit} onChange={(e) => setNewPermit(e.target.value)} placeholder="Numero de permiso" maxLength={100}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+              </label>
+
+              {/* Permit Expiry */}
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Vencimiento del Permiso</span>
+                <input type="date" value={newPermitExpiry} onChange={(e) => setNewPermitExpiry(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+              </label>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => { setShowCreateModal(false); resetCreateForm(); }}
+                className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700 cursor-pointer min-h-[48px]"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateFirearm}
+                disabled={!newBrand.trim() || !newModel.trim() || !newSerial.trim() || !newPermit.trim() || !newPermitExpiry || createLoading}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]"
+              >
+                {createLoading ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                ) : (
+                  'Registrar Arma'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TOAST */}
       {toast && (
         <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${
@@ -768,6 +964,14 @@ function AssignIcon() {
   return (
     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
     </svg>
   );
 }
