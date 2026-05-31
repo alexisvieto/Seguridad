@@ -31,7 +31,7 @@ src/
 │   ├── login/              # Login centralizado con routing por rol
 │   ├── [tenant]/           # Rutas dinámicas por tenant (rewrite desde subdomain)
 │   │   ├── puesto/         # UI del agente (mobile-first)
-│   │   ├── cliente/        # Portal del PH contratante
+│   │   ├── cliente/        # Portal del cliente contratante
 │   │   └── dashboard/      # Dashboards administrativos
 │   └── api/                # Route Handlers
 ├── modules/                # Arquitectura modular por dominio
