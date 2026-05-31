@@ -140,6 +140,191 @@ async function queryFleet(
   };
 }
 
+async function queryPayroll(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  tenantId: string,
+  intent: string,
+) {
+  // Last 3 closed periods
+  const { data: periods } = await supabase
+    .from('payroll_periods')
+    .select('id, start_date, end_date')
+    .eq('tenant_id', tenantId)
+    .in('status', ['calculado', 'cerrado_pagado'])
+    .order('end_date', { ascending: false })
+    .limit(6);
+
+  if (!periods || periods.length === 0) {
+    return { type: 'payroll_empty', title: 'Sin datos de nomina', data: [] };
+  }
+
+  const periodIds = periods.map((p) => p.id);
+
+  const { data: consolidated } = await supabase
+    .from('payroll_agent_consolidated')
+    .select('payroll_period_id, user_id, rate_per_hour, regular_hours_accumulated, overtime_hours_accumulated, gross_salary, net_salary')
+    .in('payroll_period_id', periodIds);
+
+  // Overtime cost per period
+  const periodStats = periods.map((p) => {
+    const recs = (consolidated ?? []).filter((c) => c.payroll_period_id === p.id);
+    const totalRegular = recs.reduce((s, r) => s + Number(r.regular_hours_accumulated), 0);
+    const totalOT = recs.reduce((s, r) => s + Number(r.overtime_hours_accumulated), 0);
+    const totalGross = recs.reduce((s, r) => s + Number(r.gross_salary), 0);
+    const totalNet = recs.reduce((s, r) => s + Number(r.net_salary), 0);
+    const otCost = recs.reduce((s, r) => s + Number(r.overtime_hours_accumulated) * Number(r.rate_per_hour), 0);
+    const totalHours = totalRegular + totalOT;
+    const otRatio = totalHours > 0 ? Math.round((totalOT / totalHours) * 100) : 0;
+
+    return {
+      label: `${p.start_date.split('-')[2]}/${p.start_date.split('-')[1]}`,
+      startDate: p.start_date,
+      agents: recs.length,
+      regularHours: Math.round(totalRegular),
+      overtimeHours: Math.round(totalOT),
+      otCost: Math.round(otCost * 100) / 100,
+      otRatio,
+      gross: Math.round(totalGross * 100) / 100,
+      net: Math.round(totalNet * 100) / 100,
+    };
+  }).reverse();
+
+  if (intent.includes('bradford') || intent.includes('ausentismo')) {
+    // Bradford Factor calculation
+    const { data: members } = await supabase
+      .from('memberships').select('user_id').eq('tenant_id', tenantId).in('role', ['editor', 'admin']);
+
+    const { data: shifts } = await supabase
+      .from('agent_shifts').select('user_id, clock_in')
+      .eq('tenant_id', tenantId)
+      .gte('clock_in', '2026-01-01T00:00:00Z')
+      .order('clock_in');
+
+    const shiftDays = new Map<string, Set<string>>();
+    for (const s of shifts ?? []) {
+      const day = s.clock_in.split('T')[0]!;
+      const set = shiftDays.get(s.user_id) ?? new Set();
+      set.add(day);
+      shiftDays.set(s.user_id, set);
+    }
+
+    // Generate all working days in 2026 so far
+    const today = new Date();
+    const allDays: string[] = [];
+    const d = new Date('2026-01-01');
+    while (d <= today) {
+      allDays.push(d.toISOString().split('T')[0]!);
+      d.setDate(d.getDate() + 1);
+    }
+
+    const { data: profiles } = await supabase
+      .from('profiles').select('id, full_name')
+      .in('id', (members ?? []).map((m) => m.user_id));
+
+    const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+
+    const bradfordResults = (members ?? []).map((m) => {
+      const workedDays = shiftDays.get(m.user_id) ?? new Set();
+      let episodes = 0;
+      let absentDays = 0;
+      let inAbsence = false;
+
+      for (const day of allDays) {
+        if (!workedDays.has(day)) {
+          absentDays++;
+          if (!inAbsence) { episodes++; inAbsence = true; }
+        } else {
+          inAbsence = false;
+        }
+      }
+
+      const bradford = episodes * episodes * absentDays;
+      let severity: string;
+      if (bradford <= 50) severity = 'Bajo';
+      else if (bradford <= 200) severity = 'Moderado';
+      else if (bradford <= 500) severity = 'Alto';
+      else severity = 'Critico';
+
+      return {
+        name: nameMap.get(m.user_id) ?? 'Agente',
+        episodes,
+        absentDays,
+        bradford,
+        severity,
+      };
+    }).sort((a, b) => b.bradford - a.bradford);
+
+    return {
+      type: 'bradford',
+      title: 'Factor de Bradford — Impacto del Ausentismo',
+      agents: bradfordResults,
+      chartType: 'table',
+    };
+  }
+
+  return {
+    type: 'payroll_overtime',
+    title: 'Fuga de Rentabilidad por Horas Extras',
+    periods: periodStats,
+    totalOTCost: periodStats.reduce((s, p) => s + p.otCost, 0),
+    avgOTRatio: Math.round(periodStats.reduce((s, p) => s + p.otRatio, 0) / periodStats.length),
+    chartType: 'stacked_bar',
+  };
+}
+
+async function queryFleetCPK(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  tenantId: string,
+) {
+  const { data: vehicles } = await supabase
+    .from('fleet_vehicles')
+    .select('id, plate_number, brand_model, current_odometer')
+    .eq('tenant_id', tenantId);
+
+  const { data: violations } = await supabase
+    .from('geofence_violations')
+    .select('vehicle_id')
+    .eq('tenant_id', tenantId);
+
+  const violationCounts = new Map<string, number>();
+  for (const v of violations ?? []) {
+    violationCounts.set(v.vehicle_id, (violationCounts.get(v.vehicle_id) ?? 0) + 1);
+  }
+
+  // Estimate CPK (maintenance cost / km) — using violations as proxy for cost events
+  const cpkData = (vehicles ?? []).map((v) => {
+    const incidents = violationCounts.get(v.id) ?? 0;
+    const estimatedCost = incidents * 75; // B/.75 avg cost per incident
+    const km = v.current_odometer > 0 ? v.current_odometer : 1;
+    const cpk = Math.round((estimatedCost / km) * 10000) / 10000;
+
+    let rating: string;
+    if (cpk < 0.15) rating = 'Excelente';
+    else if (cpk < 0.30) rating = 'Normal';
+    else if (cpk < 0.50) rating = 'Elevado';
+    else rating = 'Critico';
+
+    return {
+      plate: v.plate_number,
+      model: v.brand_model,
+      km: v.current_odometer,
+      incidents,
+      estimatedCost,
+      cpk,
+      rating,
+    };
+  }).sort((a, b) => a.cpk - b.cpk);
+
+  return {
+    type: 'fleet_cpk',
+    title: 'Costo por Kilometro Recorrido (CPK)',
+    vehicles: cpkData,
+    best: cpkData[0] ?? null,
+    worst: cpkData[cpkData.length - 1] ?? null,
+    chartType: 'bar',
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: unknown = await request.json();
@@ -184,7 +369,14 @@ export async function POST(request: NextRequest) {
         queryResult = await queryPunctuality(supabase, tenantId);
         break;
       case 'fleet':
-        queryResult = await queryFleet(supabase, tenantId);
+        if (aiResponse.intent.includes('cpk') || aiResponse.intent.includes('costo') || aiResponse.intent.includes('kilometro')) {
+          queryResult = await queryFleetCPK(supabase, tenantId);
+        } else {
+          queryResult = await queryFleet(supabase, tenantId);
+        }
+        break;
+      case 'payroll':
+        queryResult = await queryPayroll(supabase, tenantId, aiResponse.intent);
         break;
       default:
         queryResult = { type: 'info', message: aiResponse.answer };

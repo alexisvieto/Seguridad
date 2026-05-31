@@ -307,26 +307,7 @@ export default function DashboardAnalyticsPage() {
                 <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 px-4 py-3">
                   <p className="text-xs text-emerald-500/70">NexGuard360 IA</p>
                   <p className="mt-1 text-sm text-zinc-200">{chatResult.aiClassification.answer}</p>
-                  {chatResult.result && typeof chatResult.result === 'object' && 'agents' in chatResult.result && (
-                    <ul className="mt-3 space-y-1">
-                      {(chatResult.result['agents'] as Array<{ name: string; shifts?: number }>)?.slice(0, 5).map((a) => (
-                        <li key={a.name} className="flex items-center justify-between text-xs text-zinc-300">
-                          <span>{a.name}</span>
-                          {a.shifts !== undefined && <span className="text-emerald-400">{a.shifts} turnos</span>}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {chatResult.result && typeof chatResult.result === 'object' && 'vehicles' in chatResult.result && (
-                    <ul className="mt-3 space-y-1">
-                      {(chatResult.result['vehicles'] as Array<{ plate: string; model: string; incidents: number }>)?.slice(0, 5).map((v) => (
-                        <li key={v.plate} className="flex items-center justify-between text-xs text-zinc-300">
-                          <span className="font-mono">{v.plate} {v.model}</span>
-                          <span className="text-emerald-400">{v.incidents} incid.</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  <ChatResultData result={chatResult.result} />
                 </div>
               </div>
             ) : (
@@ -336,8 +317,11 @@ export default function DashboardAnalyticsPage() {
                 <div className="space-y-1.5">
                   {[
                     '¿Quien no falto en todo el año?',
-                    '¿Cual vehiculo tiene menos daños?',
                     '¿Quien llega siempre a tiempo?',
+                    '¿Donde pierdo dinero en horas extras?',
+                    '¿Cual es el Factor de Bradford?',
+                    '¿Cual vehiculo cuesta mas por kilometro?',
+                    '¿Cual vehiculo tiene menos daños?',
                   ].map((q) => (
                     <button key={q} onClick={() => { setChatQuestion(q); }}
                       className="block w-full rounded-lg bg-zinc-800/50 px-3 py-2 text-left text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors cursor-pointer">
@@ -371,6 +355,115 @@ export default function DashboardAnalyticsPage() {
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
+
+function ChatResultData({ result }: { result: Record<string, unknown> }) {
+  if (!result || typeof result !== 'object') return null;
+  const type = result['type'] as string | undefined;
+
+  // Agents list (attendance, punctuality, bradford)
+  if ('agents' in result && Array.isArray(result['agents'])) {
+    const agents = result['agents'] as Array<Record<string, unknown>>;
+    const isBradford = type === 'bradford';
+
+    return (
+      <div className="mt-3">
+        {'title' in result && <p className="text-[11px] font-semibold text-zinc-400 mb-2">{String(result['title'] ?? '')}</p>}
+        <ul className="space-y-1">
+          {agents.slice(0, 8).map((a, i) => (
+            <li key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-3 py-2 text-xs">
+              <span className="text-zinc-200">{String(a['name'] ?? '')}</span>
+              <div className="flex items-center gap-3">
+                {a['shifts'] !== undefined && <span className="text-emerald-400">{String(a['shifts'])} turnos</span>}
+                {a['lateCount'] !== undefined && Number(a['lateCount']) === 0 && <span className="text-blue-400">0 tardanzas</span>}
+                {isBradford && (
+                  <>
+                    <span className="tabular-nums text-zinc-400">{String(a['bradford'] ?? 0)}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      a['severity'] === 'Critico' ? 'bg-red-500/15 text-red-400' :
+                      a['severity'] === 'Alto' ? 'bg-amber-500/15 text-amber-400' :
+                      a['severity'] === 'Moderado' ? 'bg-yellow-500/15 text-yellow-400' :
+                      'bg-emerald-500/15 text-emerald-400'
+                    }`}>{String(a['severity'] ?? '')}</span>
+                  </>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  // Vehicles list (fleet, cpk)
+  if ('vehicles' in result && Array.isArray(result['vehicles'])) {
+    const vehicles = result['vehicles'] as Array<Record<string, unknown>>;
+    const isCPK = type === 'fleet_cpk';
+
+    return (
+      <div className="mt-3">
+        {'title' in result && <p className="text-[11px] font-semibold text-zinc-400 mb-2">{String(result['title'] ?? '')}</p>}
+        <ul className="space-y-1">
+          {vehicles.slice(0, 8).map((v, i) => (
+            <li key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-3 py-2 text-xs">
+              <span className="font-mono text-zinc-200">{String(v['plate'])} <span className="text-zinc-500">{String(v['model'] ?? '')}</span></span>
+              <div className="flex items-center gap-3">
+                {isCPK ? (
+                  <>
+                    <span className="tabular-nums text-zinc-300">B/.{String(v['cpk'] ?? 0)}/km</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      v['rating'] === 'Critico' ? 'bg-red-500/15 text-red-400' :
+                      v['rating'] === 'Elevado' ? 'bg-amber-500/15 text-amber-400' :
+                      v['rating'] === 'Normal' ? 'bg-blue-500/15 text-blue-400' :
+                      'bg-emerald-500/15 text-emerald-400'
+                    }`}>{String(v['rating'] ?? '')}</span>
+                  </>
+                ) : (
+                  <span className="text-emerald-400">{String(v['incidents'] ?? 0)} incid.</span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  // Payroll periods (overtime analysis)
+  if ('periods' in result && Array.isArray(result['periods'])) {
+    const periods = result['periods'] as Array<Record<string, unknown>>;
+
+    return (
+      <div className="mt-3">
+        {'title' in result && <p className="text-[11px] font-semibold text-zinc-400 mb-2">{String(result['title'] ?? '')}</p>}
+        <ul className="space-y-1">
+          {periods.map((p, i) => (
+            <li key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-3 py-2 text-xs">
+              <span className="text-zinc-200">{String(p['label'])}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-zinc-400">{String(p['overtimeHours'])}h extra</span>
+                <span className="text-amber-400 font-semibold">B/.{String(p['otCost'])}</span>
+                <span className="text-zinc-500">{String(p['otRatio'])}%</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {result['totalOTCost'] !== undefined && (
+          <div className="mt-2 flex items-center justify-between border-t border-zinc-700/30 pt-2 text-xs">
+            <span className="text-zinc-400">Costo total extras</span>
+            <span className="font-semibold text-amber-400">B/.{String(result['totalOTCost'])}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Generic info
+  if ('message' in result) {
+    return <p className="mt-2 text-sm text-zinc-300">{String(result['message'])}</p>;
+  }
+
+  return null;
+}
 
 function KpiCard({ label, value, sub, accent }: {
   label: string; value: string; sub?: string; accent?: 'amber' | 'red';
