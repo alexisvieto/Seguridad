@@ -13,6 +13,22 @@ export async function clockIn(
   },
   userId: string,
 ) {
+  // Validate: no active shift (clock_out IS NULL) for this agent
+  const { data: activeShift } = await client
+    .from('agent_shifts')
+    .select('id, work_stations(name)')
+    .eq('user_id', userId)
+    .is('clock_out', null)
+    .maybeSingle();
+
+  if (activeShift) {
+    const stationName = (activeShift.work_stations as { name: string } | null)?.name ?? 'otro puesto';
+    throw new AppError(
+      'CONFLICT',
+      `Conflicto de Asignación: Ya tienes un turno activo en '${stationName}'. Registra la salida primero.`,
+    );
+  }
+
   const { data, error } = await client
     .from('agent_shifts')
     .insert({

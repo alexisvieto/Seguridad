@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { NotificationBanner } from './notification-banner';
+import { IncidentDetailModal, type IncidentDetail } from './incident-detail-modal';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -88,6 +90,8 @@ export default function LiveMonitorPage() {
   const [clock, setClock] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [contacts, setContacts] = useState<Map<string, EmergencyContact[]>>(new Map());
+  const [activeNotification, setActiveNotification] = useState<IncidentDetail | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const feedRef = useRef<HTMLDivElement>(null);
 
@@ -108,7 +112,7 @@ export default function LiveMonitorPage() {
       .from('tenants')
       .select('id')
       .eq('slug', tenantSlug)
-      .single();
+      .maybeSingle();
 
     if (!tenant) return;
     setTenantId(tenant.id);
@@ -253,17 +257,27 @@ export default function LiveMonitorPage() {
         },
         (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
           const rec = payload.new as Record<string, unknown>;
-          setIncidents((prev) => [
-            {
-              id: String(rec['id'] ?? ''),
-              stationName: '',
-              propertyName: '',
-              refinedText: String(rec['ai_refined_text'] ?? rec['raw_text'] ?? ''),
-              status: String(rec['status'] ?? 'open'),
-              createdAt: String(rec['created_at'] ?? new Date().toISOString()),
-            },
-            ...prev.slice(0, 99),
-          ]);
+          const newIncident = {
+            id: String(rec['id'] ?? ''),
+            stationName: '',
+            propertyName: '',
+            refinedText: String(rec['ai_refined_text'] ?? rec['raw_text'] ?? ''),
+            status: String(rec['status'] ?? 'open'),
+            createdAt: String(rec['created_at'] ?? new Date().toISOString()),
+          };
+          setIncidents((prev) => [newIncident, ...prev.slice(0, 99)]);
+
+          setActiveNotification({
+            id: newIncident.id,
+            stationName: newIncident.stationName,
+            propertyName: newIncident.propertyName,
+            agentName: '',
+            incidentType: 'Novedad de Campo',
+            refinedText: newIncident.refinedText,
+            status: newIncident.status,
+            createdAt: newIncident.createdAt,
+            hasImage: false,
+          });
         },
       )
       .subscribe();
@@ -302,7 +316,16 @@ export default function LiveMonitorPage() {
   // -------------------------------------------------------------------
 
   return (
-    <div className="flex h-dvh flex-col bg-[#0A0E1A] text-zinc-100 overflow-hidden">
+    <div className="relative flex h-dvh flex-col bg-[#0A0E1A] text-zinc-100 overflow-hidden">
+
+      {/* ─── Notification Banner + Modal (Fase 2) ─── */}
+      <NotificationBanner incident={activeNotification} onBannerClick={() => setIsModalOpen(true)} />
+      <IncidentDetailModal
+        incident={activeNotification}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        tenantSlug={tenantSlug}
+      />
 
       {/* ============================================================ */}
       {/* TOP BAR                                                       */}
@@ -488,7 +511,24 @@ export default function LiveMonitorPage() {
                 {incidents.map((inc) => {
                   const badge = statusLabels[inc.status] ?? statusLabels['open']!;
                   return (
-                    <li key={inc.id} className="px-5 py-4 transition-colors hover:bg-zinc-800/20">
+                    <li
+                      key={inc.id}
+                      className="px-5 py-4 transition-colors hover:bg-zinc-800/20 cursor-pointer"
+                      onClick={() => {
+                        setActiveNotification({
+                          id: inc.id,
+                          stationName: inc.stationName,
+                          propertyName: inc.propertyName,
+                          agentName: '',
+                          incidentType: 'Novedad de Campo',
+                          refinedText: inc.refinedText,
+                          status: inc.status,
+                          createdAt: inc.createdAt,
+                          hasImage: false,
+                        });
+                        setIsModalOpen(true);
+                      }}
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-mono text-zinc-500">
                           {formatTime(inc.createdAt)}

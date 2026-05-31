@@ -74,6 +74,7 @@ export type PayrollConfig = Database['public']['Tables']['payroll_configs']['Row
 export type PayrollPeriod = Database['public']['Tables']['payroll_periods']['Row'];
 export type IncidentCategory = Database['public']['Tables']['incident_categories']['Row'];
 export type PayrollAgentConsolidated = Database['public']['Tables']['payroll_agent_consolidated']['Row'];
+export type ShiftAssignment = Database['public']['Tables']['shift_assignments']['Row'];
 
 export interface Database {
   public: {
@@ -1605,6 +1606,12 @@ export interface Database {
         Insert: { id?: string; tenant_id: string; contract_id: string; property_id: string; created_at?: string };
         Update: never;
         Relationships: [{ foreignKeyName: 'contract_properties_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
+      };
+      shift_assignments: {
+        Row: { id: string; tenant_id: string; user_id: string; work_station_id: string; assignment_type: 'fijo' | 'temporal' | 'mensual'; start_date: string; end_date: string | null; start_time: string; end_time: string; notes: string; created_by: string; created_at: string; updated_at: string };
+        Insert: { id?: string; tenant_id: string; user_id: string; work_station_id: string; assignment_type: 'fijo' | 'temporal' | 'mensual'; start_date: string; end_date?: string | null; start_time: string; end_time: string; notes?: string; created_by: string; created_at?: string; updated_at?: string };
+        Update: { work_station_id?: string; assignment_type?: 'fijo' | 'temporal' | 'mensual'; start_date?: string; end_date?: string | null; start_time?: string; end_time?: string; notes?: string; updated_at?: string };
+        Relationships: [{ foreignKeyName: 'shift_assignments_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }, { foreignKeyName: 'shift_assignments_work_station_id_fkey'; columns: ['work_station_id']; isOneToOne: false; referencedRelation: 'work_stations'; referencedColumns: ['id'] }];
       };
     };
     Views: Record<string, never>;
