@@ -16,6 +16,11 @@ export type DisciplinaryType = 'llamado_atencion' | 'falta' | 'suspension';
 export type AgentRequestType = 'nuevo_uniforme' | 'vacaciones' | 'carta_trabajo' | 'permiso_remunerado';
 export type AgentRequestStatus = 'pendiente' | 'aprobado' | 'rechazado';
 export type VaultDocumentType = 'ficha_css' | 'record_policial' | 'prueba_antidopaje' | 'evaluacion_psicologica' | 'certificacion_diasp' | 'paz_y_salvo_equipos';
+export type TicketCategory = 'queja_personal' | 'solicitud_refuerzo' | 'falla_servicio' | 'otros';
+export type TicketPriority = 'baja' | 'media' | 'alta' | 'critica';
+export type TicketStatus = 'abierto' | 'en_proceso' | 'resuelto' | 'cerrado';
+export type DamageResponsible = 'agente_seguridad' | 'residente' | 'proveedor_externo' | 'desconocido';
+export type DamageStatus = 'bajo_investigacion' | 'aceptado_empresa' | 'rechazado_con_pruebas' | 'reparado';
 
 export interface JsonBlock {
   type: string;
@@ -61,6 +66,8 @@ export type HrEmployeeVault = Database['public']['Tables']['hr_employee_vault'][
 export type TrainingCourse = Database['public']['Tables']['training_courses']['Row'];
 export type AgentTrainingLog = Database['public']['Tables']['agent_training_logs']['Row'];
 export type StationRequiredTraining = Database['public']['Tables']['station_required_trainings']['Row'];
+export type ClientTicket = Database['public']['Tables']['client_tickets']['Row'];
+export type ClientDamageReport = Database['public']['Tables']['client_damage_reports']['Row'];
 
 export interface Database {
   public: {
@@ -1172,6 +1179,123 @@ export interface Database {
           },
         ];
       };
+      client_tickets: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          property_id: string;
+          category: TicketCategory;
+          subject: string;
+          description: string;
+          priority: TicketPriority;
+          status: TicketStatus;
+          created_by: string;
+          assigned_to: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          property_id: string;
+          category: TicketCategory;
+          subject: string;
+          description: string;
+          priority?: TicketPriority;
+          status?: TicketStatus;
+          created_by: string;
+          assigned_to?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          category?: TicketCategory;
+          subject?: string;
+          description?: string;
+          priority?: TicketPriority;
+          status?: TicketStatus;
+          assigned_to?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'client_tickets_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'client_tickets_property_id_fkey';
+            columns: ['property_id'];
+            isOneToOne: false;
+            referencedRelation: 'properties_ph';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      client_damage_reports: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          property_id: string;
+          work_station_id: string | null;
+          item_damaged: string;
+          responsible_party: DamageResponsible;
+          description: string;
+          cost_estimate: number;
+          evidence_urls: string[];
+          status: DamageStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          property_id: string;
+          work_station_id?: string | null;
+          item_damaged: string;
+          responsible_party: DamageResponsible;
+          description: string;
+          cost_estimate?: number;
+          evidence_urls?: string[];
+          status?: DamageStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          item_damaged?: string;
+          responsible_party?: DamageResponsible;
+          description?: string;
+          cost_estimate?: number;
+          evidence_urls?: string[];
+          status?: DamageStatus;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'client_damage_reports_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'client_damage_reports_property_id_fkey';
+            columns: ['property_id'];
+            isOneToOne: false;
+            referencedRelation: 'properties_ph';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'client_damage_reports_work_station_id_fkey';
+            columns: ['work_station_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_stations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -1211,6 +1335,11 @@ export interface Database {
       agent_request_type: AgentRequestType;
       agent_request_status: AgentRequestStatus;
       vault_document_type: VaultDocumentType;
+      ticket_category: TicketCategory;
+      ticket_priority: TicketPriority;
+      ticket_status: TicketStatus;
+      damage_responsible: DamageResponsible;
+      damage_status: DamageStatus;
     };
     CompositeTypes: Record<string, never>;
   };
