@@ -53,3 +53,31 @@ export const reviewRequestSchema = z.object({
   reviewed_by: z.string().uuid(),
   review_notes: z.string().max(2000).optional(),
 });
+
+export const createDisciplinaryWithEvidenceSchema = z.object({
+  tenant_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  record_type: z.enum(['llamado_atencion', 'falta', 'suspension']),
+  description: z.string().min(1).max(5000),
+  start_date: z.string().regex(dateRegex),
+  end_date: z.string().regex(dateRegex).nullish(),
+  registered_by: z.string().uuid().optional(),
+  signed_ammendment_pdf_url: z.string().url().nullish(),
+  photographic_evidence_urls: z.array(z.string().url()).optional().default([]),
+  legal_validity_flag: z.boolean().optional().default(true),
+});
+
+export const uploadVaultDocSchema = z.object({
+  tenant_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  document_type: z.enum([
+    'ficha_css',
+    'record_policial',
+    'prueba_antidopaje',
+    'evaluacion_psicologica',
+    'certificacion_diasp',
+    'paz_y_salvo_equipos',
+  ]),
+  document_url: z.string().url('URL de documento inválida').max(1000),
+  expiration_date: z.string().regex(dateRegex).nullish(),
+});

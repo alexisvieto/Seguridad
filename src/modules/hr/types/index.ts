@@ -1,3 +1,5 @@
+import type { VaultDocumentType as VaultDocType } from '@/shared/types/database';
+
 export type {
   HrAgentProfile,
   HrContract,
@@ -8,6 +10,8 @@ export type {
   DisciplinaryType,
   AgentRequestType,
   AgentRequestStatus,
+  HrEmployeeVault,
+  VaultDocumentType,
 } from '@/shared/types/database';
 
 export interface UpsertHrProfileInput {
@@ -69,4 +73,20 @@ export interface ReviewRequestInput {
   status: 'aprobado' | 'rechazado';
   reviewed_by: string;
   review_notes?: string;
+}
+
+export interface UploadVaultDocInput {
+  tenant_id: string;
+  user_id: string;
+  document_type: VaultDocType;
+  document_url: string;
+  expiration_date?: string;
+}
+
+export interface VaultExpiryAlert {
+  agentName: string;
+  userId: string;
+  documentType: string;
+  expiryDate: string;
+  daysRemaining: number;
 }

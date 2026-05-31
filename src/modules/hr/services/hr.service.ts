@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, ContractType, ContractStatus, DisciplinaryType, AgentRequestType, AgentRequestStatus } from '@/shared/types/database';
-import type { CarnetAlert, ContractAlert } from '../types';
+import type { Database, ContractType, ContractStatus, DisciplinaryType, AgentRequestType, AgentRequestStatus, VaultDocumentType } from '@/shared/types/database';
+import type { CarnetAlert, ContractAlert, VaultExpiryAlert } from '../types';
 import { AppError } from '@/lib/errors/app-error';
 
 type Client = SupabaseClient<Database>;
@@ -390,4 +390,83 @@ export async function getPendingRequestCount(client: Client, tenantId: string): 
   if (error) return 0;
 
   return count ?? 0;
+}
+
+// ---------------------------------------------------------------------------
+// Employee Vault
+// ---------------------------------------------------------------------------
+
+export async function uploadVaultDocument(
+  client: Client,
+  input: {
+    tenant_id: string;
+    user_id: string;
+    document_type: VaultDocumentType;
+    document_url: string;
+    expiration_date?: string | null;
+  },
+) {
+  const { data, error } = await client
+    .from('hr_employee_vault')
+    .insert({
+      tenant_id: input.tenant_id,
+      user_id: input.user_id,
+      document_type: input.document_type,
+      document_url: input.document_url,
+      expiration_date: input.expiration_date ?? null,
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    throw new AppError('INTERNAL_ERROR', 'Error al subir documento a la bóveda');
+  }
+
+  return data;
+}
+
+export async function getVaultByUser(
+  client: Client,
+  tenantId: string,
+  userId: string,
+) {
+  const { data, error } = await client
+    .from('hr_employee_vault')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('user_id', userId)
+    .order('uploaded_at', { ascending: false });
+
+  if (error) {
+    throw new AppError('INTERNAL_ERROR', 'Error al obtener documentos');
+  }
+
+  return data ?? [];
+}
+
+export async function getVaultExpiryAlerts(
+  client: Client,
+  tenantId: string,
+): Promise<VaultExpiryAlert[]> {
+  const { data } = await client
+    .from('hr_employee_vault')
+    .select('user_id, document_type, expiration_date')
+    .eq('tenant_id', tenantId)
+    .not('expiration_date', 'is', null);
+
+  const userIds = (data ?? []).map((d) => d.user_id);
+  const { data: profiles } = userIds.length > 0
+    ? await client.from('profiles').select('id, full_name').in('id', [...new Set(userIds)])
+    : { data: [] };
+  const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+
+  return (data ?? [])
+    .filter((d) => d.expiration_date && daysUntil(d.expiration_date) <= 30)
+    .map((d) => ({
+      agentName: nameMap.get(d.user_id) ?? 'Agente',
+      userId: d.user_id,
+      documentType: d.document_type,
+      expiryDate: d.expiration_date!,
+      daysRemaining: daysUntil(d.expiration_date!),
+    }));
 }
