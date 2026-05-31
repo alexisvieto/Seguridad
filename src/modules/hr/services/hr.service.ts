@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, ContractType, ContractStatus, DisciplinaryType } from '@/shared/types/database';
+import type { Database, ContractType, ContractStatus, DisciplinaryType, AgentRequestType, AgentRequestStatus } from '@/shared/types/database';
 import type { CarnetAlert, ContractAlert } from '../types';
 import { AppError } from '@/lib/errors/app-error';
 
@@ -286,4 +286,108 @@ export async function getContractAlerts(
       daysRemaining: daysUntil(c.end_date!),
       status: c.status,
     }));
+}
+
+// ---------------------------------------------------------------------------
+// Agent Requests
+// ---------------------------------------------------------------------------
+
+export async function createAgentRequest(
+  client: Client,
+  input: {
+    tenant_id: string;
+    user_id: string;
+    request_type: AgentRequestType;
+    details: string;
+  },
+) {
+  const { data, error } = await client
+    .from('hr_agent_requests')
+    .insert(input)
+    .select()
+    .single();
+
+  if (error || !data) {
+    throw new AppError('INTERNAL_ERROR', 'Error al crear la solicitud');
+  }
+
+  return data;
+}
+
+export async function getMyRequests(client: Client, userId: string) {
+  const { data, error } = await client
+    .from('hr_agent_requests')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new AppError('INTERNAL_ERROR', 'Error al obtener solicitudes');
+  }
+
+  return data ?? [];
+}
+
+export async function getRequestsByTenant(
+  client: Client,
+  tenantId: string,
+  status?: AgentRequestStatus,
+) {
+  let query = client
+    .from('hr_agent_requests')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: false });
+
+  if (status) {
+    query = query.eq('status', status);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new AppError('INTERNAL_ERROR', 'Error al obtener solicitudes');
+  }
+
+  return data ?? [];
+}
+
+export async function reviewRequest(
+  client: Client,
+  requestId: string,
+  input: {
+    status: 'aprobado' | 'rechazado';
+    reviewed_by: string;
+    review_notes?: string;
+  },
+) {
+  const { data, error } = await client
+    .from('hr_agent_requests')
+    .update({
+      status: input.status,
+      reviewed_by: input.reviewed_by,
+      review_notes: input.review_notes ?? null,
+    })
+    .eq('id', requestId)
+    .eq('status', 'pendiente')
+    .select()
+    .single();
+
+  if (error || !data) {
+    throw new AppError('NOT_FOUND', 'Solicitud pendiente no encontrada');
+  }
+
+  return data;
+}
+
+export async function getPendingRequestCount(client: Client, tenantId: string): Promise<number> {
+  const { count, error } = await client
+    .from('hr_agent_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .eq('status', 'pendiente');
+
+  if (error) return 0;
+
+  return count ?? 0;
 }

@@ -2,9 +2,12 @@ export type {
   HrAgentProfile,
   HrContract,
   HrDisciplinaryRecord,
+  HrAgentRequest,
   ContractType,
   ContractStatus,
   DisciplinaryType,
+  AgentRequestType,
+  AgentRequestStatus,
 } from '@/shared/types/database';
 
 export interface UpsertHrProfileInput {
@@ -53,4 +56,17 @@ export interface ContractAlert {
   endDate: string;
   daysRemaining: number;
   status: string;
+}
+
+export interface CreateAgentRequestInput {
+  tenant_id: string;
+  user_id: string;
+  request_type: 'nuevo_uniforme' | 'vacaciones' | 'carta_trabajo' | 'permiso_remunerado';
+  details: string;
+}
+
+export interface ReviewRequestInput {
+  status: 'aprobado' | 'rechazado';
+  reviewed_by: string;
+  review_notes?: string;
 }

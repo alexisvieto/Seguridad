@@ -40,3 +40,16 @@ export const createDisciplinarySchema = z.object({
   end_date: z.string().regex(dateRegex).nullish(),
   registered_by: z.string().uuid().optional(),
 });
+
+export const createAgentRequestSchema = z.object({
+  tenant_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  request_type: z.enum(['nuevo_uniforme', 'vacaciones', 'carta_trabajo', 'permiso_remunerado']),
+  details: z.string().min(1, 'Debe describir la solicitud').max(5000),
+});
+
+export const reviewRequestSchema = z.object({
+  status: z.enum(['aprobado', 'rechazado']),
+  reviewed_by: z.string().uuid(),
+  review_notes: z.string().max(2000).optional(),
+});

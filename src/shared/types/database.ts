@@ -13,6 +13,8 @@ export type ViolationStatus = 'pendiente' | 'justificado' | 'notificado';
 export type ContractType = 'definido' | 'indefinido';
 export type ContractStatus = 'activo' | 'vencido' | 'terminado';
 export type DisciplinaryType = 'llamado_atencion' | 'falta' | 'suspension';
+export type AgentRequestType = 'nuevo_uniforme' | 'vacaciones' | 'carta_trabajo' | 'permiso_remunerado';
+export type AgentRequestStatus = 'pendiente' | 'aprobado' | 'rechazado';
 
 export interface JsonBlock {
   type: string;
@@ -53,6 +55,7 @@ export type GeofenceViolation = Database['public']['Tables']['geofence_violation
 export type HrAgentProfile = Database['public']['Tables']['hr_agent_profiles']['Row'];
 export type HrContract = Database['public']['Tables']['hr_contracts']['Row'];
 export type HrDisciplinaryRecord = Database['public']['Tables']['hr_disciplinary_records']['Row'];
+export type HrAgentRequest = Database['public']['Tables']['hr_agent_requests']['Row'];
 
 export interface Database {
   public: {
@@ -945,6 +948,47 @@ export interface Database {
           },
         ];
       };
+      hr_agent_requests: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          request_type: AgentRequestType;
+          details: string;
+          status: AgentRequestStatus;
+          reviewed_by: string | null;
+          review_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          request_type: AgentRequestType;
+          details: string;
+          status?: AgentRequestStatus;
+          reviewed_by?: string | null;
+          review_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: AgentRequestStatus;
+          reviewed_by?: string | null;
+          review_notes?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'hr_agent_requests_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -981,6 +1025,8 @@ export interface Database {
       contract_type: ContractType;
       contract_status: ContractStatus;
       disciplinary_type: DisciplinaryType;
+      agent_request_type: AgentRequestType;
+      agent_request_status: AgentRequestStatus;
     };
     CompositeTypes: Record<string, never>;
   };
