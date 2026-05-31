@@ -21,6 +21,14 @@ interface IncidentEntry {
   time: string;
 }
 
+interface ConsignaItem {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: string;
+  completed: boolean;
+}
+
 interface ApiError {
   error: { code: string; message: string };
 }
@@ -68,6 +76,7 @@ export default function PuestoPage() {
   const [loading, setLoading] = useState<LoadingState>('idle');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [consignas, setConsignas] = useState<ConsignaItem[]>([]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -127,6 +136,22 @@ export default function PuestoPage() {
         stationName: 'Puesto asignado',
         clockIn: data.clock_in,
       });
+
+      // Load consignas for this station
+      try {
+        const { getSupabaseBrowserClient } = await import('@/lib/supabase/client');
+        const supabase = getSupabaseBrowserClient();
+        const { data: consignasData } = await supabase
+          .from('station_consignas')
+          .select('id, title, description, priority')
+          .eq('work_station_id', data.work_station_id)
+          .eq('is_active', true)
+          .order('priority');
+
+        setConsignas((consignasData ?? []).map((c) => ({
+          id: c.id, title: c.title, description: c.description, priority: c.priority, completed: false,
+        })));
+      } catch { /* consignas are non-blocking */ }
 
       setToast({ type: 'success', message: 'Entrada registrada correctamente' });
     } catch (err) {
@@ -352,6 +377,53 @@ export default function PuestoPage() {
         {/* ============================================================ */}
         {isOnDuty && (
           <>
+            {/* Consignas del puesto */}
+            {consignas.length > 0 && (
+              <section className="rounded-2xl bg-white p-4 shadow-sm">
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+                  Consignas del Puesto
+                  <span className="ml-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-zinc-900 px-1.5 text-xs font-bold text-white">
+                    {consignas.filter((c) => !c.completed).length}
+                  </span>
+                </h2>
+                <ul className="space-y-2">
+                  {consignas.map((c) => {
+                    const priorityCls = c.priority === 'critica'
+                      ? 'border-red-200 bg-red-50'
+                      : c.priority === 'alta'
+                        ? 'border-amber-200 bg-amber-50'
+                        : 'border-zinc-200 bg-zinc-50';
+
+                    return (
+                      <li key={c.id} className={`rounded-xl border p-3 ${c.completed ? 'opacity-50' : priorityCls}`}>
+                        <label className="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={c.completed}
+                            onChange={() => setConsignas((prev) =>
+                              prev.map((item) => item.id === c.id ? { ...item, completed: !item.completed } : item),
+                            )}
+                            className="mt-0.5 h-5 w-5 shrink-0 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                          />
+                          <div className="min-w-0">
+                            <p className={`text-sm font-medium ${c.completed ? 'line-through text-zinc-400' : 'text-zinc-900'}`}>
+                              {c.title}
+                            </p>
+                            {c.description && !c.completed && (
+                              <p className="mt-0.5 text-xs text-zinc-500 leading-relaxed">{c.description}</p>
+                            )}
+                          </div>
+                          {!c.completed && c.priority === 'critica' && (
+                            <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600">CRITICA</span>
+                          )}
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
+
             {/* Report form */}
             <section className="rounded-2xl bg-white p-4 shadow-sm">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500">

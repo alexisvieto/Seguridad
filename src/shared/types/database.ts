@@ -1541,6 +1541,53 @@ export interface Database {
           },
         ];
       };
+      station_consignas: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          work_station_id: string;
+          title: string;
+          description: string | null;
+          priority: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          work_station_id: string;
+          title: string;
+          description?: string | null;
+          priority?: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          description?: string | null;
+          priority?: string;
+          is_active?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'station_consignas_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'station_consignas_work_station_id_fkey';
+            columns: ['work_station_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_stations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
