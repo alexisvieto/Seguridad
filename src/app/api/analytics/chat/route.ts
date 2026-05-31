@@ -325,6 +325,48 @@ async function queryFleetCPK(
   };
 }
 
+function classifyQuestion(question: string): AIResponse {
+  const q = question.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+  // Bradford / ausentismo
+  if (q.includes('bradford') || q.includes('ausentismo') || q.includes('ausencias')) {
+    return { category: 'payroll', intent: 'bradford_factor', params: { year: 2026 }, answer: 'Calculando Factor de Bradford para todos los agentes...' };
+  }
+
+  // Overtime / horas extras / rentabilidad
+  if (q.includes('hora extra') || q.includes('horas extra') || q.includes('overtime') || q.includes('pierdo dinero') || q.includes('rentabilidad') || q.includes('extras planas')) {
+    return { category: 'payroll', intent: 'overtime_profitability', params: {}, answer: 'Analizando fuga de rentabilidad por horas extras...' };
+  }
+
+  // CPK / costo por kilometro
+  if (q.includes('cpk') || q.includes('costo por kilo') || q.includes('kilometro') || q.includes('cuesta mas') || q.includes('mas caro')) {
+    return { category: 'fleet', intent: 'cpk_analysis', params: {}, answer: 'Calculando Costo por Kilometro (CPK) de la flota...' };
+  }
+
+  // Fleet / vehiculo / daños
+  if (q.includes('vehiculo') || q.includes('flota') || q.includes('dano') || q.includes('placa') || q.includes('preservacion')) {
+    return { category: 'fleet', intent: 'fleet_ranking', params: {}, answer: 'Generando ranking de preservacion de flota...' };
+  }
+
+  // Punctuality / puntualidad / tardanza
+  if (q.includes('puntual') || q.includes('tardanza') || q.includes('a tiempo') || q.includes('tarde') || q.includes('llega')) {
+    return { category: 'punctuality', intent: 'zero_tardiness', params: {}, answer: 'Identificando agentes con puntualidad perfecta...' };
+  }
+
+  // Attendance / asistencia / falto
+  if (q.includes('asistencia') || q.includes('falto') || q.includes('falta') || q.includes('no falto') || q.includes('record')) {
+    return { category: 'attendance', intent: 'perfect_attendance_2026', params: { year: 2026 }, answer: 'Buscando agentes con asistencia perfecta en 2026...' };
+  }
+
+  // Nomina / salario / pago
+  if (q.includes('nomina') || q.includes('salario') || q.includes('planilla') || q.includes('pago') || q.includes('neto')) {
+    return { category: 'payroll', intent: 'payroll_summary', params: {}, answer: 'Generando resumen de nomina...' };
+  }
+
+  // Default
+  return { category: 'attendance', intent: 'general_stats', params: { year: 2026 }, answer: 'Consultando estadisticas operativas...' };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: unknown = await request.json();
@@ -341,21 +383,31 @@ export async function POST(request: NextRequest) {
 
     const tenantId = membership.tenant_id;
 
-    // Ask AI to classify the question
-    let aiResponse: AIResponse;
-    try {
-      const ai = getAI();
-      const msg = await ai.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 300,
-        system: MASTER_PROMPT,
-        messages: [{ role: 'user', content: question }],
-      }, { signal: AbortSignal.timeout(12000) });
+    // Classify the question — keyword-based (instant) with optional AI upgrade
+    const aiResponse = classifyQuestion(question);
 
-      const text = msg.content.find((b) => b.type === 'text');
-      aiResponse = JSON.parse(text?.type === 'text' ? text.text : '{}') as AIResponse;
-    } catch {
-      aiResponse = { category: 'general', intent: 'fallback', params: {}, answer: 'Procesando su consulta...' };
+    // If ANTHROPIC_API_KEY is available, upgrade classification with AI
+    if (process.env.ANTHROPIC_API_KEY) {
+      try {
+        const ai = getAI();
+        const msg = await ai.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          system: MASTER_PROMPT,
+          messages: [{ role: 'user', content: question }],
+        }, { signal: AbortSignal.timeout(12000) });
+
+        const text = msg.content.find((b) => b.type === 'text');
+        const parsed = JSON.parse(text?.type === 'text' ? text.text : '{}') as AIResponse;
+        if (parsed.category) {
+          aiResponse.category = parsed.category;
+          aiResponse.intent = parsed.intent;
+          aiResponse.answer = parsed.answer;
+          if (parsed.params) aiResponse.params = parsed.params;
+        }
+      } catch {
+        // Keep keyword classification — already set above
+      }
     }
 
     // Execute the appropriate query
