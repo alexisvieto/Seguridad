@@ -3,6 +3,9 @@ export type TenantPlan = 'free' | 'pro' | 'enterprise';
 export type IncidentStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 export type FirearmType = 'revolver' | 'pistola' | 'escopeta';
 export type FirearmStatus = 'operativa' | 'mantenimiento' | 'retirada';
+export type InventoryCategory = 'uniforme' | 'calzado' | 'comunicacion' | 'defensa' | 'otros';
+export type AssetStatus = 'bueno' | 'dañado' | 'en_reparacion';
+export type LoanStatus = 'entregado' | 'devuelto' | 'descontado_por_perdida';
 
 export interface JsonBlock {
   type: string;
@@ -34,6 +37,9 @@ export type IncidentLog = Database['public']['Tables']['incidents_log']['Row'];
 export type FirearmInventory = Database['public']['Tables']['firearms_inventory']['Row'];
 export type AgentCompliance = Database['public']['Tables']['agent_compliance']['Row'];
 export type FirearmAssignment = Database['public']['Tables']['firearms_assignments']['Row'];
+export type InventoryItem = Database['public']['Tables']['inventory_items']['Row'];
+export type StationAsset = Database['public']['Tables']['station_asset_custody']['Row'];
+export type EquipmentLoan = Database['public']['Tables']['agent_equipment_loans']['Row'];
 
 export interface Database {
   public: {
@@ -514,6 +520,142 @@ export interface Database {
           },
         ];
       };
+      inventory_items: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          item_name: string;
+          category: InventoryCategory;
+          size_or_model: string | null;
+          current_stock: number;
+          min_stock_alert: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          item_name: string;
+          category: InventoryCategory;
+          size_or_model?: string | null;
+          current_stock?: number;
+          min_stock_alert?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          item_name?: string;
+          category?: InventoryCategory;
+          size_or_model?: string | null;
+          current_stock?: number;
+          min_stock_alert?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'inventory_items_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      station_asset_custody: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          work_station_id: string;
+          asset_name: string;
+          imei_or_serial: string | null;
+          status: AssetStatus;
+          last_inspection_at: string;
+          damage_report_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          work_station_id: string;
+          asset_name: string;
+          imei_or_serial?: string | null;
+          status?: AssetStatus;
+          last_inspection_at?: string;
+          damage_report_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          asset_name?: string;
+          imei_or_serial?: string | null;
+          status?: AssetStatus;
+          last_inspection_at?: string;
+          damage_report_notes?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'station_asset_custody_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'station_asset_custody_work_station_id_fkey';
+            columns: ['work_station_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_stations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      agent_equipment_loans: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          user_id: string;
+          item_id: string;
+          quantity: number;
+          loan_date: string;
+          status: LoanStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          user_id: string;
+          item_id: string;
+          quantity?: number;
+          loan_date?: string;
+          status?: LoanStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          quantity?: number;
+          status?: LoanStatus;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'agent_equipment_loans_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'agent_equipment_loans_item_id_fkey';
+            columns: ['item_id'];
+            isOneToOne: false;
+            referencedRelation: 'inventory_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -532,6 +674,9 @@ export interface Database {
       incident_status: IncidentStatus;
       firearm_type: FirearmType;
       firearm_status: FirearmStatus;
+      inventory_category: InventoryCategory;
+      asset_status: AssetStatus;
+      loan_status: LoanStatus;
     };
     CompositeTypes: Record<string, never>;
   };
