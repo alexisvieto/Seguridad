@@ -21,6 +21,7 @@ export type TicketPriority = 'baja' | 'media' | 'alta' | 'critica';
 export type TicketStatus = 'abierto' | 'en_proceso' | 'resuelto' | 'cerrado';
 export type DamageResponsible = 'agente_seguridad' | 'residente' | 'proveedor_externo' | 'desconocido';
 export type DamageStatus = 'bajo_investigacion' | 'aceptado_empresa' | 'rechazado_con_pruebas' | 'reparado';
+export type PayrollPeriodStatus = 'abierto' | 'calculado' | 'cerrado_pagado';
 
 export interface JsonBlock {
   type: string;
@@ -68,6 +69,9 @@ export type AgentTrainingLog = Database['public']['Tables']['agent_training_logs
 export type StationRequiredTraining = Database['public']['Tables']['station_required_trainings']['Row'];
 export type ClientTicket = Database['public']['Tables']['client_tickets']['Row'];
 export type ClientDamageReport = Database['public']['Tables']['client_damage_reports']['Row'];
+export type PayrollConfig = Database['public']['Tables']['payroll_configs']['Row'];
+export type PayrollPeriod = Database['public']['Tables']['payroll_periods']['Row'];
+export type PayrollAgentConsolidated = Database['public']['Tables']['payroll_agent_consolidated']['Row'];
 
 export interface Database {
   public: {
@@ -1296,6 +1300,149 @@ export interface Database {
           },
         ];
       };
+      payroll_configs: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          ordinary_hours_limit: number;
+          overtime_flat_rate: boolean;
+          pays_holiday_premium: boolean;
+          social_security_rate: number;
+          educational_insurance_rate: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          ordinary_hours_limit?: number;
+          overtime_flat_rate?: boolean;
+          pays_holiday_premium?: boolean;
+          social_security_rate?: number;
+          educational_insurance_rate?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          ordinary_hours_limit?: number;
+          overtime_flat_rate?: boolean;
+          pays_holiday_premium?: boolean;
+          social_security_rate?: number;
+          educational_insurance_rate?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payroll_configs_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payroll_periods: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          start_date: string;
+          end_date: string;
+          status: PayrollPeriodStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          start_date: string;
+          end_date: string;
+          status?: PayrollPeriodStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          start_date?: string;
+          end_date?: string;
+          status?: PayrollPeriodStatus;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payroll_periods_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payroll_agent_consolidated: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          payroll_period_id: string;
+          user_id: string;
+          rate_per_hour: number;
+          regular_hours_accumulated: number;
+          overtime_hours_accumulated: number;
+          holiday_hours_accumulated: number;
+          adjustments_addition: number;
+          adjustments_deduction: number;
+          gross_salary: number;
+          social_security_deduction: number;
+          educational_insurance_deduction: number;
+          net_salary: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          payroll_period_id: string;
+          user_id: string;
+          rate_per_hour?: number;
+          regular_hours_accumulated?: number;
+          overtime_hours_accumulated?: number;
+          holiday_hours_accumulated?: number;
+          adjustments_addition?: number;
+          adjustments_deduction?: number;
+          gross_salary?: number;
+          social_security_deduction?: number;
+          educational_insurance_deduction?: number;
+          net_salary?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          rate_per_hour?: number;
+          regular_hours_accumulated?: number;
+          overtime_hours_accumulated?: number;
+          holiday_hours_accumulated?: number;
+          adjustments_addition?: number;
+          adjustments_deduction?: number;
+          gross_salary?: number;
+          social_security_deduction?: number;
+          educational_insurance_deduction?: number;
+          net_salary?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payroll_agent_consolidated_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'payroll_agent_consolidated_payroll_period_id_fkey';
+            columns: ['payroll_period_id'];
+            isOneToOne: false;
+            referencedRelation: 'payroll_periods';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -1340,6 +1487,7 @@ export interface Database {
       ticket_status: TicketStatus;
       damage_responsible: DamageResponsible;
       damage_status: DamageStatus;
+      payroll_period_status: PayrollPeriodStatus;
     };
     CompositeTypes: Record<string, never>;
   };
