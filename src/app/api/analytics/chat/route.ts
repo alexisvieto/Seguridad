@@ -5,30 +5,13 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { handleApiError } from '@/lib/errors/error-handler';
 import { AppError } from '@/lib/errors/app-error';
 import { validate } from '@/lib/validation/validate';
+import { MASTER_PROMPT } from './master_prompt';
 
 const chatSchema = z.object({
   question: z.string().min(3).max(500),
 });
 
-const SYSTEM_PROMPT = `Eres un asistente de analítica para NexGuard360, un ERP de seguridad privada en Panamá.
-El usuario hará preguntas sobre sus datos operativos. Tu trabajo es:
-1. Entender la intención de la pregunta
-2. Clasificarla en una de estas categorías: attendance, punctuality, fleet, payroll, incidents, general
-3. Extraer parámetros relevantes (fechas, nombres, etc.)
-4. Responder en formato JSON estricto
-
-Responde SIEMPRE con este JSON (sin markdown, sin backticks):
-{"category":"<category>","intent":"<descripcion_corta>","params":{"year":2026},"answer":"<respuesta_en_español_profesional>"}
-
-Ejemplos:
-Pregunta: "¿Quién no faltó en todo el año?"
-{"category":"attendance","intent":"perfect_attendance_2026","params":{"year":2026},"answer":"Consultando agentes con asistencia perfecta en 2026..."}
-
-Pregunta: "¿Cuál vehículo tiene menos daños?"
-{"category":"fleet","intent":"best_preserved_vehicle","params":{},"answer":"Buscando el vehículo con menor cantidad de incidencias..."}
-
-Pregunta: "¿Quién llega siempre a tiempo?"
-{"category":"punctuality","intent":"zero_tardiness","params":{},"answer":"Identificando agentes con cero tardanzas registradas..."}`;
+// System prompt imported from master_prompt.ts
 
 let aiClient: Anthropic | null = null;
 function getAI(): Anthropic {
@@ -180,7 +163,7 @@ export async function POST(request: NextRequest) {
       const msg = await ai.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 300,
-        system: SYSTEM_PROMPT,
+        system: MASTER_PROMPT,
         messages: [{ role: 'user', content: question }],
       }, { signal: AbortSignal.timeout(12000) });
 
