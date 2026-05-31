@@ -98,7 +98,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
     },
     {
       href: `${base}/dashboard/rrhh`,
-      label: 'Expedientes',
+      label: 'RRHH',
       icon: <UserFileIcon />,
       roles: ['owner', 'admin'],
       section: 'hr',

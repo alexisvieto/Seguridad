@@ -72,6 +72,7 @@ const statusLabels: Record<string, { label: string; cls: string }> = {
   open: { label: 'ABIERTO', cls: 'bg-red-500/20 text-red-400 ring-red-500/30' },
   in_progress: { label: 'EN CURSO', cls: 'bg-amber-500/20 text-amber-400 ring-amber-500/30' },
   resolved: { label: 'RESUELTO', cls: 'bg-emerald-500/20 text-emerald-400 ring-emerald-500/30' },
+  justified: { label: 'JUSTIFICADA', cls: 'bg-blue-500/20 text-blue-400 ring-blue-500/30' },
   closed: { label: 'CERRADO', cls: 'bg-zinc-500/20 text-zinc-400 ring-zinc-500/30' },
 };
 
@@ -322,6 +323,12 @@ export default function LiveMonitorPage() {
         incident={activeNotification}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onJustified={(id) => {
+          setIsModalOpen(false);
+          setIncidents((prev) => prev.map((inc) =>
+            inc.id === id ? { ...inc, status: 'justified' } : inc,
+          ));
+        }}
         tenantSlug={tenantSlug}
       />
 

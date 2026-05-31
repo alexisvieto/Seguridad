@@ -88,6 +88,12 @@ export function RealtimeAlerts({ tenantId, tenantSlug }: RealtimeAlertsProps) {
     setIsModalOpen(false);
   }, []);
 
+  const handleJustified = useCallback(() => {
+    setActiveNotification(null);
+    setIsBannerVisible(false);
+    setIsModalOpen(false);
+  }, []);
+
   return (
     <>
       {/* ─── Global Banner ─── */}
@@ -147,6 +153,7 @@ export function RealtimeAlerts({ tenantId, tenantSlug }: RealtimeAlertsProps) {
         incident={activeNotification}
         isOpen={isModalOpen}
         onClose={handleModalClose}
+        onJustified={handleJustified}
         tenantSlug={tenantSlug}
       />
     </>

@@ -1,6 +1,6 @@
 export type MembershipRole = 'owner' | 'admin' | 'editor' | 'viewer';
 export type TenantPlan = 'free' | 'pro' | 'enterprise';
-export type IncidentStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+export type IncidentStatus = 'open' | 'in_progress' | 'resolved' | 'justified' | 'closed';
 export type FirearmType = 'revolver' | 'pistola' | 'escopeta';
 export type FirearmStatus = 'operativa' | 'mantenimiento' | 'retirada';
 export type InventoryCategory = 'uniforme' | 'calzado' | 'comunicacion' | 'defensa' | 'otros';
@@ -375,6 +375,9 @@ export interface Database {
           ai_refined_text: string | null;
           status: IncidentStatus;
           am_report_sent: boolean;
+          notas_resolucion: string | null;
+          justified_by: string | null;
+          justified_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -395,6 +398,9 @@ export interface Database {
           ai_refined_text?: string | null;
           status?: IncidentStatus;
           am_report_sent?: boolean;
+          notas_resolucion?: string | null;
+          justified_by?: string | null;
+          justified_at?: string | null;
           updated_at?: string;
         };
         Relationships: [

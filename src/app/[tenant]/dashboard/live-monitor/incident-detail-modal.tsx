@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -23,6 +23,7 @@ interface IncidentDetailModalProps {
   incident: IncidentDetail | null;
   isOpen: boolean;
   onClose: () => void;
+  onJustified?: (incidentId: string) => void;
   tenantSlug: string;
 }
 
@@ -49,6 +50,7 @@ const statusConfig: Record<string, { label: string; critical: boolean }> = {
   open: { label: 'ABIERTO — ATENCIÓN INMEDIATA', critical: true },
   in_progress: { label: 'EN CURSO', critical: false },
   resolved: { label: 'RESUELTO', critical: false },
+  justified: { label: 'JUSTIFICADA', critical: false },
   closed: { label: 'CERRADO', critical: false },
 };
 
@@ -60,12 +62,20 @@ export function IncidentDetailModal({
   incident,
   isOpen,
   onClose,
+  onJustified,
   tenantSlug,
 }: IncidentDetailModalProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showJustifyForm, setShowJustifyForm] = useState(false);
+  const [justifyText, setJustifyText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [justifyError, setJustifyError] = useState<string | null>(null);
 
   useEffect(() => {
     setImageLoaded(false);
+    setShowJustifyForm(false);
+    setJustifyText('');
+    setJustifyError(null);
   }, [incident?.id]);
 
   useEffect(() => {
@@ -77,9 +87,48 @@ export function IncidentDetailModal({
     return () => document.removeEventListener('keydown', handleEsc);
   }, [isOpen, onClose]);
 
+  const handleJustify = useCallback(async () => {
+    if (!incident || justifyText.trim().length < 10) {
+      setJustifyError('La justificación debe tener al menos 10 caracteres');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setJustifyError(null);
+
+    try {
+      const res = await fetch('/api/incidents/justify', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          incident_id: incident.id,
+          notas_resolucion: justifyText.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json() as Record<string, unknown>;
+        const errorField = err['error'];
+        const msg = (errorField && typeof errorField === 'object' && 'message' in errorField)
+          ? String((errorField as { message: unknown }).message)
+          : 'Error al justificar';
+        setJustifyError(msg);
+        return;
+      }
+
+      onJustified?.(incident.id);
+      onClose();
+    } catch {
+      setJustifyError('Error de conexión');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [incident, justifyText, onJustified, onClose]);
+
   if (!isOpen || !incident) return null;
 
   const config = statusConfig[incident.status] ?? statusConfig['open']!;
+  const canJustify = incident.status === 'open' || incident.status === 'in_progress';
 
   const handleGoToHistory = () => {
     onClose();
@@ -95,7 +144,7 @@ export function IncidentDetailModal({
       />
 
       {/* Modal Card */}
-      <div className="relative z-10 w-full max-w-[780px] mx-4 rounded-2xl border border-[#1E2A4A]/80 bg-[#0C1528] shadow-2xl animate-[modalFadeIn_0.2s_ease-out]">
+      <div className="relative z-10 w-full max-w-[780px] mx-4 max-h-[90vh] overflow-y-auto rounded-2xl border border-[#1E2A4A]/80 bg-[#0C1528] shadow-2xl animate-[modalFadeIn_0.2s_ease-out]">
 
         {/* ─── Header ─── */}
         <div className="flex items-start justify-between border-b border-[#1E2A4A]/60 px-7 py-5">
@@ -176,6 +225,60 @@ export function IncidentDetailModal({
           </div>
         </div>
 
+        {/* ─── Justify Section (expandable) ─── */}
+        {canJustify && (
+          <div className="border-t border-[#1E2A4A]/60 px-7 py-5">
+            {!showJustifyForm ? (
+              <button
+                onClick={() => setShowJustifyForm(true)}
+                className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/8 px-5 py-3 text-sm font-medium text-amber-300 transition-all hover:bg-amber-500/15 hover:border-amber-500/50 cursor-pointer"
+              >
+                <PenIcon />
+                Justificar Novedad
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <PenIcon />
+                  <p className="text-xs font-semibold tracking-widest text-amber-400 uppercase">
+                    Justificación del Supervisor
+                  </p>
+                </div>
+                <textarea
+                  value={justifyText}
+                  onChange={(e) => setJustifyText(e.target.value)}
+                  placeholder="Describa las acciones tomadas, resolución aplicada o motivo de cierre..."
+                  rows={4}
+                  className="w-full rounded-xl border border-[#1E2A4A]/60 bg-[#0A1020] px-5 py-4 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-500/50 focus:outline-none resize-none"
+                />
+                {justifyError && (
+                  <p className="text-xs text-red-400">{justifyError}</p>
+                )}
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] text-zinc-600">
+                    {justifyText.length}/2000 caracteres (mín. 10)
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setShowJustifyForm(false); setJustifyText(''); setJustifyError(null); }}
+                      className="rounded-lg px-4 py-2 text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleJustify}
+                      disabled={isSubmitting || justifyText.trim().length < 10}
+                      className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-600/20 transition-all hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {isSubmitting ? 'Guardando...' : 'Guardar Justificación'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ─── Footer: Actions ─── */}
         <div className="flex items-center justify-end gap-3 border-t border-[#1E2A4A]/60 px-7 py-4">
           <button
@@ -239,6 +342,14 @@ function NoImageIcon() {
   return (
     <svg className="h-10 w-10 text-zinc-700" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+    </svg>
+  );
+}
+
+function PenIcon() {
+  return (
+    <svg className="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
     </svg>
   );
 }
