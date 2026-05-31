@@ -213,13 +213,12 @@ export async function createLoan(
     quantity: number;
   },
 ) {
-  const { data: item } = await client
-    .from('inventory_items')
-    .select('current_stock')
-    .eq('id', input.item_id)
-    .single();
+  const { error: stockErr } = await client.rpc('decrement_stock', {
+    p_item_id: input.item_id,
+    p_quantity: input.quantity,
+  });
 
-  if (!item || item.current_stock < input.quantity) {
+  if (stockErr) {
     throw new AppError('CONFLICT', 'Stock insuficiente para esta entrega');
   }
 
@@ -230,13 +229,12 @@ export async function createLoan(
     .single();
 
   if (error || !data) {
+    await client.rpc('increment_stock', {
+      p_item_id: input.item_id,
+      p_quantity: input.quantity,
+    });
     throw new AppError('INTERNAL_ERROR', 'Error al registrar la entrega');
   }
-
-  await client
-    .from('inventory_items')
-    .update({ current_stock: item.current_stock - input.quantity })
-    .eq('id', input.item_id);
 
   return data;
 }
@@ -274,7 +272,7 @@ export async function updateLoanStatus(
     .from('agent_equipment_loans')
     .select('item_id, quantity, status')
     .eq('id', loanId)
-    .single();
+    .maybeSingle();
 
   if (!loan) {
     throw new AppError('NOT_FOUND', 'Entrega no encontrada');
@@ -296,18 +294,10 @@ export async function updateLoanStatus(
   }
 
   if (status === 'devuelto') {
-    const { data: item } = await client
-      .from('inventory_items')
-      .select('current_stock')
-      .eq('id', loan.item_id)
-      .single();
-
-    if (item) {
-      await client
-        .from('inventory_items')
-        .update({ current_stock: item.current_stock + loan.quantity })
-        .eq('id', loan.item_id);
-    }
+    await client.rpc('increment_stock', {
+      p_item_id: loan.item_id,
+      p_quantity: loan.quantity,
+    });
   }
 
   return data;

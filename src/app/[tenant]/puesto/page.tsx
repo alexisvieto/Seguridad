@@ -194,6 +194,13 @@ export default function PuestoPage() {
   // Voice dictation (Web Speech API)
   // -------------------------------------------------------------------
 
+  // Cleanup speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
+
   const toggleVoice = useCallback(() => {
     if (isListening && recognitionRef.current) {
       recognitionRef.current.stop();
@@ -214,24 +221,27 @@ export default function PuestoPage() {
     recognition.continuous = true;
     recognition.interimResults = true;
 
-    let finalTranscript = '';
+    const baseTextRef = { value: reportText };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let final = '';
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result?.[0]) {
           if (result.isFinal) {
-            finalTranscript += result[0].transcript + ' ';
+            final += result[0].transcript + ' ';
           } else {
             interim += result[0].transcript;
           }
         }
       }
-      setReportText((prev) => {
-        const base = prev.endsWith(' ') ? prev : prev ? prev + ' ' : '';
-        return finalTranscript ? base + finalTranscript : base + interim;
-      });
+      if (final) {
+        baseTextRef.value = baseTextRef.value + final;
+        setReportText(baseTextRef.value);
+      } else {
+        setReportText(baseTextRef.value + interim);
+      }
     };
 
     recognition.onerror = () => {
@@ -246,8 +256,7 @@ export default function PuestoPage() {
     recognitionRef.current = recognition;
     recognition.start();
     setIsListening(true);
-    finalTranscript = '';
-  }, [isListening]);
+  }, [isListening, reportText]);
 
   // -------------------------------------------------------------------
   // Render

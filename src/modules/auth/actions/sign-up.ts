@@ -26,11 +26,11 @@ export async function signUpAction(
       },
     });
 
-    if (error) {
-      return { success: false, error: error.message, code: 'UNAUTHORIZED' };
+    if (error || !data.user) {
+      return { success: false, error: error?.message ?? 'Error al registrar usuario', code: 'UNAUTHORIZED' };
     }
 
-    return { success: true, data: { userId: data.user!.id } };
+    return { success: true, data: { userId: data.user.id } };
   } catch (error) {
     return { success: false, ...handleActionError(error) };
   }

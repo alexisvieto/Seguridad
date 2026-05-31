@@ -23,7 +23,7 @@ export async function getCurrentTenant(
     .from('tenants')
     .select('*')
     .eq('slug', slug)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     throw new AppError('TENANT_NOT_FOUND', `Tenant "${slug}" no encontrado`);

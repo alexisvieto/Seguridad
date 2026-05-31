@@ -47,8 +47,9 @@ export function applySessionCookies(
   source: NextResponse,
   target: NextResponse,
 ): NextResponse {
-  source.cookies.getAll().forEach((cookie) => {
-    target.cookies.set(cookie.name, cookie.value);
-  });
+  const setCookieHeaders = source.headers.getSetCookie();
+  for (const raw of setCookieHeaders) {
+    target.headers.append('set-cookie', raw);
+  }
   return target;
 }

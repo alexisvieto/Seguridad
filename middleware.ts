@@ -85,6 +85,11 @@ export async function middleware(request: NextRequest) {
   // B) Tenant subdomain detected → rewrite to /[tenant]/...
   // ------------------------------------------------------------------
 
+  // API routes are global — don't rewrite, just pass through with session
+  if (pathname.startsWith('/api/')) {
+    return sessionResponse;
+  }
+
   // Unauthenticated → redirect to login on the tenant subdomain
   if (!user && !isPublicPath(pathname)) {
     const loginUrl = request.nextUrl.clone();

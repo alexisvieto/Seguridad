@@ -9,16 +9,6 @@ export async function createTenant(
   input: { name: string; slug: string; plan?: string },
   userId: string,
 ) {
-  const { data: existing } = await client
-    .from('tenants')
-    .select('id')
-    .eq('slug', input.slug)
-    .maybeSingle();
-
-  if (existing) {
-    throw new AppError('TENANT_SLUG_TAKEN', `El slug "${input.slug}" ya está en uso`);
-  }
-
   const { data: tenant, error: tenantError } = await client
     .from('tenants')
     .insert({
@@ -30,6 +20,9 @@ export async function createTenant(
     .single();
 
   if (tenantError || !tenant) {
+    if (tenantError?.code === '23505') {
+      throw new AppError('TENANT_SLUG_TAKEN', `El slug "${input.slug}" ya está en uso`);
+    }
     throw new AppError('INTERNAL_ERROR', 'Error al crear el tenant');
   }
 
@@ -51,7 +44,7 @@ export async function getTenantBySlug(client: Client, slug: string) {
     .from('tenants')
     .select('*')
     .eq('slug', slug)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     throw new AppError('TENANT_NOT_FOUND', `Tenant "${slug}" no encontrado`);

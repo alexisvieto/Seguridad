@@ -32,10 +32,22 @@ export async function POST(request: NextRequest) {
       .from('work_stations')
       .select('id, tenant_id, is_active')
       .eq('id', input.work_station_id)
-      .single();
+      .maybeSingle();
 
     if (stationError || !station) {
       throw new AppError('NOT_FOUND', 'Puesto de trabajo no encontrado');
+    }
+
+    // 2b. Validate user is member of the station's tenant
+    const { data: membership } = await supabase
+      .from('memberships')
+      .select('id')
+      .eq('tenant_id', station.tenant_id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!membership) {
+      throw new AppError('FORBIDDEN', 'No tienes acceso a este tenant');
     }
 
     if (!station.is_active) {

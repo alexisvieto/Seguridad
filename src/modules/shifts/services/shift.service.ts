@@ -13,17 +13,6 @@ export async function clockIn(
   },
   userId: string,
 ) {
-  const { data: activeShift } = await client
-    .from('agent_shifts')
-    .select('id')
-    .eq('user_id', userId)
-    .is('clock_out', null)
-    .maybeSingle();
-
-  if (activeShift) {
-    throw new AppError('CONFLICT', 'Ya tienes un turno activo. Registra la salida primero.');
-  }
-
   const { data, error } = await client
     .from('agent_shifts')
     .insert({
@@ -36,6 +25,9 @@ export async function clockIn(
     .single();
 
   if (error || !data) {
+    if (error?.code === '23505') {
+      throw new AppError('CONFLICT', 'Ya tienes un turno activo. Registra la salida primero.');
+    }
     throw new AppError('INTERNAL_ERROR', 'Error al registrar entrada');
   }
 
@@ -52,7 +44,7 @@ export async function clockOut(
     .from('agent_shifts')
     .select('id, user_id, clock_out')
     .eq('id', shiftId)
-    .single();
+    .maybeSingle();
 
   if (!shift) {
     throw new AppError('NOT_FOUND', 'Turno no encontrado');

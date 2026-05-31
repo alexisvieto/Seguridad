@@ -132,17 +132,6 @@ export async function assignFirearm(
     notes?: string | null;
   },
 ) {
-  const { data: active } = await client
-    .from('firearms_assignments')
-    .select('id')
-    .eq('firearm_id', input.firearm_id)
-    .is('returned_at', null)
-    .maybeSingle();
-
-  if (active) {
-    throw new AppError('CONFLICT', 'Esta arma ya tiene una asignación activa');
-  }
-
   const { data, error } = await client
     .from('firearms_assignments')
     .insert({
@@ -156,6 +145,9 @@ export async function assignFirearm(
     .single();
 
   if (error || !data) {
+    if (error?.code === '23505') {
+      throw new AppError('CONFLICT', 'Esta arma ya tiene una asignación activa');
+    }
     throw new AppError('INTERNAL_ERROR', 'Error al asignar el arma');
   }
 

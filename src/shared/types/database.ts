@@ -667,6 +667,14 @@ export interface Database {
         Args: { p_tenant_id: string };
         Returns: MembershipRole;
       };
+      decrement_stock: {
+        Args: { p_item_id: string; p_quantity: number };
+        Returns: number;
+      };
+      increment_stock: {
+        Args: { p_item_id: string; p_quantity: number };
+        Returns: number;
+      };
     };
     Enums: {
       membership_role: MembershipRole;
