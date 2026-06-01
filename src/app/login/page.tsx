@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type LoginStep = 'form' | 'routing';
@@ -102,14 +103,9 @@ export default function LoginPage() {
     <div className="flex min-h-dvh flex-col bg-[#060A14]">
 
       {/* Header */}
-      <header className="px-6 py-4">
-        <Link href="/" className="flex items-center gap-2.5 cursor-pointer">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
-            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-            </svg>
-          </div>
-          <span className="text-lg font-bold tracking-tight text-zinc-100">NexGuard360</span>
+      <header className="px-6 py-5">
+        <Link href="/" className="inline-block cursor-pointer">
+          <Image src="/nexguard360-logo.png" alt="NexGuard360" width={200} height={44} className="h-9 w-auto" />
         </Link>
       </header>
 
