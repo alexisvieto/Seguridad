@@ -40,6 +40,15 @@ interface AgentOption {
   name: string;
 }
 
+interface LoanRecord {
+  id: string;
+  agentName: string;
+  itemName: string;
+  quantity: number;
+  loanDate: string;
+  status: string;
+}
+
 interface Toast {
   type: 'success' | 'error';
   msg: string;
@@ -104,6 +113,7 @@ export default function InventarioPage() {
   const [hasSigned, setHasSigned] = useState(false);
   const [loanKey, setLoanKey] = useState(0);
   const [loanSuccess, setLoanSuccess] = useState(false);
+  const [loanHistory, setLoanHistory] = useState<LoanRecord[]>([]);
 
   // Create stock item modal
   const [showStockModal, setShowStockModal] = useState(false);
@@ -189,13 +199,36 @@ export default function InventarioPage() {
     );
 
     const memberIds = (membRes.data ?? []).map((m) => m.user_id);
+    let profileMap = new Map<string, string>();
     if (memberIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name')
         .in('id', memberIds);
       setAgents((profiles ?? []).map((p) => ({ id: p.id, name: p.full_name })));
+      profileMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
     }
+
+    // Load loan history
+    const { data: loansData } = await supabase
+      .from('agent_equipment_loans')
+      .select('id, user_id, item_id, quantity, loan_date, status')
+      .eq('tenant_id', tenant.id)
+      .order('loan_date', { ascending: false })
+      .limit(100);
+
+    const itemMap = new Map((invRes.data ?? []).map((i) => [i.id, i.item_name]));
+
+    setLoanHistory(
+      (loansData ?? []).map((l) => ({
+        id: l.id,
+        agentName: profileMap.get(l.user_id) ?? 'Agente',
+        itemName: itemMap.get(l.item_id) ?? 'Artículo',
+        quantity: l.quantity,
+        loanDate: l.loan_date,
+        status: l.status,
+      })),
+    );
 
     setIsLoading(false);
   }, [tenantSlug]);
@@ -765,6 +798,59 @@ export default function InventarioPage() {
                 )}
               </button>
             </div>
+
+            {/* Loan History */}
+            {loanHistory.length > 0 && (
+              <div className="rounded-2xl border border-zinc-700/30 bg-zinc-800/20 overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/30">
+                  <div>
+                    <h2 className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">Historial de Entregas</h2>
+                    <p className="mt-0.5 text-xs text-zinc-600">{loanHistory.length} registro{loanHistory.length !== 1 ? 's' : ''}</p>
+                  </div>
+                  <a
+                    href={`/api/inventory/loans-pdf?tenant_slug=${tenantSlug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex min-h-[40px] items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/50 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <PdfIcon />
+                    Exportar PDF
+                  </a>
+                </div>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800/30 text-left">
+                      <th className="px-6 py-3 text-xs font-semibold tracking-widest text-zinc-500 uppercase">Fecha</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-widest text-zinc-500 uppercase">Agente</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-widest text-zinc-500 uppercase">Artículo</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-widest text-zinc-500 uppercase text-center">Cant.</th>
+                      <th className="px-4 py-3 text-xs font-semibold tracking-widest text-zinc-500 uppercase text-center">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loanHistory.map((l) => {
+                      const statusCls = l.status === 'entregado' ? 'bg-emerald-500/15 text-emerald-400'
+                        : l.status === 'devuelto' ? 'bg-blue-500/15 text-blue-400'
+                        : 'bg-red-500/15 text-red-400';
+                      const statusLabel = l.status === 'entregado' ? 'Entregado'
+                        : l.status === 'devuelto' ? 'Devuelto'
+                        : 'Descontado';
+                      return (
+                        <tr key={l.id} className="border-b border-zinc-800/20 hover:bg-zinc-800/20 transition-colors">
+                          <td className="px-6 py-3 text-zinc-400 font-mono text-xs">{formatDate(l.loanDate)}</td>
+                          <td className="px-4 py-3 text-zinc-200">{l.agentName}</td>
+                          <td className="px-4 py-3 text-zinc-400">{l.itemName}</td>
+                          <td className="px-4 py-3 text-center tabular-nums text-zinc-300">{l.quantity}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${statusCls}`}>{statusLabel}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1090,6 +1176,14 @@ function CheckIcon() {
   return (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function PdfIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
     </svg>
   );
 }
