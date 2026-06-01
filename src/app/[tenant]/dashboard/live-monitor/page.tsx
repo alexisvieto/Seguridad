@@ -294,6 +294,11 @@ export default function LiveMonitorPage() {
 
   const activeCount = stations.filter((s) => s.shiftId !== null).length;
   const vacantCount = stations.filter((s) => s.shiftId === null).length;
+  const lateCount = stations.filter((s) => {
+    if (!s.shiftId || !s.clockIn) return false;
+    const ci = new Date(s.clockIn);
+    return (ci.getUTCMinutes() + (ci.getUTCHours() % 12) * 60) > 15;
+  }).length;
   const lastIncident = incidents[0] ?? null;
 
   // -------------------------------------------------------------------
@@ -356,12 +361,29 @@ export default function LiveMonitorPage() {
       {/* ============================================================ */}
       {/* KPI BAR                                                       */}
       {/* ============================================================ */}
-      <div className="grid grid-cols-3 gap-4 border-b border-zinc-800/60 px-6 py-4">
+      <div className="grid grid-cols-4 gap-4 border-b border-zinc-800/60 px-6 py-4">
         {/* Active */}
         <div className="rounded-xl bg-emerald-500/8 border border-emerald-500/20 px-5 py-4">
           <p className="text-xs font-medium tracking-widest text-emerald-500/70 uppercase">Puestos Activos</p>
           <p className="mt-1 text-4xl font-bold tabular-nums text-emerald-400">{activeCount}</p>
           <p className="mt-1 text-xs text-zinc-500">de {stations.length} puestos</p>
+        </div>
+
+        {/* Late */}
+        <div className={`rounded-xl border px-5 py-4 ${
+          lateCount > 0
+            ? 'bg-amber-500/8 border-amber-500/20'
+            : 'bg-zinc-800/40 border-zinc-700/30'
+        }`}>
+          <p className={`text-xs font-medium tracking-widest uppercase ${
+            lateCount > 0 ? 'text-amber-500/70' : 'text-zinc-500'
+          }`}>Tardanzas</p>
+          <p className={`mt-1 text-4xl font-bold tabular-nums ${
+            lateCount > 0 ? 'text-amber-400' : 'text-zinc-600'
+          }`}>{lateCount}</p>
+          <p className="mt-1 text-xs text-zinc-500">
+            {lateCount > 0 ? 'agentes con retraso' : 'todos puntuales'}
+          </p>
         </div>
 
         {/* Vacant */}
@@ -415,24 +437,30 @@ export default function LiveMonitorPage() {
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-4">
             {stations.map((station) => {
               const isOccupied = station.shiftId !== null;
+              const isLate = isOccupied && station.clockIn && (() => {
+                const ci = new Date(station.clockIn!);
+                const mins = ci.getUTCMinutes() + (ci.getUTCHours() % 12) * 60;
+                return mins > 15;
+              })();
               const propertyContacts = contacts.get(station.propertyId) ?? [];
               const supervisor = propertyContacts.find((c) =>
                 c.role.toLowerCase().includes('supervisor'),
               ) ?? propertyContacts[0];
 
+              const borderCls = !isOccupied
+                ? 'border-red-500/40 bg-red-500/5 animate-pulse'
+                : isLate
+                  ? 'border-amber-500/40 bg-amber-500/5'
+                  : 'border-emerald-500/30 bg-emerald-500/5';
+              const dotCls = !isOccupied ? 'bg-red-500' : isLate ? 'bg-amber-500' : 'bg-emerald-500';
+
               return (
                 <div
                   key={station.id}
-                  className={`relative rounded-xl border px-4 py-4 transition-colors ${
-                    isOccupied
-                      ? 'border-emerald-500/30 bg-emerald-500/5'
-                      : 'border-red-500/40 bg-red-500/5 animate-pulse'
-                  }`}
+                  className={`relative rounded-xl border px-4 py-4 transition-colors ${borderCls}`}
                 >
                   {/* Status dot */}
-                  <div className={`absolute right-3 top-3 h-2.5 w-2.5 rounded-full ${
-                    isOccupied ? 'bg-emerald-500' : 'bg-red-500'
-                  }`} />
+                  <div className={`absolute right-3 top-3 h-2.5 w-2.5 rounded-full ${dotCls}`} />
 
                   {/* Station info */}
                   <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase truncate pr-6">
@@ -452,10 +480,17 @@ export default function LiveMonitorPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <ClockIcon />
-                        <span className="text-xs text-zinc-500">
+                        <span className={`text-xs ${isLate ? 'text-amber-400' : 'text-zinc-500'}`}>
                           Entrada {station.clockIn ? formatTimeShort(station.clockIn) : '--:--'}
                         </span>
                       </div>
+                      {isLate && (
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400 ring-1 ring-amber-500/30">
+                            TARDANZA
+                          </span>
+                        </div>
+                      )}
                       {station.gpsValidated && (
                         <div className="flex items-center gap-2">
                           <GpsIcon />
