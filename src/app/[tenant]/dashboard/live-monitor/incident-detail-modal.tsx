@@ -70,13 +70,35 @@ export function IncidentDetailModal({
   const [justifyText, setJustifyText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [justifyError, setJustifyError] = useState<string | null>(null);
+  const [showActionForm, setShowActionForm] = useState(false);
+  const [actionText, setActionText] = useState('');
+  const [actionSaving, setActionSaving] = useState(false);
+  const [actionSaved, setActionSaved] = useState(false);
 
   useEffect(() => {
     setImageLoaded(false);
     setShowJustifyForm(false);
     setJustifyText('');
     setJustifyError(null);
+    setShowActionForm(false);
+    setActionText('');
+    setActionSaved(false);
   }, [incident?.id]);
+
+  const handleSaveAction = useCallback(async () => {
+    if (!incident || !actionText.trim()) return;
+    setActionSaving(true);
+    try {
+      const supabase = (await import('@/lib/supabase/client')).getSupabaseBrowserClient();
+      await supabase
+        .from('incidents_log')
+        .update({ action_taken: actionText.trim(), updated_at: new Date().toISOString() })
+        .eq('id', incident.id);
+      setActionSaved(true);
+      setShowActionForm(false);
+    } catch { /* silent */ }
+    finally { setActionSaving(false); }
+  }, [incident, actionText]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -224,6 +246,44 @@ export function IncidentDetailModal({
             </div>
           </div>
         </div>
+
+        {/* ─── Action Taken Section ─── */}
+        {canJustify && (
+          <div className="border-t border-[#1E2A4A]/60 px-7 py-4">
+            {actionSaved ? (
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-lime-500" />
+                <p className="text-xs text-lime-400 font-medium">Acción registrada: {actionText}</p>
+              </div>
+            ) : !showActionForm ? (
+              <button
+                onClick={() => setShowActionForm(true)}
+                className="flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/8 px-5 py-3 text-sm font-medium text-blue-300 transition-all hover:bg-blue-500/15 hover:border-blue-500/50 cursor-pointer"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Registrar Acción Tomada
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold tracking-widest text-blue-400 uppercase">Acción Tomada</p>
+                <textarea
+                  value={actionText}
+                  onChange={(e) => setActionText(e.target.value)}
+                  placeholder="Describa la acción que se tomó para resolver esta novedad..."
+                  rows={3}
+                  className="w-full rounded-xl border border-[#1E2A4A]/60 bg-[#0A1020] px-5 py-4 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-blue-500/50 focus:outline-none resize-none"
+                />
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => { setShowActionForm(false); setActionText(''); }} className="rounded-lg px-4 py-2 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer">Cancelar</button>
+                  <button onClick={handleSaveAction} disabled={actionSaving || !actionText.trim()}
+                    className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-40 cursor-pointer">
+                    {actionSaving ? 'Guardando...' : 'Guardar Acción'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ─── Justify Section (expandable) ─── */}
         {canJustify && (

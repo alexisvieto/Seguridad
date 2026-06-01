@@ -13,20 +13,34 @@ export async function clockIn(
   },
   userId: string,
 ) {
-  // Validate: no active shift (clock_out IS NULL) for this agent
+  // Check for active shift
   const { data: activeShift } = await client
     .from('agent_shifts')
-    .select('id, work_stations(name)')
+    .select('id, work_station_id')
     .eq('user_id', userId)
     .is('clock_out', null)
     .maybeSingle();
 
   if (activeShift) {
-    const stationName = (activeShift.work_stations as { name: string } | null)?.name ?? 'otro puesto';
-    throw new AppError(
-      'CONFLICT',
-      `Conflicto de Asignación: Ya tienes un turno activo en '${stationName}'. Registra la salida primero.`,
-    );
+    if (activeShift.work_station_id === input.work_station_id) {
+      // Double shift: same station — auto-close previous, open new
+      await client
+        .from('agent_shifts')
+        .update({ clock_out: new Date().toISOString(), clock_out_gps: input.clock_in_gps })
+        .eq('id', activeShift.id);
+    } else {
+      // Different station — block
+      const { data: stationData } = await client
+        .from('work_stations')
+        .select('name')
+        .eq('id', activeShift.work_station_id)
+        .maybeSingle();
+      const stationName = stationData?.name ?? 'otro puesto';
+      throw new AppError(
+        'CONFLICT',
+        `Conflicto de Asignación: Ya tienes un turno activo en '${stationName}'. Registra la salida primero.`,
+      );
+    }
   }
 
   const { data, error } = await client
@@ -38,7 +52,7 @@ export async function clockIn(
       clock_in_gps: input.clock_in_gps,
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     if (error?.code === '23505') {
@@ -46,6 +60,14 @@ export async function clockIn(
     }
     throw new AppError('INTERNAL_ERROR', 'Error al registrar entrada');
   }
+
+  // Resolve any active shift alert for this station
+  await client
+    .from('shift_alerts')
+    .update({ status: 'resolved', resolved_by_shift_id: data.id, resolved_at: new Date().toISOString() })
+    .eq('tenant_id', input.tenant_id)
+    .eq('work_station_id', input.work_station_id)
+    .eq('status', 'active');
 
   return data;
 }
