@@ -194,6 +194,11 @@ export default function ComercialPage() {
   const [selectedProp, setSelectedProp] = useState('');
   const [linkLoading, setLinkLoading] = useState(false);
 
+  const [showNewProp, setShowNewProp] = useState(false);
+  const [npName, setNpName] = useState('');
+  const [npAddress, setNpAddress] = useState('');
+  const [npLoading, setNpLoading] = useState(false);
+
   const openLinkProp = useCallback(async () => {
     if (!tenantId) return;
     const supabase = getSupabaseBrowserClient();
@@ -201,8 +206,39 @@ export default function ComercialPage() {
     const linked = selectedContract?.properties.map((p) => p.id) ?? [];
     setAvailableProps((data ?? []).filter((p) => !linked.includes(p.id)));
     setSelectedProp('');
+    setShowNewProp(false);
+    setNpName('');
+    setNpAddress('');
     setShowLinkProp(true);
   }, [tenantId, selectedContract]);
+
+  const handleCreateAndLinkProp = useCallback(async () => {
+    if (!tenantId || !selectedContract || !npName.trim()) return;
+    setNpLoading(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: prop, error: propErr } = await supabase
+        .from('properties_ph')
+        .insert({ tenant_id: tenantId, name: npName.trim(), address: npAddress.trim() || '' })
+        .select()
+        .maybeSingle();
+
+      if (propErr || !prop) throw propErr;
+
+      const { error: linkErr } = await supabase.from('contract_properties').insert({
+        tenant_id: tenantId, contract_id: selectedContract.id, property_id: prop.id,
+      });
+      if (linkErr) throw linkErr;
+
+      setToast({ type: 'success', msg: `Propiedad "${npName}" creada y vinculada` });
+      setShowLinkProp(false);
+      loadData();
+      const updated = { ...selectedContract, properties: [...selectedContract.properties, { id: prop.id, name: npName.trim() }] };
+      setSelectedContract(updated);
+      selectContract(updated);
+    } catch { setToast({ type: 'error', msg: 'Error al crear propiedad' }); }
+    finally { setNpLoading(false); }
+  }, [tenantId, selectedContract, npName, npAddress, loadData, selectContract]);
 
   const handleLinkProp = useCallback(async () => {
     if (!tenantId || !selectedContract || !selectedProp) return;
@@ -563,24 +599,55 @@ export default function ComercialPage() {
           <div className="w-full max-w-md rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl space-y-5">
             <h3 className="text-lg font-semibold">Vincular Propiedad al Contrato</h3>
             <p className="text-xs text-zinc-500">{selectedContract?.clientName}</p>
-            <label className="block">
-              <span className="text-xs font-medium text-zinc-400">Propiedad</span>
-              <select value={selectedProp} onChange={(e) => setSelectedProp(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
-                <option value="">Seleccionar propiedad...</option>
-                {availableProps.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
-              </select>
-            </label>
-            {availableProps.length === 0 && (
-              <p className="text-xs text-amber-400">No hay propiedades disponibles. Cree una propiedad primero en el sistema.</p>
+
+            {!showNewProp ? (
+              <>
+                <label className="block">
+                  <span className="text-xs font-medium text-zinc-400">Propiedad existente</span>
+                  <select value={selectedProp} onChange={(e) => setSelectedProp(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
+                    <option value="">Seleccionar propiedad...</option>
+                    {availableProps.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                  </select>
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 border-t border-zinc-800" />
+                  <span className="text-[10px] text-zinc-600 uppercase">o</span>
+                  <div className="flex-1 border-t border-zinc-800" />
+                </div>
+                <button onClick={() => setShowNewProp(true)}
+                  className="w-full rounded-xl border border-dashed border-zinc-700 py-3 text-sm font-medium text-lime-400 hover:border-lime-500/30 hover:bg-lime-500/5 cursor-pointer transition-colors">
+                  + Crear Nueva Propiedad
+                </button>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowLinkProp(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
+                  <button onClick={handleLinkProp} disabled={!selectedProp || linkLoading}
+                    className="flex-1 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                    {linkLoading ? 'Vinculando...' : 'Vincular'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <label className="block">
+                  <span className="text-xs font-medium text-zinc-400">Nombre de la propiedad</span>
+                  <input type="text" value={npName} onChange={(e) => setNpName(e.target.value)}
+                    placeholder="Ej: Torre Madrid, Oficina Central" className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-medium text-zinc-400">Dirección (opcional)</span>
+                  <input type="text" value={npAddress} onChange={(e) => setNpAddress(e.target.value)}
+                    placeholder="Ej: Calle 50, Edificio Global" className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
+                </label>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowNewProp(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Volver</button>
+                  <button onClick={handleCreateAndLinkProp} disabled={!npName.trim() || npLoading}
+                    className="flex-1 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                    {npLoading ? 'Creando...' : 'Crear y Vincular'}
+                  </button>
+                </div>
+              </>
             )}
-            <div className="flex gap-3">
-              <button onClick={() => setShowLinkProp(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
-              <button onClick={handleLinkProp} disabled={!selectedProp || linkLoading}
-                className="flex-1 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
-                {linkLoading ? 'Vinculando...' : 'Vincular'}
-              </button>
-            </div>
           </div>
         </div>
       )}
