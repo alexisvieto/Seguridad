@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
@@ -33,7 +33,7 @@ export default function LoginPage() {
       });
 
       if (authError) {
-        setError('Credenciales invalidas. Verifique su email y contraseña.');
+        setError('Credenciales invalidas. Verifique su email y contraseÃ±a.');
         setStep('form');
         return;
       }
@@ -119,21 +119,21 @@ export default function LoginPage() {
                 autoComplete="email"
                 placeholder="usuario@empresa.com"
                 disabled={step === 'routing'}
-                className="mt-1 block w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+                className="mt-1 block w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500 disabled:opacity-50"
               />
             </label>
 
             <label className="block">
-              <span className="text-xs font-medium text-zinc-400">Contraseña</span>
+              <span className="text-xs font-medium text-zinc-400">ContraseÃ±a</span>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                placeholder="Ingrese su contraseña"
+                placeholder="Ingrese su contraseÃ±a"
                 disabled={step === 'routing'}
-                className="mt-1 block w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+                className="mt-1 block w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500 disabled:opacity-50"
               />
             </label>
 
@@ -146,7 +146,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={step === 'routing' || !email.trim() || !password}
-              className="flex w-full min-h-[52px] items-center justify-center rounded-xl bg-emerald-600 px-4 py-3.5 text-base font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 cursor-pointer"
+              className="flex w-full min-h-[52px] items-center justify-center rounded-xl bg-lime-600 px-4 py-3.5 text-base font-semibold text-white transition-colors hover:bg-lime-500 disabled:opacity-50 cursor-pointer"
             >
               {step === 'routing' ? (
                 <div className="flex items-center gap-3">
@@ -167,3 +167,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

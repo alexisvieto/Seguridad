@@ -5,8 +5,8 @@
       <stop offset="100%" stop-color="#0f172a" />
     </linearGradient>
     <radialGradient id="radarGlowDark" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#34d399" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#A3E635" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#A3E635" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
@@ -14,26 +14,26 @@
     <g transform="translate(40, 45)">
       <path d="M10 20 L80 0 L150 20 C150 90 110 130 80 160 C50 130 10 90 10 20 Z" fill="url(#escudoGradienteDark)" stroke="#334155" stroke-width="2"/>
 
-      <line x1="-30" y1="65" x2="60" y2="65" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
-      <line x1="-30" y1="80" x2="50" y2="80" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
-      <line x1="-30" y1="95" x2="62" y2="95" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
+      <line x1="-30" y1="65" x2="60" y2="65" stroke="#84CC16" stroke-width="5" stroke-linecap="round"/>
+      <line x1="-30" y1="80" x2="50" y2="80" stroke="#84CC16" stroke-width="5" stroke-linecap="round"/>
+      <line x1="-30" y1="95" x2="62" y2="95" stroke="#84CC16" stroke-width="5" stroke-linecap="round"/>
 
-      <line x1="100" y1="65" x2="190" y2="65" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
-      <line x1="110" y1="80" x2="190" y2="80" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
-      <line x1="98" y1="95" x2="190" y2="95" stroke="#10b981" stroke-width="5" stroke-linecap="round"/>
+      <line x1="100" y1="65" x2="190" y2="65" stroke="#84CC16" stroke-width="5" stroke-linecap="round"/>
+      <line x1="110" y1="80" x2="190" y2="80" stroke="#84CC16" stroke-width="5" stroke-linecap="round"/>
+      <line x1="98" y1="95" x2="190" y2="95" stroke="#84CC16" stroke-width="5" stroke-linecap="round"/>
 
       <circle cx="80" cy="80" r="25" fill="url(#radarGlowDark)"/>
-      <circle cx="80" cy="80" r="16" fill="none" stroke="#34d399" stroke-width="3"/>
-      <circle cx="80" cy="80" r="3" fill="#34d399"/>
-      <line x1="80" y1="56" x2="80" y2="66" stroke="#34d399" stroke-width="2.5"/>
-      <line x1="80" y1="94" x2="80" y2="104" stroke="#34d399" stroke-width="2.5"/>
-      <line x1="56" y1="80" x2="66" y2="80" stroke="#34d399" stroke-width="2.5"/>
-      <line x1="94" y1="80" x2="104" y2="80" stroke="#34d399" stroke-width="2.5"/>
+      <circle cx="80" cy="80" r="16" fill="none" stroke="#A3E635" stroke-width="3"/>
+      <circle cx="80" cy="80" r="3" fill="#A3E635"/>
+      <line x1="80" y1="56" x2="80" y2="66" stroke="#A3E635" stroke-width="2.5"/>
+      <line x1="80" y1="94" x2="80" y2="104" stroke="#A3E635" stroke-width="2.5"/>
+      <line x1="56" y1="80" x2="66" y2="80" stroke="#A3E635" stroke-width="2.5"/>
+      <line x1="94" y1="80" x2="104" y2="80" stroke="#A3E635" stroke-width="2.5"/>
     </g>
 
     <text x="270" y="130" font-family="Inter, Geist, SF Pro, sans-serif" font-size="76" font-weight="900" letter-spacing="-1">
       <tspan fill="#FFFFFF">NEXGUARD</tspan>
-      <tspan fill="#10b981" dx="2">360</tspan>
+      <tspan fill="#84CC16" dx="2">360</tspan>
     </text>
 
     <text x="273" y="175" font-family="Inter, Geist, SF Pro, sans-serif" font-size="20" font-weight="400" fill="#94a3b8" letter-spacing="3.8">INTELIGENCIA OPERATIVA — SEGURIDAD 360</text>

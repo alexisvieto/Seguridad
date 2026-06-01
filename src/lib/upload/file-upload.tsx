@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback, useRef } from 'react';
 import { compressImage, isImageFile } from './compress-image';
@@ -93,15 +93,15 @@ export function FileUpload({
         htmlFor={`upload-${basePath.replace(/\//g, '-')}`}
         className={`flex min-h-[44px] items-center gap-2 rounded-xl border border-dashed px-4 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
           uploading
-            ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400'
+            ? 'border-lime-500/30 bg-lime-500/5 text-lime-400'
             : fileName
-              ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
+              ? 'border-lime-500/20 bg-lime-500/5 text-lime-400'
               : 'border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-500 hover:text-zinc-300'
         }`}
       >
         {uploading ? (
           <>
-            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-emerald-500/30 border-t-emerald-500" />
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-lime-500/30 border-t-lime-500" />
             <span>Procesando... {progress}%</span>
           </>
         ) : fileName ? (
@@ -119,7 +119,7 @@ export function FileUpload({
       {uploading && (
         <div className="mt-1.5 h-1 rounded-full bg-zinc-800 overflow-hidden">
           <div
-            className="h-1 rounded-full bg-emerald-500 transition-all duration-300"
+            className="h-1 rounded-full bg-lime-500 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -144,3 +144,4 @@ function CheckSvg() {
     </svg>
   );
 }
+
