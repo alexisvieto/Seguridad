@@ -395,7 +395,7 @@ export default function PayrollPeriodPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div>
-              <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Sabana de Pagos</p>
+              <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Informe de Planilla</p>
               <h1 className="text-xl font-bold">
                 {formatDate(period.startDate)} — {formatDate(period.endDate)}
               </h1>
