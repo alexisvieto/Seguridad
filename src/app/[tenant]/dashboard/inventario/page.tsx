@@ -103,6 +103,7 @@ export default function InventarioPage() {
   const [loanLoading, setLoanLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
   const [loanKey, setLoanKey] = useState(0);
+  const [loanSuccess, setLoanSuccess] = useState(false);
 
   // Create stock item modal
   const [showStockModal, setShowStockModal] = useState(false);
@@ -416,12 +417,9 @@ export default function InventarioPage() {
         ),
       );
 
+      setLoanLoading(false);
+      setLoanSuccess(true);
       setToast({ type: 'success', msg: 'Entrega registrada correctamente' });
-      setLoanAgent('');
-      setLoanItem('');
-      setLoanQty(1);
-      setHasSigned(false);
-      setLoanKey((k) => k + 1);
     } catch {
       setToast({ type: 'error', msg: 'Error al registrar la entrega' });
     } finally {
@@ -665,7 +663,31 @@ export default function InventarioPage() {
         {/* ============================================================ */}
         {/* TAB: Entrega a Agentes                                        */}
         {/* ============================================================ */}
-        {tab === 'loans' && (
+        {tab === 'loans' && loanSuccess && (
+          <div className="mx-auto max-w-lg py-20 text-center space-y-4">
+            <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-emerald-500/15">
+              <CheckIcon />
+            </div>
+            <p className="text-lg font-semibold text-emerald-400">Entrega registrada correctamente</p>
+            <p className="text-sm text-zinc-500">El stock se actualizó automáticamente</p>
+            <button
+              onClick={() => {
+                setLoanSuccess(false);
+                setLoanAgent('');
+                setLoanItem('');
+                setLoanQty(1);
+                setHasSigned(false);
+                setLoanKey((k) => k + 1);
+                loadData();
+              }}
+              className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 cursor-pointer"
+            >
+              <PlusIcon /> Nueva Entrega
+            </button>
+          </div>
+        )}
+
+        {tab === 'loans' && !loanSuccess && (
           <div key={loanKey} className="mx-auto max-w-lg space-y-6">
 
             <div className="rounded-2xl border border-zinc-700/30 bg-zinc-800/30 p-6 space-y-5">
