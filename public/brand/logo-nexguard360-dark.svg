@@ -33,7 +33,7 @@
 
     <text x="270" y="130" font-family="Inter, Geist, SF Pro, sans-serif" font-size="76" font-weight="900" letter-spacing="-1">
       <tspan fill="#FFFFFF">NEXGUARD</tspan>
-      <tspan fill="#10b981" dx="15">360</tspan>
+      <tspan fill="#10b981" dx="2">360</tspan>
     </text>
 
     <text x="273" y="175" font-family="Inter, Geist, SF Pro, sans-serif" font-size="20" font-weight="400" fill="#94a3b8" letter-spacing="3.8">INTELIGENCIA OPERATIVA — SEGURIDAD 360</text>
