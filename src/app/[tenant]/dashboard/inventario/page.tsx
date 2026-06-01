@@ -666,7 +666,7 @@ export default function InventarioPage() {
         {/* TAB: Entrega a Agentes                                        */}
         {/* ============================================================ */}
         {tab === 'loans' && (
-          <div className="mx-auto max-w-lg space-y-6">
+          <div key={loanKey} className="mx-auto max-w-lg space-y-6">
 
             <div className="rounded-2xl border border-zinc-700/30 bg-zinc-800/30 p-6 space-y-5">
               <h2 className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">
@@ -722,7 +722,6 @@ export default function InventarioPage() {
               <div>
                 <span className="text-xs font-medium text-zinc-400">Firma Digital de Conformidad del Agente</span>
                 <SignaturePad
-                  key={loanKey}
                   onSign={() => setHasSigned(true)}
                   onClear={() => setHasSigned(false)}
                 />
