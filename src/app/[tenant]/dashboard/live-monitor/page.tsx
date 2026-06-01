@@ -126,7 +126,7 @@ export default function LiveMonitorPage() {
         .order('name'),
       supabase
         .from('agent_shifts')
-        .select('id, work_station_id, clock_in, clock_in_gps, user_id, profiles(full_name)')
+        .select('id, work_station_id, clock_in, clock_in_gps, user_id')
         .eq('tenant_id', tenant.id)
         .is('clock_out', null),
       supabase
@@ -137,12 +137,19 @@ export default function LiveMonitorPage() {
         .limit(50),
     ]);
 
+    // Resolve agent names separately (agent_shifts FK → auth.users, not profiles)
+    const shiftUserIds = (shiftsRes.data ?? []).map((s) => s.user_id);
+    const { data: shiftProfiles } = shiftUserIds.length > 0
+      ? await supabase.from('profiles').select('id, full_name').in('id', shiftUserIds)
+      : { data: [] };
+    const profileMap = new Map((shiftProfiles ?? []).map((p) => [p.id, p.full_name]));
+
     const activeShifts = new Map(
       (shiftsRes.data ?? []).map((s) => [
         s.work_station_id,
         {
           shiftId: s.id,
-          agentName: s.profiles?.full_name ?? 'Agente',
+          agentName: profileMap.get(s.user_id) ?? 'Agente',
           clockIn: s.clock_in,
           gpsValidated: Boolean(s.clock_in_gps && typeof s.clock_in_gps === 'object' && 'lat' in (s.clock_in_gps as unknown as Record<string, unknown>)),
         },
@@ -297,7 +304,9 @@ export default function LiveMonitorPage() {
   const lateCount = stations.filter((s) => {
     if (!s.shiftId || !s.clockIn) return false;
     const ci = new Date(s.clockIn);
-    return (ci.getUTCMinutes() + (ci.getUTCHours() % 12) * 60) > 15;
+    const hour = ci.getUTCHours();
+    const shiftStart = hour >= 12 ? 18 : 6;
+    return ((hour - shiftStart) * 60 + ci.getUTCMinutes()) > 15;
   }).length;
   const lastIncident = incidents[0] ?? null;
 
@@ -435,12 +444,26 @@ export default function LiveMonitorPage() {
         {/* ---------------------------------------------------------- */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-4">
-            {stations.map((station) => {
+            {[...stations].sort((a, b) => {
+              const getOrder = (s: typeof a) => {
+                if (s.shiftId === null) return 2; // red last
+                const ci = s.clockIn ? new Date(s.clockIn) : null;
+                if (ci) {
+                  const hour = ci.getUTCHours();
+                  const shiftStart = hour >= 12 ? 18 : 6;
+                  if ((hour - shiftStart) * 60 + ci.getUTCMinutes() > 15) return 1; // yellow middle
+                }
+                return 0; // green first
+              };
+              return getOrder(a) - getOrder(b);
+            }).map((station) => {
               const isOccupied = station.shiftId !== null;
               const isLate = isOccupied && station.clockIn && (() => {
                 const ci = new Date(station.clockIn!);
-                const mins = ci.getUTCMinutes() + (ci.getUTCHours() % 12) * 60;
-                return mins > 15;
+                const hour = ci.getUTCHours();
+                const shiftStart = hour >= 12 ? 18 : 6;
+                const minutesPast = (hour - shiftStart) * 60 + ci.getUTCMinutes();
+                return minutesPast > 15;
               })();
               const propertyContacts = contacts.get(station.propertyId) ?? [];
               const supervisor = propertyContacts.find((c) =>
