@@ -114,6 +114,11 @@ export default function InventarioPage() {
   const [loanKey, setLoanKey] = useState(0);
   const [loanSuccess, setLoanSuccess] = useState(false);
   const [loanHistory, setLoanHistory] = useState<LoanRecord[]>([]);
+  const [showLoanForm, setShowLoanForm] = useState(false);
+  const [expandedLoan, setExpandedLoan] = useState<string | null>(null);
+
+  // Assets - expanded station
+  const [expandedStation, setExpandedStation] = useState<string | null>(null);
 
   // Create stock item modal
   const [showStockModal, setShowStockModal] = useState(false);
@@ -633,7 +638,7 @@ export default function InventarioPage() {
                 </button>
               </div>
             ) : (
-          <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {(() => {
               const grouped = new Map<string, { stationName: string; propertyName: string; items: AssetRow[] }>();
               for (const a of assets) {
@@ -643,50 +648,70 @@ export default function InventarioPage() {
                 }
                 grouped.get(key)!.items.push(a);
               }
-              return [...grouped.entries()].map(([stationId, group]) => (
-                <div key={stationId} className="rounded-xl border border-zinc-700/30 bg-zinc-800/20 overflow-hidden">
-                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-800/30">
-                    <div>
-                      <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">{group.propertyName}</p>
-                      <p className="mt-0.5 text-sm font-semibold text-zinc-100">{group.stationName}</p>
+              return [...grouped.entries()].map(([stationId, group]) => {
+                const isExpanded = expandedStation === stationId;
+                const okCount = group.items.filter((i) => i.status === 'bueno').length;
+                const damagedCount = group.items.filter((i) => i.status !== 'bueno').length;
+
+                return (
+                  <div key={stationId} className="rounded-xl border border-zinc-700/30 bg-zinc-800/20 overflow-hidden">
+                    {/* Card header - clickable */}
+                    <div
+                      className="px-5 py-4 cursor-pointer hover:bg-zinc-800/30 transition-colors"
+                      onClick={() => setExpandedStation(isExpanded ? null : stationId)}
+                    >
+                      <p className="text-sm font-semibold text-zinc-100">{group.propertyName}</p>
+                      <p className="mt-0.5 text-xs text-zinc-500">{group.stationName}</p>
+                      <div className="mt-2 flex items-center gap-3">
+                        <span className="rounded-full bg-zinc-700/50 px-2.5 py-0.5 text-[10px] tabular-nums text-zinc-400">
+                          {group.items.length} equipo{group.items.length !== 1 ? 's' : ''}
+                        </span>
+                        {okCount > 0 && (
+                          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] text-emerald-400">{okCount} OK</span>
+                        )}
+                        {damagedCount > 0 && (
+                          <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] text-red-400">{damagedCount} daño</span>
+                        )}
+                      </div>
                     </div>
-                    <span className="rounded-full bg-zinc-700/50 px-2.5 py-0.5 text-xs tabular-nums text-zinc-400">
-                      {group.items.length} equipo{group.items.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <div className="divide-y divide-zinc-800/20">
-                    {group.items.map((asset) => {
-                      const badge = assetStatusBadge[asset.status] ?? assetStatusBadge['bueno']!;
-                      return (
-                        <div key={asset.id} className="flex items-center justify-between px-5 py-3 hover:bg-zinc-800/20 transition-colors">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium text-zinc-200 truncate">{asset.assetName}</p>
-                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.cls}`}>
-                                {badge.label}
-                              </span>
+
+                    {/* Expanded detail */}
+                    {isExpanded && (
+                      <div className="border-t border-zinc-800/30 divide-y divide-zinc-800/20">
+                        {group.items.map((asset) => {
+                          const badge = assetStatusBadge[asset.status] ?? assetStatusBadge['bueno']!;
+                          return (
+                            <div key={asset.id} className="flex items-center justify-between px-5 py-3 hover:bg-zinc-800/20 transition-colors">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium text-zinc-200 truncate">{asset.assetName}</p>
+                                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.cls}`}>
+                                    {badge.label}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3 mt-0.5">
+                                  {asset.imei && <p className="text-xs font-mono text-zinc-600">{asset.imei}</p>}
+                                  <p className="text-xs text-zinc-600">Inspección: {formatDate(asset.lastInspection)}</p>
+                                </div>
+                                {asset.damageNotes && asset.status === 'dañado' && (
+                                  <p className="mt-1 text-xs text-red-400 italic">{asset.damageNotes}</p>
+                                )}
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setDamageModal(asset); setDamageNotes(asset.damageNotes ?? ''); }}
+                                className="flex min-h-[36px] items-center gap-1.5 rounded-lg bg-zinc-700/40 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 cursor-pointer shrink-0 ml-3"
+                              >
+                                <DamageIcon />
+                                Reportar
+                              </button>
                             </div>
-                            <div className="flex items-center gap-3 mt-0.5">
-                              {asset.imei && <p className="text-xs font-mono text-zinc-600">{asset.imei}</p>}
-                              <p className="text-xs text-zinc-600">Inspección: {formatDate(asset.lastInspection)}</p>
-                            </div>
-                            {asset.damageNotes && asset.status === 'dañado' && (
-                              <p className="mt-1 text-xs text-red-400 italic">{asset.damageNotes}</p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => { setDamageModal(asset); setDamageNotes(asset.damageNotes ?? ''); }}
-                            className="flex min-h-[36px] items-center gap-1.5 rounded-lg bg-zinc-700/40 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 cursor-pointer shrink-0 ml-3"
-                          >
-                            <DamageIcon />
-                            Reportar
-                          </button>
-                        </div>
-                      );
-                    })}
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ));
+                );
+              });
             })()}
           </div>
             )}
@@ -696,161 +721,176 @@ export default function InventarioPage() {
         {/* ============================================================ */}
         {/* TAB: Entrega a Agentes                                        */}
         {/* ============================================================ */}
-        {tab === 'loans' && loanSuccess && (
-          <div className="mx-auto max-w-lg py-20 text-center space-y-4">
-            <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-emerald-500/15">
-              <CheckIcon />
-            </div>
-            <p className="text-lg font-semibold text-emerald-400">Entrega registrada correctamente</p>
-            <p className="text-sm text-zinc-500">El stock se actualizó automáticamente</p>
-            <button
-              onClick={() => {
-                setLoanSuccess(false);
-                setLoanAgent('');
-                setLoanItem('');
-                setLoanQty(1);
-                setHasSigned(false);
-                setLoanKey((k) => k + 1);
-                loadData();
-              }}
-              className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 cursor-pointer"
-            >
-              <PlusIcon /> Nueva Entrega
-            </button>
-          </div>
-        )}
-
-        {tab === 'loans' && !loanSuccess && (
-          <div key={loanKey} className="mx-auto max-w-lg space-y-6">
-
-            <div className="rounded-2xl border border-zinc-700/30 bg-zinc-800/30 p-6 space-y-5">
-              <h2 className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">
-                Formulario de Entrega
+        {tab === 'loans' && (
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">
+                Entregas Realizadas — {loanHistory.length} registro{loanHistory.length !== 1 ? 's' : ''}
               </h2>
-
-              {/* Agent select */}
-              <label className="block">
-                <span className="text-xs font-medium text-zinc-400">Agente</span>
-                <select
-                  value={loanAgent}
-                  onChange={(e) => setLoanAgent(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer"
-                >
-                  <option value="">Seleccionar agente...</option>
-                  {agents.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
-                </select>
-              </label>
-
-              {/* Item select */}
-              <label className="block">
-                <span className="text-xs font-medium text-zinc-400">Artículo</span>
-                <select
-                  value={loanItem}
-                  onChange={(e) => setLoanItem(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer"
-                >
-                  <option value="">Seleccionar artículo...</option>
-                  {availableForLoan.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.itemName}{i.sizeOrModel ? ` (${i.sizeOrModel})` : ''} — Stock: {i.currentStock}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {/* Quantity */}
-              <label className="block">
-                <span className="text-xs font-medium text-zinc-400">Cantidad</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={inventory.find((i) => i.id === loanItem)?.currentStock ?? 99}
-                  value={loanQty}
-                  onChange={(e) => setLoanQty(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none"
-                />
-              </label>
-
-              {/* Signature pad */}
-              <div>
-                <span className="text-xs font-medium text-zinc-400">Firma Digital de Conformidad del Agente</span>
-                <SignaturePad
-                  onSign={() => setHasSigned(true)}
-                  onClear={() => setHasSigned(false)}
-                />
-              </div>
-
-              {/* Submit */}
               <button
-                onClick={submitLoan}
-                disabled={!loanAgent || !loanItem || !hasSigned || loanLoading}
-                className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-40 cursor-pointer"
+                onClick={() => { setShowLoanForm(true); setLoanSuccess(false); setLoanAgent(''); setLoanItem(''); setLoanQty(1); setHasSigned(false); setLoanKey((k) => k + 1); }}
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer"
               >
-                {loanLoading ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                ) : (
-                  <>
-                    <CheckIcon />
-                    Registrar Entrega
-                  </>
-                )}
+                <PlusIcon /> Formulario de Entrega
               </button>
             </div>
 
-            {/* Loan History */}
-            {loanHistory.length > 0 && (
-              <div className="rounded-2xl border border-zinc-700/30 bg-zinc-800/20 overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/30">
-                  <div>
-                    <h2 className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">Historial de Entregas</h2>
-                    <p className="mt-0.5 text-xs text-zinc-600">{loanHistory.length} registro{loanHistory.length !== 1 ? 's' : ''}</p>
-                  </div>
-                  <a
-                    href={`/api/inventory/loans-pdf?tenant_slug=${tenantSlug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex min-h-[40px] items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/50 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
-                  >
-                    <PdfIcon />
-                    Exportar PDF
-                  </a>
+            {loanHistory.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-800/60">
+                  <CheckIcon />
                 </div>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-zinc-800/30 text-left">
-                      <th className="px-6 py-3 text-xs font-semibold tracking-widest text-zinc-500 uppercase">Fecha</th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-widest text-zinc-500 uppercase">Agente</th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-widest text-zinc-500 uppercase">Artículo</th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-widest text-zinc-500 uppercase text-center">Cant.</th>
-                      <th className="px-4 py-3 text-xs font-semibold tracking-widest text-zinc-500 uppercase text-center">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loanHistory.map((l) => {
-                      const statusCls = l.status === 'entregado' ? 'bg-emerald-500/15 text-emerald-400'
-                        : l.status === 'devuelto' ? 'bg-blue-500/15 text-blue-400'
-                        : 'bg-red-500/15 text-red-400';
-                      const statusLabel = l.status === 'entregado' ? 'Entregado'
-                        : l.status === 'devuelto' ? 'Devuelto'
-                        : 'Descontado';
-                      return (
-                        <tr key={l.id} className="border-b border-zinc-800/20 hover:bg-zinc-800/20 transition-colors">
-                          <td className="px-6 py-3 text-zinc-400 font-mono text-xs">{formatDate(l.loanDate)}</td>
-                          <td className="px-4 py-3 text-zinc-200">{l.agentName}</td>
-                          <td className="px-4 py-3 text-zinc-400">{l.itemName}</td>
-                          <td className="px-4 py-3 text-center tabular-nums text-zinc-300">{l.quantity}</td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${statusCls}`}>{statusLabel}</span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <p className="text-sm font-medium text-zinc-400">Sin entregas registradas</p>
+                <p className="text-xs text-zinc-600">Registre la primera entrega de equipo a un agente</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {(() => {
+                  const byMonth = new Map<string, LoanRecord[]>();
+                  for (const l of loanHistory) {
+                    const d = new Date(l.loanDate);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    if (!byMonth.has(key)) byMonth.set(key, []);
+                    byMonth.get(key)!.push(l);
+                  }
+                  return [...byMonth.entries()].map(([monthKey, items]) => {
+                    const [year, month] = monthKey.split('-');
+                    const monthName = new Date(Number(year), Number(month) - 1).toLocaleDateString('es-PA', { month: 'long', year: 'numeric' });
+
+                    return (
+                      <div key={monthKey} className="rounded-xl border border-zinc-700/30 bg-zinc-800/20 overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800/30">
+                          <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">
+                            Entregas {monthName}
+                          </p>
+                          <span className="rounded-full bg-zinc-700/50 px-2.5 py-0.5 text-xs tabular-nums text-zinc-400">
+                            {items.length}
+                          </span>
+                        </div>
+                        <div className="divide-y divide-zinc-800/20">
+                          {items.map((l) => {
+                            const isExpanded = expandedLoan === l.id;
+                            const statusCls = l.status === 'entregado' ? 'bg-emerald-500/15 text-emerald-400'
+                              : l.status === 'devuelto' ? 'bg-blue-500/15 text-blue-400'
+                              : 'bg-red-500/15 text-red-400';
+                            const statusLabel = l.status === 'entregado' ? 'Entregado'
+                              : l.status === 'devuelto' ? 'Devuelto'
+                              : 'Descontado';
+
+                            return (
+                              <div key={l.id}>
+                                <div
+                                  className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-zinc-800/20 transition-colors"
+                                  onClick={() => setExpandedLoan(isExpanded ? null : l.id)}
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <span className="text-xs font-mono text-zinc-600 shrink-0">{formatDate(l.loanDate)}</span>
+                                    <p className="text-sm font-medium text-zinc-200 truncate">{l.agentName}</p>
+                                    <span className="text-xs text-zinc-500 truncate hidden sm:inline">— {l.itemName} x{l.quantity}</span>
+                                  </div>
+                                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${statusCls}`}>{statusLabel}</span>
+                                </div>
+
+                                {isExpanded && (
+                                  <div className="px-5 py-4 bg-zinc-800/10 border-t border-zinc-800/20 space-y-3">
+                                    <div className="grid grid-cols-2 gap-4 text-xs">
+                                      <div><span className="text-zinc-500">Agente:</span> <span className="text-zinc-200 font-medium">{l.agentName}</span></div>
+                                      <div><span className="text-zinc-500">Fecha:</span> <span className="text-zinc-200">{formatDate(l.loanDate)}</span></div>
+                                      <div><span className="text-zinc-500">Artículo:</span> <span className="text-zinc-200">{l.itemName}</span></div>
+                                      <div><span className="text-zinc-500">Cantidad:</span> <span className="text-zinc-200">{l.quantity}</span></div>
+                                    </div>
+                                    <div className="flex justify-end">
+                                      <a
+                                        href={`/api/inventory/loans-pdf?tenant_slug=${tenantSlug}&loan_id=${l.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex min-h-[36px] items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
+                                      >
+                                        <PdfIcon /> Descargar PDF
+                                      </a>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             )}
+          </div>
+        )}
+
+        {/* LOAN FORM MODAL */}
+        {showLoanForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowLoanForm(false); }}>
+            <div key={loanKey} className="w-full max-w-md rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+              {loanSuccess ? (
+                <div className="py-10 text-center space-y-4">
+                  <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-emerald-500/15">
+                    <CheckIcon />
+                  </div>
+                  <p className="text-lg font-semibold text-emerald-400">Entrega registrada</p>
+                  <p className="text-sm text-zinc-500">El stock se actualizó automáticamente</p>
+                  <div className="flex gap-3 justify-center">
+                    <button onClick={() => { setShowLoanForm(false); loadData(); }}
+                      className="rounded-xl bg-zinc-800 px-5 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer">
+                      Cerrar
+                    </button>
+                    <button onClick={() => { setLoanSuccess(false); setLoanAgent(''); setLoanItem(''); setLoanQty(1); setHasSigned(false); setLoanKey((k) => k + 1); }}
+                      className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 cursor-pointer">
+                      Nueva Entrega
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold text-zinc-100 mb-5">Formulario de Entrega</h3>
+                  <div className="space-y-5">
+                    <label className="block">
+                      <span className="text-xs font-medium text-zinc-400">Agente</span>
+                      <select value={loanAgent} onChange={(e) => setLoanAgent(e.target.value)}
+                        className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                        <option value="">Seleccionar agente...</option>
+                        {agents.map((a) => (<option key={a.id} value={a.id}>{a.name}</option>))}
+                      </select>
+                    </label>
+                    <label className="block">
+                      <span className="text-xs font-medium text-zinc-400">Artículo</span>
+                      <select value={loanItem} onChange={(e) => setLoanItem(e.target.value)}
+                        className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                        <option value="">Seleccionar artículo...</option>
+                        {availableForLoan.map((i) => (<option key={i.id} value={i.id}>{i.itemName}{i.sizeOrModel ? ` (${i.sizeOrModel})` : ''} — Stock: {i.currentStock}</option>))}
+                      </select>
+                    </label>
+                    <label className="block">
+                      <span className="text-xs font-medium text-zinc-400">Cantidad</span>
+                      <input type="number" min={1} max={inventory.find((i) => i.id === loanItem)?.currentStock ?? 99} value={loanQty}
+                        onChange={(e) => setLoanQty(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                    </label>
+                    <div>
+                      <span className="text-xs font-medium text-zinc-400">Firma Digital del Agente</span>
+                      <SignaturePad onSign={() => setHasSigned(true)} onClear={() => setHasSigned(false)} />
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={() => setShowLoanForm(false)}
+                        className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">
+                        Cancelar
+                      </button>
+                      <button onClick={submitLoan} disabled={!loanAgent || !loanItem || !hasSigned || loanLoading}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                        {loanLoading ? <SpinnerSm /> : <><CheckIcon /> Registrar</>}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
