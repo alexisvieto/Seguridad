@@ -283,7 +283,7 @@ export default function PreciosPage() {
             <Image src="/nexguard360-logo.png" alt="NexGuard360" width={140} height={32} className="h-6 w-auto" />
           </div>
           <p style={{ fontFamily: 'var(--ng-font-body)', fontSize: '0.78rem', color: 'var(--ng-text-muted)' }}>
-            © {new Date().getFullYear()} NexGuard360 by Nexera. Panamá.
+            © 2026 NexGuard360 by Nexera. Panamá.
           </p>
           <a href="https://www.nexguard360.com" style={{ fontFamily: 'var(--ng-font-mono)', fontSize: '0.7rem', color: 'var(--ng-lime)', letterSpacing: '0.1em' }}>
             www.nexguard360.com

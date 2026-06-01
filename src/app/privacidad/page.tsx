@@ -96,7 +96,7 @@ function Footer() {
     <footer style={{ borderTop: '1px solid var(--ng-border)' }}>
       <div className="mx-auto max-w-[1200px] px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
         <Image src="/nexguard360-logo.png" alt="NexGuard360" width={140} height={32} className="h-6 w-auto" />
-        <p style={{ fontFamily: 'var(--ng-font-body)', fontSize: '0.78rem', color: 'var(--ng-text-muted)' }}>© {new Date().getFullYear()} NexGuard360 by Nexera. Panamá.</p>
+        <p style={{ fontFamily: 'var(--ng-font-body)', fontSize: '0.78rem', color: 'var(--ng-text-muted)' }}>© 2026 NexGuard360 by Nexera. Panamá.</p>
       </div>
     </footer>
   );

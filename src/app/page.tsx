@@ -346,7 +346,7 @@ export default function LandingPage() {
           </div>
           <div className="mt-10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4" style={{ borderTop: '1px solid var(--ng-border)' }}>
             <p style={{ fontFamily: 'var(--ng-font-body)', fontSize: '0.78rem', color: 'var(--ng-text-muted)' }}>
-              © {new Date().getFullYear()} NexGuard360 by Nexera. Panamá — Todos los derechos reservados.
+              © 2026 NexGuard360 by Nexera. Panamá — Todos los derechos reservados.
             </p>
             <a href="https://www.nexguard360.com" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--ng-font-mono)', fontSize: '0.7rem', color: 'var(--ng-lime)', letterSpacing: '0.1em' }}>
               www.nexguard360.com
