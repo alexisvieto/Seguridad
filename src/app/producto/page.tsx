@@ -292,7 +292,7 @@ export default function ProductoPage() {
 
           {/* Image container */}
           <div
-            className="relative z-10 flex-1 overflow-auto flex items-center justify-center"
+            className="relative z-10 flex-1 overflow-auto"
             onClick={(e) => e.stopPropagation()}
             onWheel={(e) => {
               e.preventDefault();
@@ -302,22 +302,21 @@ export default function ProductoPage() {
               });
             }}
           >
-            <Image
-              src={lightboxImage}
-              alt="Vista del módulo"
-              width={1920}
-              height={1080}
-              className="transition-transform duration-150 ease-out"
-              style={{
-                transform: `scale(${zoomLevel})`,
-                transformOrigin: 'center center',
-                maxWidth: zoomLevel <= 1 ? '90vw' : 'none',
-                maxHeight: zoomLevel <= 1 ? '80vh' : 'none',
-                objectFit: 'contain',
-                borderRadius: 12,
-                boxShadow: '0 24px 64px rgba(0,0,0,0.55)',
-              }}
-            />
+            <div className="min-h-full flex items-center justify-center p-8" style={{ minWidth: zoomLevel > 1 ? `${zoomLevel * 90}vw` : undefined }}>
+              <Image
+                src={lightboxImage}
+                alt="Vista del módulo"
+                width={1920}
+                height={1080}
+                className="rounded-xl"
+                style={{
+                  width: `${zoomLevel * 80}vw`,
+                  maxWidth: 'none',
+                  height: 'auto',
+                  boxShadow: '0 24px 64px rgba(0,0,0,0.55)',
+                }}
+              />
+            </div>
           </div>
 
           {/* Hint */}
