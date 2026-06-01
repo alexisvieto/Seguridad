@@ -144,7 +144,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
     }`}>
 
       {/* Logo */}
-      <div className="border-b border-zinc-800/60 px-2 py-3">
+      <div className="border-b border-zinc-800/60 px-2 py-5">
         {collapsed ? (
           <div className="flex items-center justify-center">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600/20">
@@ -152,7 +152,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-1.5 min-w-0">
+          <div className="flex flex-col gap-2 min-w-0">
             <img src="/brand/logo-nexguard360-dark.svg" alt="NexGuard360" className="w-full h-auto" />
             <p className="text-[10px] text-zinc-600 truncate px-1">{tenantName}</p>
           </div>
