@@ -93,7 +93,7 @@ export default function LoginPage() {
       {/* Header */}
       <header className="px-6 py-5">
         <Link href="/" className="inline-block cursor-pointer">
-          <Image src="/nexguard360-logo.png" alt="NexGuard360" width={200} height={44} className="h-9 w-auto" style={{ mixBlendMode: 'lighten' }} />
+          <img src="/brand/logo-nexguard360-dark.svg" alt="NexGuard360" className="h-12 w-auto" />
         </Link>
       </header>
 

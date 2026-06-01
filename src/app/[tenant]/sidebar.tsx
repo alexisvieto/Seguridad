@@ -153,7 +153,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-1.5 min-w-0">
-            <Image src="/nexguard360-logo.png" alt="NexGuard360" width={400} height={90} className="w-full h-auto" style={{ mixBlendMode: 'lighten' }} />
+            <img src="/brand/logo-nexguard360-dark.svg" alt="NexGuard360" className="w-full h-auto" />
             <p className="text-[10px] text-zinc-600 truncate px-1">{tenantName}</p>
           </div>
         )}
