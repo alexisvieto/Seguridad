@@ -102,6 +102,7 @@ export default function InventarioPage() {
   const [loanQty, setLoanQty] = useState(1);
   const [loanLoading, setLoanLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
+  const [loanKey, setLoanKey] = useState(0);
 
   // Create stock item modal
   const [showStockModal, setShowStockModal] = useState(false);
@@ -420,6 +421,7 @@ export default function InventarioPage() {
       setLoanItem('');
       setLoanQty(1);
       setHasSigned(false);
+      setLoanKey((k) => k + 1);
     } catch {
       setToast({ type: 'error', msg: 'Error al registrar la entrega' });
     } finally {
@@ -600,58 +602,61 @@ export default function InventarioPage() {
                 </button>
               </div>
             ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {assets.map((asset) => {
-              const badge = assetStatusBadge[asset.status] ?? assetStatusBadge['bueno']!;
-              return (
-                <div
-                  key={asset.id}
-                  className={`rounded-xl border px-5 py-4 ${
-                    asset.status === 'dañado'
-                      ? 'border-red-500/30 bg-red-500/5'
-                      : asset.status === 'en_reparacion'
-                        ? 'border-amber-500/30 bg-amber-500/5'
-                        : 'border-zinc-700/30 bg-zinc-800/30'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase truncate">
-                        {asset.propertyName} — {asset.stationName}
-                      </p>
-                      <p className="mt-0.5 text-base font-semibold text-zinc-100 truncate">
-                        {asset.assetName}
-                      </p>
-                      {asset.imei && (
-                        <p className="mt-0.5 text-xs font-mono text-zinc-500">{asset.imei}</p>
-                      )}
+          <div className="space-y-4">
+            {(() => {
+              const grouped = new Map<string, { stationName: string; propertyName: string; items: AssetRow[] }>();
+              for (const a of assets) {
+                const key = a.stationId;
+                if (!grouped.has(key)) {
+                  grouped.set(key, { stationName: a.stationName, propertyName: a.propertyName, items: [] });
+                }
+                grouped.get(key)!.items.push(a);
+              }
+              return [...grouped.entries()].map(([stationId, group]) => (
+                <div key={stationId} className="rounded-xl border border-zinc-700/30 bg-zinc-800/20 overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-800/30">
+                    <div>
+                      <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">{group.propertyName}</p>
+                      <p className="mt-0.5 text-sm font-semibold text-zinc-100">{group.stationName}</p>
                     </div>
-                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${badge.cls}`}>
-                      {badge.label}
+                    <span className="rounded-full bg-zinc-700/50 px-2.5 py-0.5 text-xs tabular-nums text-zinc-400">
+                      {group.items.length} equipo{group.items.length !== 1 ? 's' : ''}
                     </span>
                   </div>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <p className="text-xs text-zinc-500">
-                      Inspección: {formatDate(asset.lastInspection)}
-                    </p>
-                    <button
-                      onClick={() => { setDamageModal(asset); setDamageNotes(asset.damageNotes ?? ''); }}
-                      className="flex min-h-[40px] items-center gap-1.5 rounded-lg bg-zinc-700/50 px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 cursor-pointer"
-                    >
-                      <DamageIcon />
-                      Reportar
-                    </button>
+                  <div className="divide-y divide-zinc-800/20">
+                    {group.items.map((asset) => {
+                      const badge = assetStatusBadge[asset.status] ?? assetStatusBadge['bueno']!;
+                      return (
+                        <div key={asset.id} className="flex items-center justify-between px-5 py-3 hover:bg-zinc-800/20 transition-colors">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-zinc-200 truncate">{asset.assetName}</p>
+                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.cls}`}>
+                                {badge.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              {asset.imei && <p className="text-xs font-mono text-zinc-600">{asset.imei}</p>}
+                              <p className="text-xs text-zinc-600">Inspección: {formatDate(asset.lastInspection)}</p>
+                            </div>
+                            {asset.damageNotes && asset.status === 'dañado' && (
+                              <p className="mt-1 text-xs text-red-400 italic">{asset.damageNotes}</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => { setDamageModal(asset); setDamageNotes(asset.damageNotes ?? ''); }}
+                            className="flex min-h-[36px] items-center gap-1.5 rounded-lg bg-zinc-700/40 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 cursor-pointer shrink-0 ml-3"
+                          >
+                            <DamageIcon />
+                            Reportar
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
-
-                  {asset.damageNotes && asset.status === 'dañado' && (
-                    <p className="mt-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 italic">
-                      {asset.damageNotes}
-                    </p>
-                  )}
                 </div>
-              );
-            })}
+              ));
+            })()}
           </div>
             )}
           </div>
@@ -717,6 +722,7 @@ export default function InventarioPage() {
               <div>
                 <span className="text-xs font-medium text-zinc-400">Firma Digital de Conformidad del Agente</span>
                 <SignaturePad
+                  key={loanKey}
                   onSign={() => setHasSigned(true)}
                   onClear={() => setHasSigned(false)}
                 />
