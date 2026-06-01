@@ -32,8 +32,31 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NexGuard360 | Plataforma de Gestión para Seguridad Privada",
-  description: "ERP multi-tenant para empresas de seguridad privada. Control operativo en tiempo real, bitácoras con IA, blindaje legal, telemetría GPS y gestión de RRHH.",
+  title: {
+    default: 'NexGuard360 | Seguridad Operativa y Control 360',
+    template: '%s | NexGuard360',
+  },
+  description: 'Sistema operativo para agencias de seguridad privada. Turnos, armamento DIASP, flota, nómina ACH Panamá, analítica IA y compliance en una sola plataforma.',
+  keywords: ['seguridad privada', 'agencia de seguridad', 'Panamá', 'DIASP', 'control de turnos', 'nómina quincenal', 'CSS', 'MITRADEL', 'ERP seguridad', 'NexGuard360'],
+  authors: [{ name: 'Nexera' }],
+  creator: 'Nexera',
+  metadataBase: new URL('https://www.nexguard360.com'),
+  openGraph: {
+    type: 'website',
+    locale: 'es_PA',
+    url: 'https://www.nexguard360.com',
+    siteName: 'NexGuard360',
+    title: 'NexGuard360 | Seguridad Operativa y Control 360',
+    description: 'Sistema operativo para agencias de seguridad privada en Panamá y LATAM. Centralice turnos, armamento, flota, nómina y compliance en una sola plataforma.',
+    images: [{ url: '/nexguard360-logo.png', width: 1200, height: 630, alt: 'NexGuard360' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'NexGuard360 | Seguridad Operativa y Control 360',
+    description: 'Sistema operativo para agencias de seguridad privada. Sin Excel, sin WhatsApp, sin parches.',
+    images: ['/nexguard360-logo.png'],
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
