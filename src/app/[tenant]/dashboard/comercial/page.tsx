@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { FileUpload } from '@/lib/upload/file-upload';
+import { QRCodeCanvas } from 'qrcode.react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,6 +40,7 @@ interface StationWithConsignas {
   id: string;
   name: string;
   propertyId: string;
+  qrToken: string;
   consignas: { id: string; title: string; priority: string }[];
 }
 
@@ -168,7 +170,7 @@ export default function ComercialPage() {
     if (propertyIds.length === 0) { setStationsDetail([]); setDetailLoading(false); return; }
 
     const { data: stations } = await supabase
-      .from('work_stations').select('id, name, property_id').in('property_id', propertyIds).eq('is_active', true);
+      .from('work_stations').select('id, name, property_id, qr_code_token').in('property_id', propertyIds).eq('is_active', true);
 
     const stationIds = (stations ?? []).map((s) => s.id);
     const { data: consignas } = stationIds.length > 0
@@ -183,7 +185,7 @@ export default function ComercialPage() {
     }
 
     setStationsDetail((stations ?? []).map((s) => ({
-      id: s.id, name: s.name, propertyId: s.property_id, consignas: consignasByStation.get(s.id) ?? [],
+      id: s.id, name: s.name, propertyId: s.property_id, qrToken: s.qr_code_token, consignas: consignasByStation.get(s.id) ?? [],
     })));
 
     setDetailLoading(false);
@@ -259,6 +261,21 @@ export default function ComercialPage() {
     } catch { setToast({ type: 'error', msg: 'Error al vincular propiedad' }); }
     finally { setLinkLoading(false); }
   }, [tenantId, selectedContract, selectedProp, availableProps, loadData, selectContract]);
+
+  // QR modal
+  const [qrStation, setQrStation] = useState<StationWithConsignas | null>(null);
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  const downloadQr = useCallback(() => {
+    if (!qrRef.current || !qrStation) return;
+    const canvas = qrRef.current.querySelector('canvas');
+    if (!canvas) return;
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `QR-${qrStation.name.replace(/\s+/g, '-')}.png`;
+    a.click();
+  }, [qrStation]);
 
   // Create work station
   const [showStationForm, setShowStationForm] = useState<string | null>(null);
@@ -531,8 +548,12 @@ export default function ComercialPage() {
                         <div key={st.id} className="px-5 py-3">
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium text-zinc-100">{st.name}</p>
-                            <button onClick={() => { setShowConsignaForm(st.id); setCgTitle(''); setCgDesc(''); setCgPriority('media'); }}
-                              className="text-[11px] font-medium text-lime-400 hover:text-lime-300 cursor-pointer">+ Consigna</button>
+                            <div className="flex items-center gap-3">
+                              <button onClick={() => setQrStation(st)}
+                                className="text-[11px] font-medium text-blue-400 hover:text-blue-300 cursor-pointer">QR</button>
+                              <button onClick={() => { setShowConsignaForm(st.id); setCgTitle(''); setCgDesc(''); setCgPriority('media'); }}
+                                className="text-[11px] font-medium text-lime-400 hover:text-lime-300 cursor-pointer">+ Consigna</button>
+                            </div>
                           </div>
                           {st.consignas.length === 0 ? (
                             <p className="mt-1 text-xs text-zinc-600">Sin consignas asignadas</p>
@@ -705,6 +726,35 @@ export default function ComercialPage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* QR Modal */}
+      {qrStation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setQrStation(null); }}>
+          <div className="w-full max-w-sm rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl text-center space-y-4">
+            <h3 className="text-lg font-semibold">Código QR del Puesto</h3>
+            <p className="text-xs text-zinc-500">{qrStation.name}</p>
+            <div ref={qrRef} className="flex justify-center py-4">
+              <QRCodeCanvas
+                value={JSON.stringify({ station_id: qrStation.id, token: qrStation.qrToken })}
+                size={220}
+                bgColor="#ffffff"
+                fgColor="#0A0E1A"
+                level="H"
+                includeMargin
+              />
+            </div>
+            <p className="text-[10px] text-zinc-600 font-mono break-all">Token: {qrStation.qrToken}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setQrStation(null)}
+                className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer">Cerrar</button>
+              <button onClick={downloadQr}
+                className="flex-1 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">Descargar PNG</button>
+            </div>
+            <p className="text-[10px] text-zinc-600">Imprima y coloque este QR en el puesto de control. El agente lo escanea para marcar entrada.</p>
           </div>
         </div>
       )}
