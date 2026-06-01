@@ -70,10 +70,6 @@ export default function LoginPage() {
       }
 
       // 4. Route based on role
-      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost:3000';
-      const protocol = rootDomain.includes('localhost') ? 'http' : 'https';
-      const isLocalhost = rootDomain.includes('localhost');
-
       let dashboardPath: string;
 
       if (membership.role === 'owner' || membership.role === 'admin') {
@@ -84,15 +80,7 @@ export default function LoginPage() {
         dashboardPath = '/puesto';
       }
 
-      let targetUrl: string;
-
-      if (isLocalhost) {
-        targetUrl = `${protocol}://${rootDomain}/${tenantSlug}${dashboardPath}`;
-      } else {
-        targetUrl = `${protocol}://${tenantSlug}.${rootDomain}${dashboardPath}`;
-      }
-
-      window.location.href = targetUrl;
+      window.location.href = `/${tenantSlug}${dashboardPath}`;
     } catch {
       setError('Error de conexion. Intente nuevamente.');
       setStep('form');
