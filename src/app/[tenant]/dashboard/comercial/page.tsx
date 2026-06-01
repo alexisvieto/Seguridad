@@ -38,6 +38,7 @@ interface ContractRow {
 interface StationWithConsignas {
   id: string;
   name: string;
+  propertyId: string;
   consignas: { id: string; title: string; priority: string }[];
 }
 
@@ -182,7 +183,7 @@ export default function ComercialPage() {
     }
 
     setStationsDetail((stations ?? []).map((s) => ({
-      id: s.id, name: s.name, consignas: consignasByStation.get(s.id) ?? [],
+      id: s.id, name: s.name, propertyId: s.property_id, consignas: consignasByStation.get(s.id) ?? [],
     })));
 
     setDetailLoading(false);
@@ -258,6 +259,27 @@ export default function ComercialPage() {
     } catch { setToast({ type: 'error', msg: 'Error al vincular propiedad' }); }
     finally { setLinkLoading(false); }
   }, [tenantId, selectedContract, selectedProp, availableProps, loadData, selectContract]);
+
+  // Create work station
+  const [showStationForm, setShowStationForm] = useState<string | null>(null);
+  const [wsName, setWsName] = useState('');
+  const [wsLoading, setWsLoading] = useState(false);
+
+  const handleCreateStation = useCallback(async () => {
+    if (!tenantId || !showStationForm || !wsName.trim()) return;
+    setWsLoading(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.from('work_stations').insert({
+        tenant_id: tenantId, property_id: showStationForm, name: wsName.trim(),
+      });
+      if (error) throw error;
+      setToast({ type: 'success', msg: `Puesto "${wsName}" creado` });
+      setShowStationForm(null); setWsName('');
+      if (selectedContract) selectContract(selectedContract);
+    } catch { setToast({ type: 'error', msg: 'Error al crear puesto' }); }
+    finally { setWsLoading(false); }
+  }, [tenantId, showStationForm, wsName, selectedContract, selectContract]);
 
   // Add consigna to station
   const [showConsignaForm, setShowConsignaForm] = useState<string | null>(null);
@@ -467,15 +489,46 @@ export default function ComercialPage() {
 
                 <FileUpload bucket="hr-documents" basePath={`${tenantId}/contratos-comerciales/${selectedContract.id}`} label="Adjuntar contrato firmado (PDF)" accept=".pdf" onUploaded={() => setToast({ type: 'success', msg: 'Contrato adjuntado' })} />
 
-                {/* Stations & Consignas */}
+                {/* Stations & Consignas grouped by property */}
                 <div>
                   <h3 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase mb-3">Puestos de Control y Consignas</h3>
-                  {stationsDetail.length === 0 ? (
-                    <p className="text-sm text-zinc-600">No hay puestos vinculados. Vincule una propiedad primero.</p>
+                  {selectedContract.properties.length === 0 ? (
+                    <p className="text-sm text-zinc-600">Vincule una propiedad primero para agregar puestos.</p>
                   ) : (
-                    <div className="space-y-3">
-                      {stationsDetail.map((st) => (
-                        <div key={st.id} className="rounded-xl border border-zinc-800/40 bg-zinc-800/20 px-5 py-4">
+                    <div className="space-y-4">
+                      {selectedContract.properties.map((prop) => {
+                        const propStations = stationsDetail.filter((s) => s.propertyId === prop.id);
+                        return (
+                          <div key={prop.id} className="rounded-xl border border-zinc-800/40 bg-zinc-800/10 overflow-hidden">
+                            <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800/30">
+                              <div>
+                                <p className="text-sm font-semibold text-zinc-100">{prop.name}</p>
+                                <p className="text-[10px] text-zinc-600">{propStations.length} puesto{propStations.length !== 1 ? 's' : ''}</p>
+                              </div>
+                              <button onClick={() => { setShowStationForm(prop.id); setWsName(''); }}
+                                className="text-[11px] font-medium text-lime-400 hover:text-lime-300 cursor-pointer">+ Crear Puesto</button>
+                            </div>
+
+                            {/* New station form */}
+                            {showStationForm === prop.id && (
+                              <div className="px-5 py-3 border-b border-zinc-800/30 bg-zinc-800/20 flex items-center gap-2">
+                                <input type="text" value={wsName} onChange={(e) => setWsName(e.target.value)}
+                                  placeholder="Nombre del puesto (ej: Garita Principal, Lobby, Ronda Perimetral)"
+                                  className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 focus:border-lime-500 focus:outline-none" />
+                                <button onClick={() => setShowStationForm(null)} className="px-3 py-2 text-xs text-zinc-500 hover:text-zinc-300 cursor-pointer">Cancelar</button>
+                                <button onClick={handleCreateStation} disabled={wsLoading || !wsName.trim()}
+                                  className="rounded-lg bg-lime-600 px-4 py-2 text-xs font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer">
+                                  {wsLoading ? '...' : 'Crear'}
+                                </button>
+                              </div>
+                            )}
+
+                            {propStations.length === 0 && !showStationForm ? (
+                              <p className="px-5 py-3 text-xs text-zinc-600">Sin puestos. Cree el primer puesto de control.</p>
+                            ) : (
+                              <div className="divide-y divide-zinc-800/20">
+                                {propStations.map((st) => (
+                        <div key={st.id} className="px-5 py-3">
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium text-zinc-100">{st.name}</p>
                             <button onClick={() => { setShowConsignaForm(st.id); setCgTitle(''); setCgDesc(''); setCgPriority('media'); }}
@@ -493,7 +546,6 @@ export default function ComercialPage() {
                               ))}
                             </ul>
                           )}
-                          {/* Inline consigna form */}
                           {showConsignaForm === st.id && (
                             <div className="mt-3 space-y-2 border-t border-zinc-800/30 pt-3">
                               <input type="text" value={cgTitle} onChange={(e) => setCgTitle(e.target.value)}
@@ -520,6 +572,11 @@ export default function ComercialPage() {
                           )}
                         </div>
                       ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
