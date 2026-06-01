@@ -164,6 +164,7 @@ const modules = [
 export default function ProductoPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [isZoomed, setIsZoomed] = useState(false);
 
   return (
     <div className="flex flex-col" style={{ background: 'var(--ng-bg-deep)', color: 'var(--ng-text-primary)' }}>
@@ -263,26 +264,43 @@ export default function ProductoPage() {
         </section>
       ))}
 
-      {/* LIGHTBOX */}
+      {/* LIGHTBOX WITH ZOOM */}
       {lightboxImage && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center" onClick={() => setLightboxImage(null)}>
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" />
-          <div className="relative z-10 max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[9999] flex flex-col" onClick={() => { setLightboxImage(null); setIsZoomed(false); }}>
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
+
+          {/* Controls bar */}
+          <div className="relative z-20 flex items-center justify-end gap-3 px-6 py-4">
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsZoomed(!isZoomed); }}
+              className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold cursor-pointer"
+              style={{ fontFamily: 'var(--ng-font-body)', background: 'rgba(132,204,22,0.10)', border: '1px solid rgba(132,204,22,0.32)', color: 'var(--ng-lime)' }}
+            >
+              {isZoomed ? 'Ajustar a pantalla' : 'Ampliar imagen'}
+            </button>
+            <button
+              onClick={() => { setLightboxImage(null); setIsZoomed(false); }}
+              className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold cursor-pointer"
+              style={{ fontFamily: 'var(--ng-font-body)', background: 'rgba(6,10,20,0.9)', border: '1px solid var(--ng-border)', color: 'var(--ng-text-primary)' }}
+            >
+              Cerrar <X size={16} />
+            </button>
+          </div>
+
+          {/* Image container */}
+          <div
+            className={`relative z-10 flex-1 ${isZoomed ? 'overflow-auto' : 'flex items-center justify-center overflow-hidden'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <Image
               src={lightboxImage}
               alt="Vista del módulo"
               width={1920}
               height={1080}
-              className="rounded-xl w-auto max-h-[85vh] object-contain"
-              style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.55)' }}
+              className={`${isZoomed ? 'w-[1920px] max-w-none cursor-grab active:cursor-grabbing' : 'max-w-[90vw] max-h-[80vh] object-contain cursor-zoom-in rounded-xl'}`}
+              style={!isZoomed ? { boxShadow: '0 24px 64px rgba(0,0,0,0.55)' } : undefined}
+              onClick={() => { if (!isZoomed) setIsZoomed(true); }}
             />
-            <button
-              onClick={() => setLightboxImage(null)}
-              className="absolute bottom-4 right-4 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold cursor-pointer"
-              style={{ fontFamily: 'var(--ng-font-body)', background: 'rgba(6,10,20,0.9)', border: '1px solid var(--ng-border)', color: 'var(--ng-text-primary)' }}
-            >
-              Cerrar <X size={16} />
-            </button>
           </div>
         </div>
       )}
