@@ -3,6 +3,26 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* NexGuard360 Design System — Public Site */
+  --ng-lime: #84CC16;
+  --ng-lime-dark: #4D7C0F;
+  --ng-lime-bright: #A3E635;
+  --ng-lime-bg: rgba(132,204,22,0.10);
+  --ng-lime-border: rgba(132,204,22,0.32);
+  --ng-lime-glow: rgba(132,204,22,0.18);
+  --ng-bg-deep: #060A14;
+  --ng-bg-surface: #0A0E1A;
+  --ng-bg-float: #0C1528;
+  --ng-bg-input: #0A1020;
+  --ng-border: rgba(30,42,74,0.6);
+  --ng-border-soft: rgba(30,42,74,0.4);
+  --ng-text-primary: #F5F7FA;
+  --ng-text-secondary: #7B8FAB;
+  --ng-text-muted: #3D4A5C;
+  --ng-font-display: var(--font-space-grotesk), system-ui, sans-serif;
+  --ng-font-body: var(--font-inter), system-ui, sans-serif;
+  --ng-font-mono: var(--font-jetbrains), monospace;
 }
 
 @theme inline {
@@ -45,6 +65,12 @@ body {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+}
+
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
 }
 
 @keyframes modalFadeIn {
