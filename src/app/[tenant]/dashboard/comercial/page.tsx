@@ -188,6 +188,65 @@ export default function ComercialPage() {
     setDetailLoading(false);
   }, []);
 
+  // Link property to contract
+  const [showLinkProp, setShowLinkProp] = useState(false);
+  const [availableProps, setAvailableProps] = useState<{ id: string; name: string }[]>([]);
+  const [selectedProp, setSelectedProp] = useState('');
+  const [linkLoading, setLinkLoading] = useState(false);
+
+  const openLinkProp = useCallback(async () => {
+    if (!tenantId) return;
+    const supabase = getSupabaseBrowserClient();
+    const { data } = await supabase.from('properties_ph').select('id, name').eq('tenant_id', tenantId).order('name');
+    const linked = selectedContract?.properties.map((p) => p.id) ?? [];
+    setAvailableProps((data ?? []).filter((p) => !linked.includes(p.id)));
+    setSelectedProp('');
+    setShowLinkProp(true);
+  }, [tenantId, selectedContract]);
+
+  const handleLinkProp = useCallback(async () => {
+    if (!tenantId || !selectedContract || !selectedProp) return;
+    setLinkLoading(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.from('contract_properties').insert({
+        tenant_id: tenantId, contract_id: selectedContract.id, property_id: selectedProp,
+      });
+      if (error) throw error;
+      setToast({ type: 'success', msg: 'Propiedad vinculada al contrato' });
+      setShowLinkProp(false);
+      loadData();
+      const updatedContract = { ...selectedContract, properties: [...selectedContract.properties, { id: selectedProp, name: availableProps.find((p) => p.id === selectedProp)?.name ?? '' }] };
+      setSelectedContract(updatedContract);
+      selectContract(updatedContract);
+    } catch { setToast({ type: 'error', msg: 'Error al vincular propiedad' }); }
+    finally { setLinkLoading(false); }
+  }, [tenantId, selectedContract, selectedProp, availableProps, loadData, selectContract]);
+
+  // Add consigna to station
+  const [showConsignaForm, setShowConsignaForm] = useState<string | null>(null);
+  const [cgTitle, setCgTitle] = useState('');
+  const [cgDesc, setCgDesc] = useState('');
+  const [cgPriority, setCgPriority] = useState('media');
+  const [cgLoading, setCgLoading] = useState(false);
+
+  const handleAddConsigna = useCallback(async () => {
+    if (!tenantId || !showConsignaForm || !cgTitle.trim()) return;
+    setCgLoading(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.from('station_consignas').insert({
+        tenant_id: tenantId, work_station_id: showConsignaForm, title: cgTitle.trim(),
+        description: cgDesc.trim() || null, priority: cgPriority,
+      });
+      if (error) throw error;
+      setToast({ type: 'success', msg: 'Consigna agregada' });
+      setShowConsignaForm(null); setCgTitle(''); setCgDesc(''); setCgPriority('media');
+      if (selectedContract) selectContract(selectedContract);
+    } catch { setToast({ type: 'error', msg: 'Error al agregar consigna' }); }
+    finally { setCgLoading(false); }
+  }, [tenantId, showConsignaForm, cgTitle, cgDesc, cgPriority, selectedContract, selectContract]);
+
   // Create client
   const handleCreateClient = useCallback(async () => {
     if (!tenantId || !cName.trim()) return;
@@ -363,7 +422,11 @@ export default function ComercialPage() {
                 <div className="grid gap-4 sm:grid-cols-3">
                   <InfoCard label="Inicio" value={formatDate(selectedContract.startDate)} />
                   <InfoCard label="Vencimiento" value={selectedContract.endDate ? formatDate(selectedContract.endDate) : 'Indefinido'} />
-                  <InfoCard label="Propiedades" value={selectedContract.properties.map((p) => p.name).join(', ') || 'Sin asignar'} />
+                  <div className="rounded-xl border border-zinc-700/30 bg-zinc-800/40 px-5 py-4">
+                    <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Propiedades</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-200">{selectedContract.properties.map((p) => p.name).join(', ') || 'Sin asignar'}</p>
+                    <button onClick={openLinkProp} className="mt-2 text-xs font-medium text-lime-400 hover:text-lime-300 cursor-pointer">+ Vincular propiedad</button>
+                  </div>
                 </div>
 
                 <FileUpload bucket="hr-documents" basePath={`${tenantId}/contratos-comerciales/${selectedContract.id}`} label="Adjuntar contrato firmado (PDF)" accept=".pdf" onUploaded={() => setToast({ type: 'success', msg: 'Contrato adjuntado' })} />
@@ -372,12 +435,16 @@ export default function ComercialPage() {
                 <div>
                   <h3 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase mb-3">Puestos de Control y Consignas</h3>
                   {stationsDetail.length === 0 ? (
-                    <p className="text-sm text-zinc-600">No hay puestos vinculados a las propiedades de este contrato</p>
+                    <p className="text-sm text-zinc-600">No hay puestos vinculados. Vincule una propiedad primero.</p>
                   ) : (
                     <div className="space-y-3">
                       {stationsDetail.map((st) => (
                         <div key={st.id} className="rounded-xl border border-zinc-800/40 bg-zinc-800/20 px-5 py-4">
-                          <p className="text-sm font-medium text-zinc-100">{st.name}</p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-zinc-100">{st.name}</p>
+                            <button onClick={() => { setShowConsignaForm(st.id); setCgTitle(''); setCgDesc(''); setCgPriority('media'); }}
+                              className="text-[11px] font-medium text-lime-400 hover:text-lime-300 cursor-pointer">+ Consigna</button>
+                          </div>
                           {st.consignas.length === 0 ? (
                             <p className="mt-1 text-xs text-zinc-600">Sin consignas asignadas</p>
                           ) : (
@@ -389,6 +456,31 @@ export default function ComercialPage() {
                                 </li>
                               ))}
                             </ul>
+                          )}
+                          {/* Inline consigna form */}
+                          {showConsignaForm === st.id && (
+                            <div className="mt-3 space-y-2 border-t border-zinc-800/30 pt-3">
+                              <input type="text" value={cgTitle} onChange={(e) => setCgTitle(e.target.value)}
+                                placeholder="Ej: Ronda en área social 8am, 6pm y 12am"
+                                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 focus:border-lime-500 focus:outline-none" />
+                              <input type="text" value={cgDesc} onChange={(e) => setCgDesc(e.target.value)}
+                                placeholder="Descripción detallada (opcional)"
+                                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 focus:border-lime-500 focus:outline-none" />
+                              <div className="flex items-center gap-2">
+                                <select value={cgPriority} onChange={(e) => setCgPriority(e.target.value)}
+                                  className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 focus:border-lime-500 focus:outline-none cursor-pointer">
+                                  <option value="baja">Baja</option>
+                                  <option value="media">Media</option>
+                                  <option value="alta">Alta</option>
+                                  <option value="critica">Crítica</option>
+                                </select>
+                                <button onClick={() => setShowConsignaForm(null)} className="px-3 py-2 text-xs text-zinc-500 hover:text-zinc-300 cursor-pointer">Cancelar</button>
+                                <button onClick={handleAddConsigna} disabled={cgLoading || !cgTitle.trim()}
+                                  className="rounded-lg bg-lime-600 px-4 py-2 text-xs font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer">
+                                  {cgLoading ? 'Guardando...' : 'Guardar'}
+                                </button>
+                              </div>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -458,6 +550,35 @@ export default function ComercialPage() {
               <button onClick={() => setShowContractForm(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
               <button onClick={handleCreateContract} disabled={!ctClient || !ctStart || !ctAmount || parseFloat(ctAmount) <= 0 || contractLoading} className="flex flex-1 items-center justify-center rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
                 {contractLoading ? <Spinner /> : 'Crear Contrato'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Link Property Modal */}
+      {showLinkProp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowLinkProp(false); }}>
+          <div className="w-full max-w-md rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl space-y-5">
+            <h3 className="text-lg font-semibold">Vincular Propiedad al Contrato</h3>
+            <p className="text-xs text-zinc-500">{selectedContract?.clientName}</p>
+            <label className="block">
+              <span className="text-xs font-medium text-zinc-400">Propiedad</span>
+              <select value={selectedProp} onChange={(e) => setSelectedProp(e.target.value)}
+                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
+                <option value="">Seleccionar propiedad...</option>
+                {availableProps.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+              </select>
+            </label>
+            {availableProps.length === 0 && (
+              <p className="text-xs text-amber-400">No hay propiedades disponibles. Cree una propiedad primero en el sistema.</p>
+            )}
+            <div className="flex gap-3">
+              <button onClick={() => setShowLinkProp(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
+              <button onClick={handleLinkProp} disabled={!selectedProp || linkLoading}
+                className="flex-1 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                {linkLoading ? 'Vinculando...' : 'Vincular'}
               </button>
             </div>
           </div>
