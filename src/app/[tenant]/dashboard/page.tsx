@@ -182,7 +182,7 @@ export default function DashboardAnalyticsPage() {
   if (isLoading) {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
       </div>
     );
   }
@@ -198,10 +198,10 @@ export default function DashboardAnalyticsPage() {
         </div>
         <div className="flex items-center gap-2">
           <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-            className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 focus:border-emerald-500 focus:outline-none" />
+            className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 focus:border-lime-500 focus:outline-none" />
           <span className="text-xs text-zinc-600">a</span>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-            className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 focus:border-emerald-500 focus:outline-none" />
+            className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 focus:border-lime-500 focus:outline-none" />
         </div>
       </header>
 
@@ -221,7 +221,7 @@ export default function DashboardAnalyticsPage() {
 
           {/* Perfect Attendance */}
           <div className="rounded-2xl border border-zinc-800/40 bg-zinc-800/20 p-5">
-            <h2 className="text-xs font-semibold tracking-widest text-emerald-500 uppercase">Record de Asistencia Perfecta</h2>
+            <h2 className="text-xs font-semibold tracking-widest text-lime-500 uppercase">Record de Asistencia Perfecta</h2>
             <p className="mt-1 text-[11px] text-zinc-600">Agentes con mayor numero de turnos en el rango seleccionado</p>
             {perfectAgents.length === 0 ? (
               <p className="mt-4 text-sm text-zinc-600">Sin datos en el rango seleccionado</p>
@@ -231,11 +231,11 @@ export default function DashboardAnalyticsPage() {
                   <li key={a.name} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-4 py-2.5">
                     <div className="flex items-center gap-3">
                       <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
-                        i === 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-400'
+                        i === 0 ? 'bg-lime-500/20 text-lime-400' : 'bg-zinc-700 text-zinc-400'
                       }`}>{i + 1}</span>
                       <span className="text-sm text-zinc-200">{a.name}</span>
                     </div>
-                    <span className="text-sm tabular-nums text-emerald-400 font-semibold">{a.shifts} turnos</span>
+                    <span className="text-sm tabular-nums text-lime-400 font-semibold">{a.shifts} turnos</span>
                   </li>
                 ))}
               </ul>
@@ -272,14 +272,14 @@ export default function DashboardAnalyticsPage() {
                   <li key={v.plate} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-4 py-2.5">
                     <div className="flex items-center gap-3">
                       <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
-                        i === 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-400'
+                        i === 0 ? 'bg-lime-500/20 text-lime-400' : 'bg-zinc-700 text-zinc-400'
                       }`}>{i + 1}</span>
                       <div>
                         <span className="text-sm font-mono text-zinc-200">{v.plate}</span>
                         <span className="ml-2 text-xs text-zinc-500">{v.model}</span>
                       </div>
                     </div>
-                    <span className={`text-sm tabular-nums font-medium ${v.incidents === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    <span className={`text-sm tabular-nums font-medium ${v.incidents === 0 ? 'text-lime-400' : 'text-amber-400'}`}>
                       {v.incidents} incid.
                     </span>
                   </li>
@@ -313,8 +313,8 @@ export default function DashboardAnalyticsPage() {
                   <p className="text-xs text-zinc-500">Pregunta</p>
                   <p className="mt-1 text-sm text-zinc-200">{chatResult.question}</p>
                 </div>
-                <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 px-4 py-3">
-                  <p className="text-xs text-emerald-500/70">NexGuard360 IA</p>
+                <div className="rounded-xl bg-lime-500/5 border border-lime-500/20 px-4 py-3">
+                  <p className="text-xs text-lime-500/70">NexGuard360 IA</p>
                   <p className="mt-1 text-sm text-zinc-200">{chatResult.aiClassification.answer}</p>
                   <ChatResultData result={chatResult.result} />
                 </div>
@@ -345,9 +345,9 @@ export default function DashboardAnalyticsPage() {
               <input type="text" value={chatQuestion} onChange={(e) => setChatQuestion(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleChat(); }}
                 placeholder="Pregunte algo..."
-                className="flex-1 rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none" />
+                className="flex-1 rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none" />
               <button onClick={handleChat} disabled={chatLoading || !chatQuestion.trim()}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer">
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-lime-600 text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer">
                 {chatLoading ? <Spinner /> : <SendIcon />}
               </button>
             </div>
@@ -379,10 +379,10 @@ function ChatResultData({ result }: { result: Record<string, unknown> }) {
             <li key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/40 px-3 py-2 text-xs">
               <span className="text-zinc-200">{String(a['name'] ?? '')}</span>
               <div className="flex items-center gap-3">
-                {a['salary'] !== undefined && <span className="text-emerald-400 font-semibold">{String(a['salary'])}</span>}
+                {a['salary'] !== undefined && <span className="text-lime-400 font-semibold">{String(a['salary'])}</span>}
                 {a['hourlyRate'] !== undefined && <span className="text-zinc-500">{String(a['hourlyRate'])}</span>}
                 {a['type'] !== undefined && !a['salary'] && <span className="text-zinc-500">{String(a['type'])}</span>}
-                {a['shifts'] !== undefined && <span className="text-emerald-400">{String(a['shifts'])} turnos</span>}
+                {a['shifts'] !== undefined && <span className="text-lime-400">{String(a['shifts'])} turnos</span>}
                 {a['lateCount'] !== undefined && Number(a['lateCount']) === 0 && <span className="text-blue-400">0 tardanzas</span>}
                 {isBradford && (
                   <>
@@ -391,7 +391,7 @@ function ChatResultData({ result }: { result: Record<string, unknown> }) {
                       a['severity'] === 'Critico' ? 'bg-red-500/15 text-red-400' :
                       a['severity'] === 'Alto' ? 'bg-amber-500/15 text-amber-400' :
                       a['severity'] === 'Moderado' ? 'bg-yellow-500/15 text-yellow-400' :
-                      'bg-emerald-500/15 text-emerald-400'
+                      'bg-lime-500/15 text-lime-400'
                     }`}>{String(a['severity'] ?? '')}</span>
                   </>
                 )}
@@ -423,11 +423,11 @@ function ChatResultData({ result }: { result: Record<string, unknown> }) {
                       v['rating'] === 'Critico' ? 'bg-red-500/15 text-red-400' :
                       v['rating'] === 'Elevado' ? 'bg-amber-500/15 text-amber-400' :
                       v['rating'] === 'Normal' ? 'bg-blue-500/15 text-blue-400' :
-                      'bg-emerald-500/15 text-emerald-400'
+                      'bg-lime-500/15 text-lime-400'
                     }`}>{String(v['rating'] ?? '')}</span>
                   </>
                 ) : (
-                  <span className="text-emerald-400">{String(v['incidents'] ?? 0)} incid.</span>
+                  <span className="text-lime-400">{String(v['incidents'] ?? 0)} incid.</span>
                 )}
               </div>
             </li>
@@ -514,7 +514,7 @@ function ChatResultData({ result }: { result: Record<string, unknown> }) {
         {result['totalMonthlyPayroll'] !== undefined && (
           <div className="flex items-center justify-between border-t border-zinc-700/30 pt-2 text-xs">
             <span className="text-zinc-400">Planilla mensual total ({String(result['agentCount'] ?? '')} agentes)</span>
-            <span className="font-bold text-emerald-400">B/.{Number(result['totalMonthlyPayroll']).toLocaleString('es-PA', { minimumFractionDigits: 2 })}</span>
+            <span className="font-bold text-lime-400">B/.{Number(result['totalMonthlyPayroll']).toLocaleString('es-PA', { minimumFractionDigits: 2 })}</span>
           </div>
         )}
       </div>
@@ -546,7 +546,7 @@ function KpiCard({ label, value, sub, accent }: {
 
 function AIIcon() {
   return (
-    <svg className="h-10 w-10 text-emerald-500/30" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <svg className="h-10 w-10 text-lime-500/30" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
     </svg>
   );

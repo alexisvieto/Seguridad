@@ -76,7 +76,7 @@ const disciplineLabels: Record<string, { label: string; cls: string }> = {
 
 const contractStatusBadge: Record<string, { label: string; cls: string }> = {
   pendiente_sello: { label: 'Pendiente MITRADEL', cls: 'bg-amber-500/15 text-amber-400' },
-  activo: { label: 'Activo', cls: 'bg-emerald-500/15 text-emerald-400' },
+  activo: { label: 'Activo', cls: 'bg-lime-500/15 text-lime-400' },
   vencido: { label: 'Vencido', cls: 'bg-red-500/15 text-red-400' },
   terminado: { label: 'Terminado', cls: 'bg-zinc-500/15 text-zinc-400' },
 };
@@ -308,7 +308,7 @@ export default function RRHHPage() {
   if (isLoading) {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
       </div>
     );
   }
@@ -377,7 +377,7 @@ export default function RRHHPage() {
             </div>
           ) : detailLoading ? (
             <div className="flex h-full items-center justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
             </div>
           ) : (
             <div className="flex flex-col h-full">
@@ -401,7 +401,7 @@ export default function RRHHPage() {
                 ]).map((t) => (
                   <button key={t.key} onClick={() => setDetailTab(t.key)}
                     className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer min-h-[40px] ${
-                      detailTab === t.key ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-emerald-500' : 'text-zinc-500 hover:text-zinc-300'
+                      detailTab === t.key ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-lime-500' : 'text-zinc-500 hover:text-zinc-300'
                     }`}>
                     {t.label}
                   </button>
@@ -449,7 +449,7 @@ export default function RRHHPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-zinc-500">Sello MITRADEL</p>
-                          <p className={`text-sm font-medium ${selected.mitradelPdf ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          <p className={`text-sm font-medium ${selected.mitradelPdf ? 'text-lime-400' : 'text-amber-400'}`}>
                             {selected.mitradelPdf ? 'Documento sellado' : 'Pendiente'}
                           </p>
                         </div>
@@ -580,7 +580,7 @@ export default function RRHHPage() {
                                 <span className="rounded-full bg-blue-500/15 px-2.5 py-0.5 text-[11px] font-medium text-blue-400">{l.days} dias</span>
                                 <span className="text-xs text-zinc-500">{formatDate(l.startDate)}</span>
                               </div>
-                              {l.certificateUrl && <span className="text-[10px] text-emerald-500">Certificado adjunto</span>}
+                              {l.certificateUrl && <span className="text-[10px] text-lime-500">Certificado adjunto</span>}
                             </div>
                             <p className="mt-2 text-sm text-zinc-300">{l.reason}</p>
                             {(l.clinic || l.doctor) && (
@@ -645,7 +645,7 @@ export default function RRHHPage() {
                     {/* List */}
                     {disciplinary.length === 0 && !showAmonForm ? (
                       <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-lime-500/10">
                           <CheckIcon />
                         </div>
                         <p className="text-sm text-zinc-500">Sin registros disciplinarios</p>
@@ -663,7 +663,7 @@ export default function RRHHPage() {
                                   <span className="text-xs text-zinc-500">{formatDate(d.startDate)}</span>
                                 </div>
                                 {d.legalFlag && (
-                                  <span className="text-[10px] text-emerald-500/70">Validez legal</span>
+                                  <span className="text-[10px] text-lime-500/70">Validez legal</span>
                                 )}
                               </div>
                               <p className="mt-2 text-sm leading-relaxed text-zinc-300">{d.description}</p>
@@ -686,7 +686,7 @@ export default function RRHHPage() {
       {/* TOAST */}
       {toast && (
         <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${
-          toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+          toast.type === 'success' ? 'bg-lime-600 text-white' : 'bg-red-600 text-white'
         }`}>{toast.msg}</div>
       )}
     </div>
@@ -737,7 +737,7 @@ function PlusIcon() {
 
 function CheckIcon() {
   return (
-    <svg className="h-6 w-6 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <svg className="h-6 w-6 text-lime-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   );

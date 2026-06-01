@@ -71,7 +71,7 @@ function timeAgo(iso: string): string {
 const statusLabels: Record<string, { label: string; cls: string }> = {
   open: { label: 'ABIERTO', cls: 'bg-red-500/20 text-red-400 ring-red-500/30' },
   in_progress: { label: 'EN CURSO', cls: 'bg-amber-500/20 text-amber-400 ring-amber-500/30' },
-  resolved: { label: 'RESUELTO', cls: 'bg-emerald-500/20 text-emerald-400 ring-emerald-500/30' },
+  resolved: { label: 'RESUELTO', cls: 'bg-lime-500/20 text-lime-400 ring-lime-500/30' },
   justified: { label: 'JUSTIFICADA', cls: 'bg-blue-500/20 text-blue-400 ring-blue-500/30' },
   closed: { label: 'CERRADO', cls: 'bg-zinc-500/20 text-zinc-400 ring-zinc-500/30' },
 };
@@ -318,7 +318,7 @@ export default function LiveMonitorPage() {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
           <p className="text-sm tracking-widest text-zinc-500 uppercase">Cargando monitor...</p>
         </div>
       </div>
@@ -351,7 +351,7 @@ export default function LiveMonitorPage() {
       {/* ============================================================ */}
       <header className="flex items-center justify-between border-b border-zinc-800/60 px-6 py-3">
         <div className="flex items-center gap-3">
-          <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="h-2.5 w-2.5 rounded-full bg-lime-500 animate-pulse" />
           <h1 className="text-lg font-semibold tracking-wide text-zinc-100">
             NOC Monitor
           </h1>
@@ -372,9 +372,9 @@ export default function LiveMonitorPage() {
       {/* ============================================================ */}
       <div className="grid grid-cols-4 gap-4 border-b border-zinc-800/60 px-6 py-4">
         {/* Active */}
-        <div className="rounded-xl bg-emerald-500/8 border border-emerald-500/20 px-5 py-4">
-          <p className="text-xs font-medium tracking-widest text-emerald-500/70 uppercase">Puestos Activos</p>
-          <p className="mt-1 text-4xl font-bold tabular-nums text-emerald-400">{activeCount}</p>
+        <div className="rounded-xl bg-lime-500/8 border border-lime-500/20 px-5 py-4">
+          <p className="text-xs font-medium tracking-widest text-lime-500/70 uppercase">Puestos Activos</p>
+          <p className="mt-1 text-4xl font-bold tabular-nums text-lime-400">{activeCount}</p>
           <p className="mt-1 text-xs text-zinc-500">de {stations.length} puestos</p>
         </div>
 
@@ -474,8 +474,8 @@ export default function LiveMonitorPage() {
                 ? 'border-red-500/40 bg-red-500/5 animate-pulse'
                 : isLate
                   ? 'border-amber-500/40 bg-amber-500/5'
-                  : 'border-emerald-500/30 bg-emerald-500/5';
-              const dotCls = !isOccupied ? 'bg-red-500' : isLate ? 'bg-amber-500' : 'bg-emerald-500';
+                  : 'border-lime-500/30 bg-lime-500/5';
+              const dotCls = !isOccupied ? 'bg-red-500' : isLate ? 'bg-amber-500' : 'bg-lime-500';
 
               return (
                 <div
@@ -517,7 +517,7 @@ export default function LiveMonitorPage() {
                       {station.gpsValidated && (
                         <div className="flex items-center gap-2">
                           <GpsIcon />
-                          <span className="text-xs text-emerald-500/80">GPS Validado</span>
+                          <span className="text-xs text-lime-500/80">GPS Validado</span>
                         </div>
                       )}
                     </div>
@@ -642,7 +642,7 @@ function ClockIcon() {
 
 function GpsIcon() {
   return (
-    <svg className="h-3.5 w-3.5 shrink-0 text-emerald-500/80" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <svg className="h-3.5 w-3.5 shrink-0 text-lime-500/80" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
     </svg>

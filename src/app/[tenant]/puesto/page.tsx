@@ -298,14 +298,14 @@ export default function PuestoPage() {
               {tenantSlug}
             </p>
             {isOnDuty && (
-              <p className="text-xs text-emerald-400">
+              <p className="text-xs text-lime-400">
                 En turno desde {formatTime(shift.clockIn)}
               </p>
             )}
           </div>
           <div
             className={`h-3 w-3 shrink-0 rounded-full ${
-              isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'
+              isOnDuty ? 'bg-lime-400 animate-pulse' : 'bg-zinc-500'
             }`}
             title={isOnDuty ? 'En turno' : 'Fuera de turno'}
           />
@@ -348,7 +348,7 @@ export default function PuestoPage() {
             <button
               onClick={handleClockIn}
               disabled={loading !== 'idle'}
-              className="flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-md transition-colors active:bg-emerald-700 disabled:opacity-60"
+              className="flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-lime-600 px-6 py-4 text-base font-semibold text-white shadow-md transition-colors active:bg-lime-700 disabled:opacity-60"
             >
               {loading === 'idle' && (
                 <>
@@ -403,7 +403,7 @@ export default function PuestoPage() {
                             onChange={() => setConsignas((prev) =>
                               prev.map((item) => item.id === c.id ? { ...item, completed: !item.completed } : item),
                             )}
-                            className="mt-0.5 h-5 w-5 shrink-0 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                            className="mt-0.5 h-5 w-5 shrink-0 rounded border-zinc-300 text-lime-600 focus:ring-lime-500 cursor-pointer"
                           />
                           <div className="min-w-0">
                             <p className={`text-sm font-medium ${c.completed ? 'line-through text-zinc-400' : 'text-zinc-900'}`}>
@@ -439,7 +439,7 @@ export default function PuestoPage() {
                   rows={4}
                   maxLength={5000}
                   disabled={loading === 'refining'}
-                  className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 p-3 pr-12 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+                  className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 p-3 pr-12 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500 disabled:opacity-50"
                 />
 
                 {/* Mic button */}
@@ -523,7 +523,7 @@ export default function PuestoPage() {
                           {formatTime(incident.time)}
                         </span>
                         {incident.refinedText && (
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          <span className="rounded-full bg-lime-100 px-2 py-0.5 text-[10px] font-semibold text-lime-700">
                             IA
                           </span>
                         )}
@@ -555,7 +555,7 @@ export default function PuestoPage() {
         <div
           className={`fixed bottom-6 left-4 right-4 z-50 mx-auto max-w-sm animate-[slideUp_0.3s_ease-out] rounded-xl px-4 py-3 text-center text-sm font-medium shadow-lg ${
             toast.type === 'success'
-              ? 'bg-emerald-600 text-white'
+              ? 'bg-lime-600 text-white'
               : 'bg-red-600 text-white'
           }`}
         >

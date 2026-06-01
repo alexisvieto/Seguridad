@@ -147,8 +147,8 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       <div className="border-b border-zinc-800/60 px-2 py-5">
         {collapsed ? (
           <div className="flex items-center justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600/20">
-              <span className="text-sm font-bold text-emerald-400">N</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-lime-600/20">
+              <span className="text-sm font-bold text-lime-400">N</span>
             </div>
           </div>
         ) : (
@@ -179,7 +179,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
                     title={collapsed ? item.label : undefined}
                     className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors cursor-pointer mb-0.5 min-h-[36px] ${
                       isActive
-                        ? 'bg-emerald-500/10 text-emerald-400'
+                        ? 'bg-lime-500/10 text-lime-400'
                         : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
                     }`}
                   >

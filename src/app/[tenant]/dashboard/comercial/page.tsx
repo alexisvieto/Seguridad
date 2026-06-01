@@ -56,10 +56,10 @@ function fmt(v: number): string {
 }
 
 const statusBadge: Record<string, { label: string; cls: string }> = {
-  activo: { label: 'Activo', cls: 'bg-emerald-500/15 text-emerald-400' },
+  activo: { label: 'Activo', cls: 'bg-lime-500/15 text-lime-400' },
   suspendido: { label: 'Suspendido', cls: 'bg-amber-500/15 text-amber-400' },
   inactivo: { label: 'Inactivo', cls: 'bg-zinc-500/15 text-zinc-400' },
-  vigente: { label: 'Vigente', cls: 'bg-emerald-500/15 text-emerald-400' },
+  vigente: { label: 'Vigente', cls: 'bg-lime-500/15 text-lime-400' },
   vencido: { label: 'Vencido', cls: 'bg-red-500/15 text-red-400' },
   cancelado: { label: 'Cancelado', cls: 'bg-zinc-500/15 text-zinc-400' },
 };
@@ -233,7 +233,7 @@ export default function ComercialPage() {
   const monthlyRevenue = contracts.filter((c) => c.status === 'vigente').reduce((s, c) => s + c.monthlyAmount, 0);
 
   if (isLoading) {
-    return <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]"><div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" /></div>;
+    return <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]"><div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" /></div>;
   }
 
   return (
@@ -249,14 +249,14 @@ export default function ComercialPage() {
       <div className="grid grid-cols-3 gap-4 border-b border-zinc-800/60 px-6 py-4">
         <KpiCard label="Clientes Activos" value={String(activeClients)} />
         <KpiCard label="Contratos Vigentes" value={String(activeContracts)} />
-        <KpiCard label="Facturacion Mensual" value={`B/.${fmt(monthlyRevenue)}`} accent="emerald" />
+        <KpiCard label="Facturacion Mensual" value={`B/.${fmt(monthlyRevenue)}`} accent="lime" />
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-zinc-800/60 px-6 pt-2">
         {([{ key: 'clients' as Tab, label: 'Clientes' }, { key: 'contracts' as Tab, label: 'Contratos' }]).map((t) => (
           <button key={t.key} onClick={() => { setTab(t.key); setSelectedContract(null); }}
-            className={`rounded-t-lg px-5 py-3 text-sm font-medium transition-colors cursor-pointer min-h-[44px] ${tab === t.key ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-emerald-500' : 'text-zinc-500 hover:text-zinc-300'}`}>
+            className={`rounded-t-lg px-5 py-3 text-sm font-medium transition-colors cursor-pointer min-h-[44px] ${tab === t.key ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-lime-500' : 'text-zinc-500 hover:text-zinc-300'}`}>
             {t.label}
           </button>
         ))}
@@ -270,7 +270,7 @@ export default function ComercialPage() {
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Clientes</p>
-                <button onClick={() => setShowClientForm(true)} className="flex min-h-[40px] items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 cursor-pointer"><PlusIcon /> Nuevo</button>
+                <button onClick={() => setShowClientForm(true)} className="flex min-h-[40px] items-center gap-2 rounded-xl bg-lime-600 px-4 py-2 text-xs font-semibold text-white hover:bg-lime-500 cursor-pointer"><PlusIcon /> Nuevo</button>
               </div>
               {clients.length === 0 ? (
                 <Empty title="Sin clientes" subtitle="Registre su primer cliente corporativo" action="Registrar Cliente" onAction={() => setShowClientForm(true)} />
@@ -301,7 +301,7 @@ export default function ComercialPage() {
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Contratos</p>
-                <button onClick={() => setShowContractForm(true)} disabled={clients.length === 0} className="flex min-h-[40px] items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer"><PlusIcon /> Nuevo</button>
+                <button onClick={() => setShowContractForm(true)} disabled={clients.length === 0} className="flex min-h-[40px] items-center gap-2 rounded-xl bg-lime-600 px-4 py-2 text-xs font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer"><PlusIcon /> Nuevo</button>
               </div>
               {contracts.length === 0 ? (
                 <Empty title="Sin contratos" subtitle="Registre clientes primero, luego cree contratos" action="Crear Contrato" onAction={() => setShowContractForm(true)} />
@@ -313,7 +313,7 @@ export default function ComercialPage() {
                     return (
                       <li key={ct.id}>
                         <button onClick={() => selectContract(ct)}
-                          className={`w-full text-left rounded-xl border px-4 py-3 transition-colors cursor-pointer ${isSelected ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-zinc-800/40 bg-zinc-800/20 hover:bg-zinc-800/30'}`}>
+                          className={`w-full text-left rounded-xl border px-4 py-3 transition-colors cursor-pointer ${isSelected ? 'border-lime-500/30 bg-lime-500/5' : 'border-zinc-800/40 bg-zinc-800/20 hover:bg-zinc-800/30'}`}>
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium text-zinc-100">{ct.clientName}</p>
                             <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.cls}`}>{badge.label}</span>
@@ -351,7 +351,7 @@ export default function ComercialPage() {
 
           {tab === 'contracts' && selectedContract && (
             detailLoading ? (
-              <div className="flex h-full items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" /></div>
+              <div className="flex h-full items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" /></div>
             ) : (
               <div className="space-y-6">
                 <div>
@@ -404,22 +404,22 @@ export default function ComercialPage() {
             <div className="max-w-md space-y-4">
               <h3 className="text-lg font-semibold">Nuevo Cliente</h3>
               <label className="block"><span className="text-xs font-medium text-zinc-400">Razon Social</span>
-                <input type="text" value={cName} onChange={(e) => setCName(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                <input type="text" value={cName} onChange={(e) => setCName(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block"><span className="text-xs font-medium text-zinc-400">RUC</span>
-                  <input type="text" value={cRuc} onChange={(e) => setCRuc(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                  <input type="text" value={cRuc} onChange={(e) => setCRuc(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
                 <label className="block"><span className="text-xs font-medium text-zinc-400">Representante Legal</span>
-                  <input type="text" value={cRep} onChange={(e) => setCRep(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                  <input type="text" value={cRep} onChange={(e) => setCRep(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block"><span className="text-xs font-medium text-zinc-400">Email</span>
-                  <input type="email" value={cEmail} onChange={(e) => setCEmail(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                  <input type="email" value={cEmail} onChange={(e) => setCEmail(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
                 <label className="block"><span className="text-xs font-medium text-zinc-400">Telefono</span>
-                  <input type="text" value={cPhone} onChange={(e) => setCPhone(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                  <input type="text" value={cPhone} onChange={(e) => setCPhone(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setShowClientForm(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
-                <button onClick={handleCreateClient} disabled={!cName.trim() || clientLoading} className="flex flex-1 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                <button onClick={handleCreateClient} disabled={!cName.trim() || clientLoading} className="flex flex-1 items-center justify-center rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
                   {clientLoading ? <Spinner /> : 'Registrar'}
                 </button>
               </div>
@@ -435,28 +435,28 @@ export default function ComercialPage() {
             <h3 className="text-lg font-semibold text-zinc-100">Nuevo Contrato</h3>
             <div className="mt-5 space-y-4">
               <label className="block"><span className="text-xs font-medium text-zinc-400">Cliente</span>
-                <select value={ctClient} onChange={(e) => setCtClient(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                <select value={ctClient} onChange={(e) => setCtClient(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                   <option value="">Seleccionar...</option>
                   {clients.map((c) => <option key={c.id} value={c.id}>{c.companyName}</option>)}
                 </select></label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block"><span className="text-xs font-medium text-zinc-400">Fecha Inicio</span>
-                  <input type="date" value={ctStart} onChange={(e) => setCtStart(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                  <input type="date" value={ctStart} onChange={(e) => setCtStart(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
                 <label className="block"><span className="text-xs font-medium text-zinc-400">Fecha Fin (opcional)</span>
-                  <input type="date" value={ctEnd} onChange={(e) => setCtEnd(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                  <input type="date" value={ctEnd} onChange={(e) => setCtEnd(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block"><span className="text-xs font-medium text-zinc-400">Monto Mensual (B/.)</span>
-                  <input type="text" inputMode="decimal" value={ctAmount} onChange={(e) => setCtAmount(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0.00" className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                  <input type="text" inputMode="decimal" value={ctAmount} onChange={(e) => setCtAmount(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0.00" className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
                 <label className="block"><span className="text-xs font-medium text-zinc-400">Agentes Requeridos</span>
-                  <input type="text" inputMode="numeric" value={ctAgents} onChange={(e) => setCtAgents(e.target.value.replace(/[^0-9]/g, ''))} placeholder="1" className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" /></label>
+                  <input type="text" inputMode="numeric" value={ctAgents} onChange={(e) => setCtAgents(e.target.value.replace(/[^0-9]/g, ''))} placeholder="1" className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
               </div>
               <label className="block"><span className="text-xs font-medium text-zinc-400">Notas</span>
-                <textarea value={ctNotes} onChange={(e) => setCtNotes(e.target.value)} rows={2} className="mt-1 block w-full resize-none rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none" /></label>
+                <textarea value={ctNotes} onChange={(e) => setCtNotes(e.target.value)} rows={2} className="mt-1 block w-full resize-none rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none" /></label>
             </div>
             <div className="mt-6 flex gap-3">
               <button onClick={() => setShowContractForm(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
-              <button onClick={handleCreateContract} disabled={!ctClient || !ctStart || !ctAmount || parseFloat(ctAmount) <= 0 || contractLoading} className="flex flex-1 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+              <button onClick={handleCreateContract} disabled={!ctClient || !ctStart || !ctAmount || parseFloat(ctAmount) <= 0 || contractLoading} className="flex flex-1 items-center justify-center rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
                 {contractLoading ? <Spinner /> : 'Crear Contrato'}
               </button>
             </div>
@@ -464,7 +464,7 @@ export default function ComercialPage() {
         </div>
       )}
 
-      {toast && <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>{toast.msg}</div>}
+      {toast && <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${toast.type === 'success' ? 'bg-lime-600 text-white' : 'bg-red-600 text-white'}`}>{toast.msg}</div>}
     </div>
   );
 }
@@ -472,9 +472,9 @@ export default function ComercialPage() {
 // Sub-components
 function KpiCard({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
-    <div className={`rounded-xl border px-5 py-4 ${accent === 'emerald' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-zinc-700/30 bg-zinc-800/40'}`}>
+    <div className={`rounded-xl border px-5 py-4 ${accent === 'lime' ? 'border-lime-500/20 bg-lime-500/5' : 'border-zinc-700/30 bg-zinc-800/40'}`}>
       <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">{label}</p>
-      <p className={`mt-1 text-2xl font-bold tabular-nums ${accent === 'emerald' ? 'text-emerald-400' : 'text-zinc-200'}`}>{value}</p>
+      <p className={`mt-1 text-2xl font-bold tabular-nums ${accent === 'lime' ? 'text-lime-400' : 'text-zinc-200'}`}>{value}</p>
     </div>
   );
 }
@@ -494,7 +494,7 @@ function Empty({ title, subtitle, action, onAction }: { title: string; subtitle:
       <BriefLgIcon />
       <p className="text-sm font-medium text-zinc-400">{title}</p>
       <p className="text-xs text-zinc-600">{subtitle}</p>
-      <button onClick={onAction} className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 cursor-pointer"><PlusIcon /> {action}</button>
+      <button onClick={onAction} className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer"><PlusIcon /> {action}</button>
     </div>
   );
 }

@@ -85,19 +85,19 @@ function formatDateTime(iso: string): string {
 }
 
 const alertDot: Record<AlertLevel, string> = {
-  green: 'bg-emerald-500',
+  green: 'bg-lime-500',
   yellow: 'bg-amber-500',
   red: 'bg-red-500',
 };
 
 const alertBg: Record<AlertLevel, string> = {
-  green: 'bg-emerald-500/8 border-emerald-500/20',
+  green: 'bg-lime-500/8 border-lime-500/20',
   yellow: 'bg-amber-500/8 border-amber-500/20',
   red: 'bg-red-500/8 border-red-500/20',
 };
 
 const statusBadge: Record<string, { label: string; cls: string }> = {
-  operativa: { label: 'Operativa', cls: 'bg-emerald-500/15 text-emerald-400' },
+  operativa: { label: 'Operativa', cls: 'bg-lime-500/15 text-lime-400' },
   mantenimiento: { label: 'Mantenimiento', cls: 'bg-amber-500/15 text-amber-400' },
   retirada: { label: 'Retirada', cls: 'bg-zinc-500/15 text-zinc-400' },
 };
@@ -446,7 +446,7 @@ export default function ArmamentoPage() {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
           <p className="text-sm tracking-widest text-zinc-500 uppercase">Cargando inventario...</p>
         </div>
       </div>
@@ -471,7 +471,7 @@ export default function ArmamentoPage() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer"
+          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer"
         >
           <PlusIcon />
           Agregar Arma
@@ -495,7 +495,7 @@ export default function ArmamentoPage() {
               <span className={`${permitsExpired > 0 ? 'text-lg' : 'text-3xl font-bold'} tabular-nums text-amber-400`}>{permitsSoon}</span>
             )}
             {permitsExpired === 0 && permitsSoon === 0 && (
-              <span className="text-3xl font-bold tabular-nums text-emerald-400">0</span>
+              <span className="text-3xl font-bold tabular-nums text-lime-400">0</span>
             )}
           </div>
           <p className="mt-1 text-xs text-zinc-500">
@@ -509,7 +509,7 @@ export default function ArmamentoPage() {
         {/* Compliance */}
         <div className={`rounded-xl border px-5 py-4 ${nonCompliantAgents > 0 ? alertBg.red : alertBg.green}`}>
           <p className="text-xs font-medium tracking-widest text-zinc-400 uppercase">Agentes No Aptos</p>
-          <p className={`mt-1 text-3xl font-bold tabular-nums ${nonCompliantAgents > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+          <p className={`mt-1 text-3xl font-bold tabular-nums ${nonCompliantAgents > 0 ? 'text-red-400' : 'text-lime-400'}`}>
             {nonCompliantAgents}
           </p>
           <p className="mt-1 text-xs text-zinc-500">
@@ -547,7 +547,7 @@ export default function ArmamentoPage() {
               </div>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer"
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer"
               >
                 <PlusIcon />
                 Agregar Primera Arma
@@ -612,7 +612,7 @@ export default function ArmamentoPage() {
             </div>
           ) : detailLoading ? (
             <div className="flex h-full items-center justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
             </div>
           ) : (
             <div className="p-6 space-y-6">
@@ -628,7 +628,7 @@ export default function ArmamentoPage() {
                 </div>
                 <button
                   onClick={openAssignModal}
-                  className="flex min-h-[48px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer"
+                  className="flex min-h-[48px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer"
                 >
                   <AssignIcon />
                   Asignar a Puesto / Agente
@@ -664,7 +664,7 @@ export default function ArmamentoPage() {
                         key={a.id}
                         className={`flex items-center justify-between gap-4 rounded-xl border px-5 py-4 ${
                           a.returnedAt === null
-                            ? 'border-emerald-500/20 bg-emerald-500/5'
+                            ? 'border-lime-500/20 bg-lime-500/5'
                             : 'border-zinc-800/40 bg-zinc-800/20'
                         }`}
                       >
@@ -729,7 +729,7 @@ export default function ArmamentoPage() {
                   onClick={() => { setAssignTarget(t); setAssignTargetId(''); }}
                   className={`flex-1 rounded-lg px-4 py-3 text-sm font-medium transition-colors cursor-pointer min-h-[48px] ${
                     assignTarget === t
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-lime-600 text-white'
                       : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                   }`}
                 >
@@ -746,7 +746,7 @@ export default function ArmamentoPage() {
               <select
                 value={assignTargetId}
                 onChange={(e) => setAssignTargetId(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer"
+                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer"
               >
                 <option value="">Seleccionar...</option>
                 {assignTarget === 'station'
@@ -767,7 +767,7 @@ export default function ArmamentoPage() {
                 onChange={(e) => setAssignNotes(e.target.value)}
                 rows={2}
                 maxLength={1000}
-                className="mt-1 block w-full resize-none rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none"
+                className="mt-1 block w-full resize-none rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none"
                 placeholder="Observaciones..."
               />
             </label>
@@ -783,7 +783,7 @@ export default function ArmamentoPage() {
               <button
                 onClick={submitAssignment}
                 disabled={!assignTargetId || assignLoading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]"
               >
                 {assignLoading ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -813,7 +813,7 @@ export default function ArmamentoPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Tipo de Arma</span>
                 <select value={newType} onChange={(e) => setNewType(e.target.value as typeof newType)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                   <option value="pistola">Pistola</option>
                   <option value="revolver">Revolver</option>
                   <option value="escopeta">Escopeta</option>
@@ -824,7 +824,7 @@ export default function ArmamentoPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Estado Actual</span>
                 <select value={newStatus} onChange={(e) => setNewStatus(e.target.value as typeof newStatus)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                   <option value="operativa">Operativa</option>
                   <option value="mantenimiento">En Mantenimiento</option>
                   <option value="retirada">Retirada</option>
@@ -835,35 +835,35 @@ export default function ArmamentoPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Marca</span>
                 <input type="text" value={newBrand} onChange={(e) => setNewBrand(e.target.value)} placeholder="Ej: Glock, Taurus" maxLength={100}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
 
               {/* Model */}
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Modelo</span>
                 <input type="text" value={newModel} onChange={(e) => setNewModel(e.target.value)} placeholder="Ej: G17 Gen5" maxLength={100}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
 
               {/* Serial Number */}
               <label className="block sm:col-span-2">
                 <span className="text-xs font-medium text-zinc-400">Numero de Serie</span>
                 <input type="text" value={newSerial} onChange={(e) => setNewSerial(e.target.value)} placeholder="Numero unico del arma" maxLength={100}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
 
               {/* Permit Number */}
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Permiso DIASP</span>
                 <input type="text" value={newPermit} onChange={(e) => setNewPermit(e.target.value)} placeholder="Numero de permiso" maxLength={100}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
 
               {/* Permit Expiry */}
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Vencimiento del Permiso</span>
                 <input type="date" value={newPermitExpiry} onChange={(e) => setNewPermitExpiry(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
             </div>
 
@@ -877,7 +877,7 @@ export default function ArmamentoPage() {
               <button
                 onClick={handleCreateFirearm}
                 disabled={!newBrand.trim() || !newModel.trim() || !newSerial.trim() || !newPermit.trim() || !newPermitExpiry || createLoading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]"
               >
                 {createLoading ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -893,7 +893,7 @@ export default function ArmamentoPage() {
       {/* TOAST */}
       {toast && (
         <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${
-          toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+          toast.type === 'success' ? 'bg-lime-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.msg}
         </div>

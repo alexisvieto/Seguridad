@@ -154,8 +154,8 @@ export function IncidentDetailModal({
                 Detalle de Novedad
               </h2>
               {config.critical && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-bold tracking-wide text-emerald-400 ring-1 ring-emerald-500/30">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-lime-500/15 px-3 py-1 text-[11px] font-bold tracking-wide text-lime-400 ring-1 ring-lime-500/30">
+                  <span className="h-1.5 w-1.5 rounded-full bg-lime-400 animate-pulse" />
                   REQUIERE ATENCIÓN
                 </span>
               )}
@@ -289,7 +289,7 @@ export function IncidentDetailModal({
           </button>
           <button
             onClick={handleGoToHistory}
-            className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-500 hover:shadow-emerald-500/30 cursor-pointer"
+            className="rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-lime-600/20 transition-all hover:bg-lime-500 hover:shadow-lime-500/30 cursor-pointer"
           >
             Ir al Historial
           </button>

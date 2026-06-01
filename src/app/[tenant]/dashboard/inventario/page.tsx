@@ -69,7 +69,7 @@ const categoryLabels: Record<string, string> = {
 };
 
 const assetStatusBadge: Record<string, { label: string; cls: string }> = {
-  bueno: { label: 'Bueno', cls: 'bg-emerald-500/15 text-emerald-400' },
+  bueno: { label: 'Bueno', cls: 'bg-lime-500/15 text-lime-400' },
   dañado: { label: 'Dañado', cls: 'bg-red-500/15 text-red-400' },
   en_reparacion: { label: 'En reparación', cls: 'bg-amber-500/15 text-amber-400' },
 };
@@ -480,7 +480,7 @@ export default function InventarioPage() {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
           <p className="text-sm tracking-widest text-zinc-500 uppercase">Cargando inventario...</p>
         </div>
       </div>
@@ -532,7 +532,7 @@ export default function InventarioPage() {
             onClick={() => setTab(t.key)}
             className={`rounded-t-lg px-5 py-3 text-sm font-medium transition-colors cursor-pointer min-h-[44px] ${
               tab === t.key
-                ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-emerald-500'
+                ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-lime-500'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'
             }`}
           >
@@ -552,7 +552,7 @@ export default function InventarioPage() {
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Bodega General</h2>
               <button onClick={() => setShowStockModal(true)}
-                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer">
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer">
                 <PlusIcon /> Ingresar Mercancia
               </button>
             </div>
@@ -564,7 +564,7 @@ export default function InventarioPage() {
                 <p className="text-sm font-medium text-zinc-400">Bodega vacia</p>
                 <p className="text-xs text-zinc-600">Ingrese el inventario inicial de uniformes, radios y equipos</p>
                 <button onClick={() => setShowStockModal(true)}
-                  className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer">
+                  className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer">
                   <PlusIcon /> Ingresar Primera Mercancia
                 </button>
               </div>
@@ -590,7 +590,7 @@ export default function InventarioPage() {
                       <td className="px-4 py-3 text-zinc-400">{categoryLabels[item.category] ?? item.category}</td>
                       <td className="px-4 py-3 text-zinc-500">{item.sizeOrModel ?? '—'}</td>
                       <td className={`px-4 py-3 text-right tabular-nums font-semibold ${
-                        isEmpty ? 'text-red-400' : isLow ? 'text-amber-400' : 'text-emerald-400'
+                        isEmpty ? 'text-red-400' : isLow ? 'text-amber-400' : 'text-lime-400'
                       }`}>
                         {item.currentStock}
                       </td>
@@ -601,7 +601,7 @@ export default function InventarioPage() {
                         ) : isLow ? (
                           <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-medium text-amber-400">Bajo</span>
                         ) : (
-                          <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-medium text-emerald-400">OK</span>
+                          <span className="rounded-full bg-lime-500/15 px-2.5 py-1 text-[11px] font-medium text-lime-400">OK</span>
                         )}
                       </td>
                     </tr>
@@ -621,7 +621,7 @@ export default function InventarioPage() {
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Equipos Asignados a Puestos</h2>
               <button onClick={openAssetModal}
-                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer">
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer">
                 <PlusIcon /> Asignar Equipo a Puesto
               </button>
             </div>
@@ -633,7 +633,7 @@ export default function InventarioPage() {
                 <p className="text-sm font-medium text-zinc-400">Sin equipos asignados a puestos</p>
                 <p className="text-xs text-zinc-600">Asigne celulares, radios y equipos fijos a cada garita o puesto de vigilancia</p>
                 <button onClick={openAssetModal}
-                  className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer">
+                  className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer">
                   <PlusIcon /> Asignar Primer Equipo
                 </button>
               </div>
@@ -667,7 +667,7 @@ export default function InventarioPage() {
                           {group.items.length} equipo{group.items.length !== 1 ? 's' : ''}
                         </span>
                         {okCount > 0 && (
-                          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] text-emerald-400">{okCount} OK</span>
+                          <span className="rounded-full bg-lime-500/15 px-2 py-0.5 text-[10px] text-lime-400">{okCount} OK</span>
                         )}
                         {damagedCount > 0 && (
                           <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] text-red-400">{damagedCount} daño</span>
@@ -729,7 +729,7 @@ export default function InventarioPage() {
               </h2>
               <button
                 onClick={() => { setShowLoanForm(true); setLoanSuccess(false); setLoanAgent(''); setLoanItem(''); setLoanQty(1); setHasSigned(false); setLoanKey((k) => k + 1); }}
-                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer"
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer"
               >
                 <PlusIcon /> Formulario de Entrega
               </button>
@@ -770,7 +770,7 @@ export default function InventarioPage() {
                         <div className="divide-y divide-zinc-800/20">
                           {items.map((l) => {
                             const isExpanded = expandedLoan === l.id;
-                            const statusCls = l.status === 'entregado' ? 'bg-emerald-500/15 text-emerald-400'
+                            const statusCls = l.status === 'entregado' ? 'bg-lime-500/15 text-lime-400'
                               : l.status === 'devuelto' ? 'bg-blue-500/15 text-blue-400'
                               : 'bg-red-500/15 text-red-400';
                             const statusLabel = l.status === 'entregado' ? 'Entregado'
@@ -831,10 +831,10 @@ export default function InventarioPage() {
             <div key={loanKey} className="w-full max-w-md rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
               {loanSuccess ? (
                 <div className="py-10 text-center space-y-4">
-                  <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-emerald-500/15">
+                  <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-lime-500/15">
                     <CheckIcon />
                   </div>
-                  <p className="text-lg font-semibold text-emerald-400">Entrega registrada</p>
+                  <p className="text-lg font-semibold text-lime-400">Entrega registrada</p>
                   <p className="text-sm text-zinc-500">El stock se actualizó automáticamente</p>
                   <div className="flex gap-3 justify-center">
                     <button onClick={() => { setShowLoanForm(false); loadData(); }}
@@ -842,7 +842,7 @@ export default function InventarioPage() {
                       Cerrar
                     </button>
                     <button onClick={() => { setLoanSuccess(false); setLoanAgent(''); setLoanItem(''); setLoanQty(1); setHasSigned(false); setLoanKey((k) => k + 1); }}
-                      className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 cursor-pointer">
+                      className="rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
                       Nueva Entrega
                     </button>
                   </div>
@@ -854,7 +854,7 @@ export default function InventarioPage() {
                     <label className="block">
                       <span className="text-xs font-medium text-zinc-400">Agente</span>
                       <select value={loanAgent} onChange={(e) => setLoanAgent(e.target.value)}
-                        className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                        className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                         <option value="">Seleccionar agente...</option>
                         {agents.map((a) => (<option key={a.id} value={a.id}>{a.name}</option>))}
                       </select>
@@ -862,7 +862,7 @@ export default function InventarioPage() {
                     <label className="block">
                       <span className="text-xs font-medium text-zinc-400">Artículo</span>
                       <select value={loanItem} onChange={(e) => setLoanItem(e.target.value)}
-                        className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                        className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                         <option value="">Seleccionar artículo...</option>
                         {availableForLoan.map((i) => (<option key={i.id} value={i.id}>{i.itemName}{i.sizeOrModel ? ` (${i.sizeOrModel})` : ''} — Stock: {i.currentStock}</option>))}
                       </select>
@@ -871,7 +871,7 @@ export default function InventarioPage() {
                       <span className="text-xs font-medium text-zinc-400">Cantidad</span>
                       <input type="number" min={1} max={inventory.find((i) => i.id === loanItem)?.currentStock ?? 99} value={loanQty}
                         onChange={(e) => setLoanQty(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                        className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                     </label>
                     <div>
                       <span className="text-xs font-medium text-zinc-400">Firma Digital del Agente</span>
@@ -883,7 +883,7 @@ export default function InventarioPage() {
                         Cancelar
                       </button>
                       <button onClick={submitLoan} disabled={!loanAgent || !loanItem || !hasSigned || loanLoading}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
                         {loanLoading ? <SpinnerSm /> : <><CheckIcon /> Registrar</>}
                       </button>
                     </div>
@@ -955,7 +955,7 @@ export default function InventarioPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Categoria</span>
                 <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                   <option value="uniforme">Uniforme</option>
                   <option value="calzado">Calzado</option>
                   <option value="comunicacion">Radio / Comunicacion</option>
@@ -967,33 +967,33 @@ export default function InventarioPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Item / Descripcion</span>
                 <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Ej: Camisa Operativa Azul Talla L" maxLength={200}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
 
               <div className="grid grid-cols-2 gap-4">
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Cantidad Inicial</span>
                   <input type="number" min={0} value={newQty} onChange={(e) => setNewQty(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                 </label>
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Alerta Minima</span>
                   <input type="number" min={0} value={newMinAlert} onChange={(e) => setNewMinAlert(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                 </label>
               </div>
 
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Lote / Factura (opcional)</span>
                 <input type="text" value={newLote} onChange={(e) => setNewLote(e.target.value)} placeholder="Referencia de compra"
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
             </div>
 
             <div className="mt-6 flex gap-3">
               <button onClick={() => setShowStockModal(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
               <button onClick={handleCreateStock} disabled={!newItemName.trim() || stockCreateLoading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
                 {stockCreateLoading ? <SpinnerSm /> : 'Registrar'}
               </button>
             </div>
@@ -1012,7 +1012,7 @@ export default function InventarioPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Puesto de Vigilancia</span>
                 <select value={assetStation} onChange={(e) => setAssetStation(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                   <option value="">Seleccionar puesto...</option>
                   {stationOptions.map((s) => (
                     <option key={s.id} value={s.id}>{s.name} — {s.property}</option>
@@ -1023,20 +1023,20 @@ export default function InventarioPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Nombre del Equipo</span>
                 <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)} placeholder="Ej: Celular Samsung A15, Radio Motorola" maxLength={200}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
 
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">IMEI / Serial (opcional)</span>
                 <input type="text" value={assetImei} onChange={(e) => setAssetImei(e.target.value)} placeholder="Identificador del dispositivo"
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
             </div>
 
             <div className="mt-6 flex gap-3">
               <button onClick={() => setShowAssetModal(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
               <button onClick={handleCreateAsset} disabled={!assetStation || !assetName.trim() || assetCreateLoading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
                 {assetCreateLoading ? <SpinnerSm /> : 'Asignar Equipo'}
               </button>
             </div>
@@ -1047,7 +1047,7 @@ export default function InventarioPage() {
       {/* TOAST */}
       {toast && (
         <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${
-          toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+          toast.type === 'success' ? 'bg-lime-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.msg}
         </div>

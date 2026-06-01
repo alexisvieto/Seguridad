@@ -47,9 +47,9 @@ const typeConfig: Record<AssignmentType, {
   fijo: {
     label: 'Fijo',
     description: 'Indefinido — sin fecha de fin',
-    activeClass: 'border-emerald-500/40 bg-emerald-500/10',
-    textClass: 'text-emerald-400',
-    badgeClass: 'bg-emerald-500/15 text-emerald-400',
+    activeClass: 'border-lime-500/40 bg-lime-500/10',
+    textClass: 'text-lime-400',
+    badgeClass: 'bg-lime-500/15 text-lime-400',
   },
   temporal: {
     label: 'Temporal',
@@ -262,7 +262,7 @@ export default function TurnosPage() {
   if (isLoading) {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
       </div>
     );
   }
@@ -325,7 +325,7 @@ export default function TurnosPage() {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-lime-500 focus:outline-none"
                 />
               </div>
               {assignmentType !== 'fijo' && (
@@ -336,7 +336,7 @@ export default function TurnosPage() {
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     min={startDate}
-                    className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-lime-500 focus:outline-none"
                   />
                 </div>
               )}
@@ -355,7 +355,7 @@ export default function TurnosPage() {
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-lime-500 focus:outline-none"
                 />
               </div>
               <div>
@@ -364,7 +364,7 @@ export default function TurnosPage() {
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-lime-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -375,7 +375,7 @@ export default function TurnosPage() {
               <select
                 value={selectedStation}
                 onChange={(e) => setSelectedStation(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-lime-500 focus:outline-none"
               >
                 <option value="">Seleccionar puesto...</option>
                 {stations.map((s) => (
@@ -394,7 +394,7 @@ export default function TurnosPage() {
               <select
                 value={selectedAgent}
                 onChange={(e) => { setSelectedAgent(e.target.value); setConflict(null); }}
-                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 focus:border-lime-500 focus:outline-none"
               >
                 <option value="">Seleccionar agente...</option>
                 {agents.map((a) => (
@@ -418,7 +418,7 @@ export default function TurnosPage() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Cobertura vacaciones, refuerzo temporal..."
-                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none"
               />
             </div>
 
@@ -431,8 +431,8 @@ export default function TurnosPage() {
 
             {/* Success message */}
             {successMsg && (
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-4 py-3">
-                <p className="text-sm font-medium text-emerald-400">{successMsg}</p>
+              <div className="rounded-xl border border-lime-500/30 bg-lime-500/8 px-4 py-3">
+                <p className="text-sm font-medium text-lime-400">{successMsg}</p>
               </div>
             )}
 
@@ -440,7 +440,7 @@ export default function TurnosPage() {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || !selectedAgent || !selectedStation || startTime === endTime}
-              className="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full rounded-xl bg-lime-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-lime-600/20 transition-all hover:bg-lime-500 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               {isSubmitting ? 'Guardando...' : 'Asignar Turno'}
             </button>
@@ -459,7 +459,7 @@ export default function TurnosPage() {
                 type="date"
                 value={viewDate}
                 onChange={(e) => setViewDate(e.target.value)}
-                className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 focus:border-lime-500 focus:outline-none"
               />
               <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs tabular-nums text-zinc-400">
                 {assignments.length}
@@ -482,10 +482,10 @@ export default function TurnosPage() {
                   >
                     <div className="flex items-center gap-4">
                       {/* Time block */}
-                      <div className="flex flex-col items-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 min-w-[60px]">
-                        <span className="text-xs font-bold tabular-nums text-emerald-400">{a.start_time.slice(0, 5)}</span>
+                      <div className="flex flex-col items-center rounded-lg bg-lime-500/10 border border-lime-500/20 px-3 py-1.5 min-w-[60px]">
+                        <span className="text-xs font-bold tabular-nums text-lime-400">{a.start_time.slice(0, 5)}</span>
                         <span className="text-[9px] text-zinc-600">a</span>
-                        <span className="text-xs font-bold tabular-nums text-emerald-400">{a.end_time.slice(0, 5)}</span>
+                        <span className="text-xs font-bold tabular-nums text-lime-400">{a.end_time.slice(0, 5)}</span>
                       </div>
 
                       {/* Info */}

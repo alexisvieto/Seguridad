@@ -64,7 +64,7 @@ function formatCurrency(v: number): string {
 const statusConfig: Record<string, { label: string; cls: string }> = {
   abierto: { label: 'Abierto', cls: 'bg-blue-500/15 text-blue-400 ring-blue-500/30' },
   calculado: { label: 'Calculado', cls: 'bg-amber-500/15 text-amber-400 ring-amber-500/30' },
-  cerrado_pagado: { label: 'Cerrado / Pagado', cls: 'bg-emerald-500/15 text-emerald-400 ring-emerald-500/30' },
+  cerrado_pagado: { label: 'Cerrado / Pagado', cls: 'bg-lime-500/15 text-lime-400 ring-lime-500/30' },
 };
 
 const SS_RATE = 0.0975;
@@ -366,7 +366,7 @@ export default function PayrollPeriodPage() {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
           <p className="text-sm tracking-widest text-zinc-500 uppercase">Cargando nomina...</p>
         </div>
       </div>
@@ -425,7 +425,7 @@ export default function PayrollPeriodPage() {
             <button
               onClick={handleClosePeriod}
               disabled={isLocked || period.status !== 'calculado' || actionLoading !== null}
-              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-40 cursor-pointer"
+              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 disabled:opacity-40 cursor-pointer"
             >
               {actionLoading === 'close' ? <Spinner /> : <LockIcon />}
               Cerrar Periodo
@@ -437,9 +437,9 @@ export default function PayrollPeriodPage() {
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-4 border-b border-zinc-800/60 px-6 py-4">
         <KpiCard label="Total Horas" value={`${formatCurrency(totalHours)}h`} sub={`${agents.length} agentes`} />
-        <KpiCard label="Salario Bruto" value={`B/.${formatCurrency(totalGross)}`} accent="emerald" />
+        <KpiCard label="Salario Bruto" value={`B/.${formatCurrency(totalGross)}`} accent="lime" />
         <KpiCard label="Deducciones" value={`B/.${formatCurrency(totalDeductions)}`} sub="SS 9.75% + SE 1.25%" accent="amber" />
-        <KpiCard label="Neto a Pagar" value={`B/.${formatCurrency(totalNet)}`} sub="Monto ACH" accent="emerald" highlight />
+        <KpiCard label="Neto a Pagar" value={`B/.${formatCurrency(totalNet)}`} sub="Monto ACH" accent="lime" highlight />
       </div>
 
       {/* ACH WARNINGS */}
@@ -524,7 +524,7 @@ export default function PayrollPeriodPage() {
                   <TdNum cls="font-semibold">{formatCurrency(agent.gross)}</TdNum>
                   <TdNum cls="text-red-400/70">{formatCurrency(agent.ss)}</TdNum>
                   <TdNum cls="text-red-400/70">{formatCurrency(agent.ei)}</TdNum>
-                  <TdNum cls="font-bold text-emerald-400">{formatCurrency(agent.net)}</TdNum>
+                  <TdNum cls="font-bold text-lime-400">{formatCurrency(agent.net)}</TdNum>
                 </tr>
               ))}
             </tbody>
@@ -541,7 +541,7 @@ export default function PayrollPeriodPage() {
                 <TdNum cls="font-bold">{formatCurrency(totalGross)}</TdNum>
                 <TdNum cls="font-semibold text-red-400">{formatCurrency(agents.reduce((s, a) => s + a.ss, 0))}</TdNum>
                 <TdNum cls="font-semibold text-red-400">{formatCurrency(agents.reduce((s, a) => s + a.ei, 0))}</TdNum>
-                <TdNum cls="font-bold text-emerald-400 text-base">{formatCurrency(totalNet)}</TdNum>
+                <TdNum cls="font-bold text-lime-400 text-base">{formatCurrency(totalNet)}</TdNum>
               </tr>
             </tfoot>
           </table>
@@ -551,7 +551,7 @@ export default function PayrollPeriodPage() {
       {/* TOAST */}
       {toast && (
         <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${
-          toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+          toast.type === 'success' ? 'bg-lime-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.msg}
         </div>
@@ -568,22 +568,22 @@ function KpiCard({ label, value, sub, accent, highlight }: {
   label: string;
   value: string;
   sub?: string;
-  accent?: 'emerald' | 'amber';
+  accent?: 'lime' | 'amber';
   highlight?: boolean;
 }) {
-  const borderCls = accent === 'emerald'
-    ? 'border-emerald-500/20'
+  const borderCls = accent === 'lime'
+    ? 'border-lime-500/20'
     : accent === 'amber'
       ? 'border-amber-500/20'
       : 'border-zinc-700/30';
 
-  const bgCls = highlight ? 'bg-emerald-500/8' : 'bg-zinc-800/40';
+  const bgCls = highlight ? 'bg-lime-500/8' : 'bg-zinc-800/40';
 
   return (
     <div className={`rounded-xl border ${borderCls} ${bgCls} px-5 py-4`}>
       <p className="text-xs font-medium tracking-widest text-zinc-500 uppercase">{label}</p>
       <p className={`mt-1 text-2xl font-bold tabular-nums ${
-        accent === 'emerald' ? 'text-emerald-400' : accent === 'amber' ? 'text-amber-400' : 'text-zinc-200'
+        accent === 'lime' ? 'text-lime-400' : accent === 'amber' ? 'text-amber-400' : 'text-zinc-200'
       }`}>
         {value}
       </p>
@@ -643,7 +643,7 @@ function NumericInput({ value, disabled, onChange }: {
       onChange={handleChange}
       onBlur={handleBlur}
       disabled={disabled}
-      className="w-24 rounded-lg border border-zinc-700/50 bg-zinc-800/50 px-2.5 py-2 text-right text-sm tabular-nums text-zinc-200 focus:border-emerald-500 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+      className="w-24 rounded-lg border border-zinc-700/50 bg-zinc-800/50 px-2.5 py-2 text-right text-sm tabular-nums text-zinc-200 focus:border-lime-500 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
     />
   );
 }

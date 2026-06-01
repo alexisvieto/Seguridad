@@ -58,13 +58,13 @@ function level(dateStr: string): AlertLevel {
 }
 
 const levelDot: Record<AlertLevel, string> = {
-  green: 'bg-emerald-500',
+  green: 'bg-lime-500',
   yellow: 'bg-amber-500',
   red: 'bg-red-500',
 };
 
 const levelBadge: Record<AlertLevel, string> = {
-  green: 'bg-emerald-500/15 text-emerald-400',
+  green: 'bg-lime-500/15 text-lime-400',
   yellow: 'bg-amber-500/15 text-amber-400',
   red: 'bg-red-500/15 text-red-400',
 };
@@ -274,7 +274,7 @@ export default function CapacitacionesPage() {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
           <p className="text-sm tracking-widest text-zinc-500 uppercase">Cargando capacitaciones...</p>
         </div>
       </div>
@@ -297,7 +297,7 @@ export default function CapacitacionesPage() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer"
+          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer"
         >
           <PlusIcon />
           Registrar Capacitación
@@ -306,9 +306,9 @@ export default function CapacitacionesPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-4 border-b border-zinc-800/60 px-6 py-4">
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-5 py-4">
-          <p className="text-xs font-medium tracking-widest text-emerald-500/70 uppercase">Agentes Certificados</p>
-          <p className="mt-1 text-4xl font-bold tabular-nums text-emerald-400">{certifiedAgents}</p>
+        <div className="rounded-xl border border-lime-500/20 bg-lime-500/8 px-5 py-4">
+          <p className="text-xs font-medium tracking-widest text-lime-500/70 uppercase">Agentes Certificados</p>
+          <p className="mt-1 text-4xl font-bold tabular-nums text-lime-400">{certifiedAgents}</p>
           <p className="mt-1 text-xs text-zinc-500">de {agents.length} agentes</p>
         </div>
 
@@ -429,7 +429,7 @@ export default function CapacitacionesPage() {
                 <select
                   value={modalAgent}
                   onChange={(e) => setModalAgent(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer"
                 >
                   <option value="">Seleccionar agente...</option>
                   {agents.map((a) => (
@@ -444,7 +444,7 @@ export default function CapacitacionesPage() {
                 <select
                   value={modalCourse}
                   onChange={(e) => setModalCourse(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer"
                 >
                   <option value="">Seleccionar curso...</option>
                   {courses.map((c) => (
@@ -460,7 +460,7 @@ export default function CapacitacionesPage() {
                   type="date"
                   value={modalDate}
                   onChange={(e) => setModalDate(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none"
                 />
               </label>
 
@@ -473,7 +473,7 @@ export default function CapacitacionesPage() {
                   onChange={(e) => setModalGrade(e.target.value)}
                   placeholder="Ej: Aprobado, 95/100"
                   maxLength={50}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none"
                 />
               </label>
 
@@ -500,7 +500,7 @@ export default function CapacitacionesPage() {
               <button
                 onClick={submitTraining}
                 disabled={!modalAgent || !modalCourse || !modalDate || modalLoading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]"
               >
                 {modalLoading ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -516,7 +516,7 @@ export default function CapacitacionesPage() {
       {/* TOAST */}
       {toast && (
         <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${
-          toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+          toast.type === 'success' ? 'bg-lime-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.msg}
         </div>

@@ -37,7 +37,7 @@ interface Toast {
 // ---------------------------------------------------------------------------
 
 const statusBadge: Record<string, { label: string; cls: string }> = {
-  activo: { label: 'Activo', cls: 'bg-emerald-500/15 text-emerald-400' },
+  activo: { label: 'Activo', cls: 'bg-lime-500/15 text-lime-400' },
   taller: { label: 'En Taller', cls: 'bg-amber-500/15 text-amber-400' },
   siniestrado: { label: 'Siniestrado', cls: 'bg-red-500/15 text-red-400' },
 };
@@ -258,7 +258,7 @@ export default function FlotaPage() {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
           <p className="text-sm tracking-widest text-zinc-500 uppercase">Cargando flota...</p>
         </div>
       </div>
@@ -276,16 +276,16 @@ export default function FlotaPage() {
           <span className="text-sm text-zinc-500">{vehicles.length} unidades</span>
         </div>
         <button onClick={() => setShowCreateModal(true)}
-          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 cursor-pointer">
+          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
           <PlusIcon /> Registrar Vehiculo
         </button>
       </header>
 
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-4 border-b border-zinc-800/60 px-6 py-4">
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-5 py-4">
+        <div className="rounded-xl border border-lime-500/20 bg-lime-500/8 px-5 py-4">
           <p className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Activos</p>
-          <p className="mt-1 text-3xl font-bold tabular-nums text-emerald-400">{activeCount}</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums text-lime-400">{activeCount}</p>
           <p className="mt-1 text-xs text-zinc-500">de {vehicles.length} vehiculos</p>
         </div>
         <div className={`rounded-xl border px-5 py-4 ${maintenanceDue > 0 ? 'border-amber-500/20 bg-amber-500/8' : 'border-zinc-700/30 bg-zinc-800/40'}`}>
@@ -308,7 +308,7 @@ export default function FlotaPage() {
         ]).map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`rounded-t-lg px-5 py-3 text-sm font-medium transition-colors cursor-pointer min-h-[44px] ${
-              tab === t.key ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-emerald-500' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'
+              tab === t.key ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-lime-500' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'
             }`}>
             {t.label}
           </button>
@@ -345,7 +345,7 @@ export default function FlotaPage() {
                       const liveStatus = v.status !== 'activo'
                         ? badge
                         : isMoving
-                          ? { label: 'En Ruta', cls: 'bg-emerald-500/15 text-emerald-400' }
+                          ? { label: 'En Ruta', cls: 'bg-lime-500/15 text-lime-400' }
                           : { label: 'Detenido', cls: 'bg-amber-500/15 text-amber-400' };
 
                       return (
@@ -362,7 +362,7 @@ export default function FlotaPage() {
                           <td className="px-3 py-3 text-right">
                             {v.lastSpeed !== null ? (
                               <span className={`tabular-nums text-sm font-medium ${
-                                v.lastSpeed > 80 ? 'text-red-400' : v.lastSpeed > 1 ? 'text-emerald-400' : 'text-zinc-500'
+                                v.lastSpeed > 80 ? 'text-red-400' : v.lastSpeed > 1 ? 'text-lime-400' : 'text-zinc-500'
                               }`}>
                                 {v.lastSpeed.toFixed(0)}
                               </span>
@@ -387,7 +387,7 @@ export default function FlotaPage() {
               <div className="flex-1 rounded-2xl border border-zinc-800/40 overflow-hidden">
                 <Suspense fallback={
                   <div className="flex h-full items-center justify-center bg-zinc-900">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
                   </div>
                 }>
                   <FleetMap
@@ -417,7 +417,7 @@ export default function FlotaPage() {
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Bitacora de Mantenimiento</h2>
               <button onClick={() => setShowMaintModal(true)} disabled={vehicles.length === 0}
-                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer">
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer">
                 <PlusIcon /> Registrar Mantenimiento
               </button>
             </div>
@@ -475,12 +475,12 @@ export default function FlotaPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Placa</span>
                 <input type="text" value={vPlate} onChange={(e) => setVPlate(e.target.value)} placeholder="Ej: ABC-1234" maxLength={20}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Tipo</span>
                 <select value={vType} onChange={(e) => setVType(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                   <option value="auto">Auto</option>
                   <option value="moto">Moto</option>
                   <option value="scooter">Scooter</option>
@@ -490,28 +490,28 @@ export default function FlotaPage() {
               <label className="block sm:col-span-2">
                 <span className="text-xs font-medium text-zinc-400">Marca y Modelo</span>
                 <input type="text" value={vBrand} onChange={(e) => setVBrand(e.target.value)} placeholder="Ej: Toyota Hilux 2024" maxLength={150}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">GPS Device ID (opcional)</span>
                 <input type="text" value={vGps} onChange={(e) => setVGps(e.target.value)} placeholder="ID del tracker"
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Odometro Actual (km)</span>
                 <input type="number" min={0} value={vOdometer} onChange={(e) => setVOdometer(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
               <label className="block sm:col-span-2">
                 <span className="text-xs font-medium text-zinc-400">Proximo Mantenimiento (km)</span>
                 <input type="number" min={1} value={vNextMaint} onChange={(e) => setVNextMaint(Math.max(1, parseInt(e.target.value) || 5000))}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
             </div>
             <div className="mt-6 flex gap-3">
               <button onClick={() => setShowCreateModal(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
               <button onClick={handleCreateVehicle} disabled={!vPlate.trim() || !vBrand.trim() || createLoading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
                 {createLoading ? <Spinner /> : 'Registrar'}
               </button>
             </div>
@@ -529,7 +529,7 @@ export default function FlotaPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Vehiculo</span>
                 <select value={maintVehicle} onChange={(e) => setMaintVehicle(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                   <option value="">Seleccionar...</option>
                   {vehicles.map((v) => <option key={v.id} value={v.id}>{v.plateNumber} — {v.brandModel}</option>)}
                 </select>
@@ -537,30 +537,30 @@ export default function FlotaPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Tipo de Servicio</span>
                 <input type="text" value={maintType} onChange={(e) => setMaintType(e.target.value)} placeholder="Ej: Cambio de aceite, Revision de frenos" maxLength={200}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
               <div className="grid grid-cols-2 gap-4">
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Kilometraje Actual</span>
                   <input type="number" min={0} value={maintKm} onChange={(e) => setMaintKm(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                 </label>
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Costo (B/.)</span>
                   <input type="number" min={0} step="0.01" value={maintCost} onChange={(e) => setMaintCost(Math.max(0, parseFloat(e.target.value) || 0))}
-                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                 </label>
               </div>
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Fecha</span>
                 <input type="date" value={maintDate} onChange={(e) => setMaintDate(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
             </div>
             <div className="mt-6 flex gap-3">
               <button onClick={() => setShowMaintModal(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
               <button onClick={handleMaintenance} disabled={!maintVehicle || !maintType.trim() || !maintDate || maintLoading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
                 {maintLoading ? <Spinner /> : 'Registrar'}
               </button>
             </div>
@@ -571,7 +571,7 @@ export default function FlotaPage() {
       {/* TOAST */}
       {toast && (
         <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${
-          toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+          toast.type === 'success' ? 'bg-lime-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.msg}
         </div>
@@ -593,7 +593,7 @@ function EmptyState({ icon, title, subtitle, action, onAction }: {
       <p className="text-sm font-medium text-zinc-400">{title}</p>
       <p className="text-xs text-zinc-600">{subtitle}</p>
       <button onClick={onAction}
-        className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 cursor-pointer">
+        className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
         <PlusIcon /> {action}
       </button>
     </div>
@@ -630,7 +630,7 @@ function WrenchIcon() {
 
 function MapPinIcon() {
   return (
-    <svg className="mx-auto h-10 w-10 text-emerald-500/30" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <svg className="mx-auto h-10 w-10 text-lime-500/30" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
     </svg>
   );

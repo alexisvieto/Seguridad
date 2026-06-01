@@ -22,7 +22,7 @@ interface Toast {
 const statusBadge: Record<string, { label: string; cls: string }> = {
   abierto: { label: 'Abierto', cls: 'bg-blue-500/15 text-blue-400' },
   calculado: { label: 'Calculado', cls: 'bg-amber-500/15 text-amber-400' },
-  cerrado_pagado: { label: 'Pagado', cls: 'bg-emerald-500/15 text-emerald-400' },
+  cerrado_pagado: { label: 'Pagado', cls: 'bg-lime-500/15 text-lime-400' },
 };
 
 function formatDate(d: string): string {
@@ -122,7 +122,7 @@ export default function NominaIndexPage() {
   if (isLoading) {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
       </div>
     );
   }
@@ -136,7 +136,7 @@ export default function NominaIndexPage() {
           <span className="text-sm text-zinc-500">{periods.length} periodos</span>
         </div>
         <button onClick={() => setShowCreate(true)}
-          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 cursor-pointer">
+          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
           <PlusIcon /> Nuevo Periodo
         </button>
       </header>
@@ -150,7 +150,7 @@ export default function NominaIndexPage() {
             <p className="text-sm font-medium text-zinc-400">Sin periodos de nomina</p>
             <p className="text-xs text-zinc-600">Cree un periodo quincenal para empezar a calcular planillas</p>
             <button onClick={() => setShowCreate(true)}
-              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 cursor-pointer">
+              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
               <PlusIcon /> Crear Primer Periodo
             </button>
           </div>
@@ -169,7 +169,7 @@ export default function NominaIndexPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold tabular-nums text-emerald-400">B/.{fmt(p.totalNet)}</p>
+                    <p className="text-sm font-semibold tabular-nums text-lime-400">B/.{fmt(p.totalNet)}</p>
                     <p className="text-[10px] text-zinc-600">Neto a pagar</p>
                   </div>
                 </Link>
@@ -189,18 +189,18 @@ export default function NominaIndexPage() {
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Fecha Inicio</span>
                 <input type="date" value={newStart} onChange={(e) => setNewStart(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Fecha Fin</span>
                 <input type="date" value={newEnd} onChange={(e) => setNewEnd(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
             </div>
             <div className="mt-6 flex gap-3">
               <button onClick={() => setShowCreate(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
               <button onClick={handleCreatePeriod} disabled={!newStart || !newEnd || createLoading}
-                className="flex flex-1 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                className="flex flex-1 items-center justify-center rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
                 {createLoading ? <Spinner /> : 'Crear'}
               </button>
             </div>
@@ -210,7 +210,7 @@ export default function NominaIndexPage() {
 
       {toast && (
         <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${
-          toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+          toast.type === 'success' ? 'bg-lime-600 text-white' : 'bg-red-600 text-white'
         }`}>{toast.msg}</div>
       )}
     </div>

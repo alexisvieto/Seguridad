@@ -50,7 +50,7 @@ interface ShiftChangeData {
 }
 
 const statusConfig: Record<string, { label: string; icon: string; cls: string }> = {
-  on_time: { label: 'Presente', icon: '●', cls: 'text-emerald-400' },
+  on_time: { label: 'Presente', icon: '●', cls: 'text-lime-400' },
   late: { label: 'Tardanza', icon: '●', cls: 'text-amber-400' },
   no_show: { label: 'Ausencia', icon: '●', cls: 'text-red-400' },
   relief: { label: 'Relevista', icon: '●', cls: 'text-blue-400' },
@@ -243,7 +243,7 @@ export default function CambioTurnoPage() {
   if (!tenantId || isLoading) {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
       </div>
     );
   }
@@ -262,7 +262,7 @@ export default function CambioTurnoPage() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-none"
+            className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-lime-500 focus:outline-none"
           />
           <div className="flex rounded-lg border border-zinc-700 overflow-hidden">
             <button
@@ -283,7 +283,7 @@ export default function CambioTurnoPage() {
             </button>
           </div>
           {data?.reportStatus === 'enviado' && (
-            <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-bold text-emerald-400 ring-1 ring-emerald-500/30">
+            <span className="rounded-full bg-lime-500/15 px-3 py-1 text-[11px] font-bold text-lime-400 ring-1 ring-lime-500/30">
               ENVIADO
             </span>
           )}
@@ -345,7 +345,7 @@ export default function CambioTurnoPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           {hasEvent && (
-                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                            <span className="rounded-full bg-lime-500/15 px-2 py-0.5 text-[10px] font-semibold text-lime-400">
                               Documentado
                             </span>
                           )}
@@ -373,7 +373,7 @@ export default function CambioTurnoPage() {
                             <select
                               value={eventType}
                               onChange={(e) => setEventType(e.target.value)}
-                              className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                              className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 focus:border-lime-500 focus:outline-none"
                             >
                               {eventTypes.map((et) => (
                                 <option key={et.value} value={et.value}>{et.label}</option>
@@ -407,7 +407,7 @@ export default function CambioTurnoPage() {
                               {saving ? 'Guardando...' : 'Guardar'}
                             </button>
                           </div>
-                          {saveMsg && <p className="text-xs text-emerald-400">{saveMsg}</p>}
+                          {saveMsg && <p className="text-xs text-lime-400">{saveMsg}</p>}
                         </div>
                       )}
                     </div>
@@ -419,13 +419,13 @@ export default function CambioTurnoPage() {
 
           {/* All OK stations */}
           <div>
-            <h2 className="text-xs font-semibold tracking-widest text-emerald-500 uppercase mb-3">
+            <h2 className="text-xs font-semibold tracking-widest text-lime-500 uppercase mb-3">
               Puestos Cubiertos ({okStations.length})
             </h2>
             <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
               {okStations.map((s) => (
                 <div key={s.workStationId} className="flex items-center gap-2 rounded-lg border border-zinc-800/30 bg-zinc-800/10 px-4 py-2.5">
-                  <span className="text-emerald-400 text-xs">●</span>
+                  <span className="text-lime-400 text-xs">●</span>
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-zinc-300 truncate">{s.stationName}</p>
                     <p className="text-[10px] text-zinc-600 truncate">{s.actualAgentName ?? s.propertyName}</p>
@@ -470,8 +470,8 @@ export default function CambioTurnoPage() {
             </p>
 
             <div className="grid grid-cols-3 gap-2 mb-5">
-              <div className="rounded-lg bg-emerald-500/8 border border-emerald-500/20 px-3 py-2 text-center">
-                <p className="text-lg font-bold text-emerald-400">{okStations.length}</p>
+              <div className="rounded-lg bg-lime-500/8 border border-lime-500/20 px-3 py-2 text-center">
+                <p className="text-lg font-bold text-lime-400">{okStations.length}</p>
                 <p className="text-[9px] text-zinc-500">Cubiertos</p>
               </div>
               <div className="rounded-lg bg-red-500/8 border border-red-500/20 px-3 py-2 text-center">
@@ -493,7 +493,7 @@ export default function CambioTurnoPage() {
                 onBlur={handleSaveFields}
                 placeholder="Nombre de cada agente libre, uno por línea..."
                 rows={4}
-                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none resize-none"
+                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none resize-none"
               />
             </div>
 
@@ -506,7 +506,7 @@ export default function CambioTurnoPage() {
                 onBlur={handleSaveFields}
                 placeholder="Todos los puestos se mantuvieron debidamente cubiertos..."
                 rows={3}
-                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none resize-none"
+                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none resize-none"
               />
             </div>
 
@@ -528,18 +528,18 @@ export default function CambioTurnoPage() {
               <button
                 onClick={handleSend}
                 disabled={sending}
-                className="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 disabled:opacity-40 cursor-pointer"
+                className="w-full rounded-xl bg-lime-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-lime-600/20 hover:bg-lime-500 disabled:opacity-40 cursor-pointer"
               >
                 {sending ? 'Enviando...' : 'Enviar Reporte a Gerencia'}
               </button>
             ) : (
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-4 py-3 text-center">
-                <p className="text-sm font-medium text-emerald-400">Reporte enviado</p>
+              <div className="rounded-xl border border-lime-500/30 bg-lime-500/8 px-4 py-3 text-center">
+                <p className="text-sm font-medium text-lime-400">Reporte enviado</p>
               </div>
             )}
 
             {sendMsg && (
-              <p className="mt-2 text-xs text-emerald-400 text-center">{sendMsg}</p>
+              <p className="mt-2 text-xs text-lime-400 text-center">{sendMsg}</p>
             )}
           </div>
         </div>

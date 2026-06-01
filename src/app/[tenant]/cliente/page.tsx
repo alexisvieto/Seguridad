@@ -73,7 +73,7 @@ function timeAgo(iso: string): string {
 const ticketStatusBadge: Record<string, { label: string; cls: string }> = {
   abierto: { label: 'Abierto', cls: 'bg-blue-500/15 text-blue-400' },
   en_proceso: { label: 'En proceso', cls: 'bg-amber-500/15 text-amber-400' },
-  resuelto: { label: 'Resuelto', cls: 'bg-emerald-500/15 text-emerald-400' },
+  resuelto: { label: 'Resuelto', cls: 'bg-lime-500/15 text-lime-400' },
   cerrado: { label: 'Cerrado', cls: 'bg-zinc-500/15 text-zinc-400' },
 };
 
@@ -88,7 +88,7 @@ const damageStatusBadge: Record<string, { label: string; cls: string }> = {
   bajo_investigacion: { label: 'En investigación', cls: 'bg-amber-500/15 text-amber-400' },
   aceptado_empresa: { label: 'Aceptado', cls: 'bg-blue-500/15 text-blue-400' },
   rechazado_con_pruebas: { label: 'Rechazado', cls: 'bg-red-500/15 text-red-400' },
-  reparado: { label: 'Reparado', cls: 'bg-emerald-500/15 text-emerald-400' },
+  reparado: { label: 'Reparado', cls: 'bg-lime-500/15 text-lime-400' },
 };
 
 const categoryLabels: Record<string, string> = {
@@ -108,7 +108,7 @@ const responsibleLabels: Record<string, string> = {
 const incidentStatusDot: Record<string, string> = {
   open: 'bg-red-500',
   in_progress: 'bg-amber-500',
-  resolved: 'bg-emerald-500',
+  resolved: 'bg-lime-500',
   closed: 'bg-zinc-500',
 };
 
@@ -296,7 +296,7 @@ export default function ClientePortalPage() {
     return (
       <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" />
           <p className="text-sm tracking-widest text-zinc-500 uppercase">Cargando portal...</p>
         </div>
       </div>
@@ -352,7 +352,7 @@ export default function ClientePortalPage() {
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-2 rounded-t-lg px-5 py-3 text-sm font-medium transition-colors cursor-pointer min-h-[44px] ${
               tab === t.key
-                ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-emerald-500'
+                ? 'bg-zinc-800/60 text-zinc-100 border-b-2 border-lime-500'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'
             }`}
           >
@@ -404,7 +404,7 @@ export default function ClientePortalPage() {
               <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Mis Tickets</h2>
               <button
                 onClick={() => setShowTicketForm(!showTicketForm)}
-                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 cursor-pointer"
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer"
               >
                 <PlusIcon />
                 {showTicketForm ? 'Cancelar' : 'Abrir Nuevo Ticket'}
@@ -417,7 +417,7 @@ export default function ClientePortalPage() {
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Categoría</span>
                   <select value={tCategory} onChange={(e) => setTCategory(e.target.value)}
-                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                     <option value="">Seleccionar...</option>
                     <option value="queja_personal">Queja de personal</option>
                     <option value="solicitud_refuerzo">Solicitud de refuerzo</option>
@@ -428,17 +428,17 @@ export default function ClientePortalPage() {
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Asunto</span>
                   <input type="text" value={tSubject} onChange={(e) => setTSubject(e.target.value)} maxLength={300} placeholder="Resuma el asunto..."
-                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-emerald-500 focus:outline-none" />
+                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                 </label>
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Descripción</span>
                   <textarea value={tDescription} onChange={(e) => setTDescription(e.target.value)} rows={4} maxLength={5000} placeholder="Detalle la situación..."
-                    className="mt-1 block w-full resize-none rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500 focus:outline-none" />
+                    className="mt-1 block w-full resize-none rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none" />
                 </label>
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Prioridad</span>
                   <select value={tPriority} onChange={(e) => setTPriority(e.target.value)}
-                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-emerald-500 focus:outline-none cursor-pointer">
+                    className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                     <option value="baja">Baja</option>
                     <option value="media">Media</option>
                     <option value="alta">Alta</option>
@@ -446,7 +446,7 @@ export default function ClientePortalPage() {
                   </select>
                 </label>
                 <button onClick={submitTicket} disabled={!tCategory || !tSubject.trim() || !tDescription.trim() || tLoading}
-                  className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-40 cursor-pointer">
+                  className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-lime-600 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-lime-500 disabled:opacity-40 cursor-pointer">
                   {tLoading ? <Spinner /> : 'Enviar Ticket'}
                 </button>
               </div>
@@ -556,7 +556,7 @@ export default function ClientePortalPage() {
       {/* TOAST */}
       {toast && (
         <div className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-[slideUp_0.3s_ease-out] ${
-          toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+          toast.type === 'success' ? 'bg-lime-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.msg}
         </div>

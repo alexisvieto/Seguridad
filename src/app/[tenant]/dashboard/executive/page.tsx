@@ -243,7 +243,7 @@ export default function ExecutiveDashboardPage() {
             <h1 className="mt-0.5 text-xl font-bold tracking-tight">NexGuard360</h1>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="h-2 w-2 rounded-full bg-lime-500 animate-pulse" />
             <span className="text-xs text-zinc-500">{tenantSlug}</span>
           </div>
         </div>
@@ -253,9 +253,9 @@ export default function ExecutiveDashboardPage() {
       <div className="grid grid-cols-4 gap-4 border-b border-zinc-800/60 px-6 py-4">
 
         {/* Payroll Cost */}
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-4">
+        <div className="rounded-xl border border-lime-500/20 bg-lime-500/5 px-5 py-4">
           <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Planilla Quincenal</p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-emerald-400">B/.{fmt(data.payroll.totalNet)}</p>
+          <p className="mt-1.5 text-2xl font-bold tabular-nums text-lime-400">B/.{fmt(data.payroll.totalNet)}</p>
           <div className="mt-2">
             <div className="flex items-center justify-between text-[10px] text-zinc-500">
               <span>Neto</span>
@@ -263,7 +263,7 @@ export default function ExecutiveDashboardPage() {
             </div>
             <div className="mt-1 h-1.5 rounded-full bg-zinc-800">
               <div
-                className="h-1.5 rounded-full bg-emerald-500 transition-all duration-500"
+                className="h-1.5 rounded-full bg-lime-500 transition-all duration-500"
                 style={{ width: `${netPct}%` }}
               />
             </div>
@@ -427,7 +427,7 @@ export default function ExecutiveDashboardPage() {
           {alerts.length === 0 ? (
             <div className="flex flex-1 items-center justify-center">
               <div className="text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-lime-500/10">
                   <CheckIcon />
                 </div>
                 <p className="mt-3 text-sm text-zinc-500">Sin alertas pendientes</p>
@@ -490,7 +490,7 @@ export default function ExecutiveDashboardPage() {
 
 function CheckIcon() {
   return (
-    <svg className="h-6 w-6 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <svg className="h-6 w-6 text-lime-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   );
