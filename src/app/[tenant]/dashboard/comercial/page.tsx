@@ -545,52 +545,10 @@ export default function ComercialPage() {
                             ) : (
                               <div className="divide-y divide-zinc-800/20">
                                 {propStations.map((st) => (
-                        <div key={st.id} className="px-5 py-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-zinc-100">{st.name}</p>
-                            <div className="flex items-center gap-3">
-                              <button onClick={() => setQrStation(st)}
-                                className="text-[11px] font-medium text-blue-400 hover:text-blue-300 cursor-pointer">QR</button>
-                              <button onClick={() => { setShowConsignaForm(st.id); setCgTitle(''); setCgDesc(''); setCgPriority('media'); }}
-                                className="text-[11px] font-medium text-lime-400 hover:text-lime-300 cursor-pointer">+ Consigna</button>
-                            </div>
-                          </div>
-                          {st.consignas.length === 0 ? (
-                            <p className="mt-1 text-xs text-zinc-600">Sin consignas asignadas</p>
-                          ) : (
-                            <ul className="mt-2 space-y-1">
-                              {st.consignas.map((c) => (
-                                <li key={c.id} className="flex items-center gap-2 text-xs">
-                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${prioBadge[c.priority] ?? prioBadge['media']}`}>{c.priority}</span>
-                                  <span className="text-zinc-300">{c.title}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                          {showConsignaForm === st.id && (
-                            <div className="mt-3 space-y-2 border-t border-zinc-800/30 pt-3">
-                              <input type="text" value={cgTitle} onChange={(e) => setCgTitle(e.target.value)}
-                                placeholder="Ej: Ronda en área social 8am, 6pm y 12am"
-                                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 focus:border-lime-500 focus:outline-none" />
-                              <input type="text" value={cgDesc} onChange={(e) => setCgDesc(e.target.value)}
-                                placeholder="Descripción detallada (opcional)"
-                                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 focus:border-lime-500 focus:outline-none" />
-                              <div className="flex items-center gap-2">
-                                <select value={cgPriority} onChange={(e) => setCgPriority(e.target.value)}
-                                  className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 focus:border-lime-500 focus:outline-none cursor-pointer">
-                                  <option value="baja">Baja</option>
-                                  <option value="media">Media</option>
-                                  <option value="alta">Alta</option>
-                                  <option value="critica">Crítica</option>
-                                </select>
-                                <button onClick={() => setShowConsignaForm(null)} className="px-3 py-2 text-xs text-zinc-500 hover:text-zinc-300 cursor-pointer">Cancelar</button>
-                                <button onClick={handleAddConsigna} disabled={cgLoading || !cgTitle.trim()}
-                                  className="rounded-lg bg-lime-600 px-4 py-2 text-xs font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer">
-                                  {cgLoading ? 'Guardando...' : 'Guardar'}
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                        <div key={st.id} className="flex items-center justify-between px-5 py-3">
+                          <p className="text-sm font-medium text-zinc-100">{st.name}</p>
+                          <button onClick={() => setQrStation(st)}
+                            className="text-[11px] font-medium text-blue-400 hover:text-blue-300 cursor-pointer">QR</button>
                         </div>
                       ))}
                               </div>
