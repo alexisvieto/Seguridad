@@ -21,6 +21,14 @@ interface FirearmRow {
   permitExpiry: string;
   permitAlert: AlertLevel;
   daysToExpiry: number;
+  locationId: string | null;
+  locationName: string | null;
+  permitDocUrl: string | null;
+}
+
+interface LocationOption {
+  id: string;
+  name: string;
 }
 
 interface AssignmentRecord {
@@ -30,6 +38,8 @@ interface AssignmentRecord {
   assignedAt: string;
   returnedAt: string | null;
   notes: string | null;
+  signatureData: string | null;
+  returnLocationName: string | null;
 }
 
 interface ComplianceRow {
@@ -143,7 +153,23 @@ export default function ArmamentoPage() {
   const [newPermit, setNewPermit] = useState('');
   const [newPermitExpiry, setNewPermitExpiry] = useState('');
   const [newStatus, setNewStatus] = useState<'operativa' | 'mantenimiento' | 'retirada'>('operativa');
+  const [newLocationId, setNewLocationId] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
+
+  // Locations
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [showLocForm, setShowLocForm] = useState(false);
+  const [newLocName, setNewLocName] = useState('');
+  const [locLoading, setLocLoading] = useState(false);
+
+  // Return
+  const [showReturnModal, setShowReturnModal] = useState<string | null>(null);
+  const [returnLocId, setReturnLocId] = useState('');
+  const [returnLoading, setReturnLoading] = useState(false);
+
+  // Signature for assignment
+  const [hasSigned, setHasSigned] = useState(false);
+  const [signKey, setSignKey] = useState(0);
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -170,7 +196,7 @@ export default function ArmamentoPage() {
     if (!tenant) return;
     setTenantId(tenant.id);
 
-    const [firearmsRes, complianceRes] = await Promise.all([
+    const [firearmsRes, complianceRes, locsRes] = await Promise.all([
       supabase
         .from('firearms_inventory')
         .select('*')
@@ -180,7 +206,15 @@ export default function ArmamentoPage() {
         .from('agent_compliance')
         .select('user_id, shooting_test_expiry, psych_test_expiry, doping_test_expiry')
         .eq('tenant_id', tenant.id),
+      supabase
+        .from('firearm_locations')
+        .select('id, name')
+        .eq('tenant_id', tenant.id)
+        .order('name'),
     ]);
+
+    const locsMap = new Map((locsRes.data ?? []).map((l) => [l.id, l.name]));
+    setLocations((locsRes.data ?? []).map((l) => ({ id: l.id, name: l.name })));
 
     const userIds = (complianceRes.data ?? []).map((c) => c.user_id);
     const { data: profiles } = userIds.length > 0
@@ -200,6 +234,9 @@ export default function ArmamentoPage() {
         permitExpiry: f.permit_expiry_date,
         permitAlert: alertLevel(f.permit_expiry_date),
         daysToExpiry: daysUntil(f.permit_expiry_date),
+        locationId: f.location_id,
+        locationName: f.location_id ? (locsMap.get(f.location_id) ?? null) : null,
+        permitDocUrl: f.permit_document_url,
       })),
     );
 
@@ -249,6 +286,8 @@ export default function ArmamentoPage() {
         assignedAt: a.assigned_at,
         returnedAt: a.returned_at,
         notes: a.notes,
+        signatureData: null,
+        returnLocationName: null,
       })),
     );
 
@@ -386,6 +425,7 @@ export default function ArmamentoPage() {
           permit_number: newPermit.trim(),
           permit_expiry_date: newPermitExpiry,
           status: newStatus,
+          location_id: newLocationId || null,
         })
         .select()
         .single();
@@ -412,6 +452,9 @@ export default function ArmamentoPage() {
           permitExpiry: data.permit_expiry_date,
           permitAlert: alertLevel(data.permit_expiry_date),
           daysToExpiry: daysUntil(data.permit_expiry_date),
+          locationId: data.location_id,
+          locationName: data.location_id ? (locations.find((l) => l.id === data.location_id)?.name ?? null) : null,
+          permitDocUrl: data.permit_document_url,
         };
         setFirearms((prev) => [...prev, newFirearm]);
         setSelected(newFirearm);

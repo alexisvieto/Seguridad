@@ -436,6 +436,8 @@ export interface Database {
           status: FirearmStatus;
           permit_number: string;
           permit_expiry_date: string;
+          location_id: string | null;
+          permit_document_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -449,6 +451,8 @@ export interface Database {
           status?: FirearmStatus;
           permit_number: string;
           permit_expiry_date: string;
+          location_id?: string | null;
+          permit_document_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -460,6 +464,8 @@ export interface Database {
           status?: FirearmStatus;
           permit_number?: string;
           permit_expiry_date?: string;
+          location_id?: string | null;
+          permit_document_url?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -1635,6 +1641,12 @@ export interface Database {
         Insert: { id?: string; report_id: string; tenant_id: string; work_station_id: string; event_type: string; programmed_agent_id?: string | null; actual_agent_id?: string | null; narrative?: string; arrival_time?: string | null; waiting_agent_id?: string | null; created_at?: string; updated_at?: string };
         Update: { event_type?: string; actual_agent_id?: string | null; narrative?: string; arrival_time?: string | null; waiting_agent_id?: string | null; updated_at?: string };
         Relationships: [{ foreignKeyName: 'shift_change_events_report_id_fkey'; columns: ['report_id']; isOneToOne: false; referencedRelation: 'shift_change_reports'; referencedColumns: ['id'] }];
+      };
+      firearm_locations: {
+        Row: { id: string; tenant_id: string; name: string; address: string; created_at: string };
+        Insert: { id?: string; tenant_id: string; name: string; address?: string; created_at?: string };
+        Update: { name?: string; address?: string };
+        Relationships: [{ foreignKeyName: 'firearm_locations_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
       };
       alert_audit_log: {
         Row: { id: string; tenant_id: string; source_type: string; source_id: string; old_status: string; new_status: string; notes: string; action_by: string; created_at: string };
