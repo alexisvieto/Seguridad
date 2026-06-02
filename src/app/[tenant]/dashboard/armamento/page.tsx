@@ -492,6 +492,7 @@ export default function ArmamentoPage() {
     (c) => c.shooting.level === 'red' || c.psych.level === 'red' || c.doping.level === 'red',
   ).length;
   const activeAssignments = assignments.filter((a) => a.returnedAt === null).length;
+  const inArmory = firearms.length - activeAssignments;
 
   // -------------------------------------------------------------------
   // Loading
@@ -561,15 +562,11 @@ export default function ArmamentoPage() {
           </p>
         </div>
 
-        {/* Compliance */}
-        <div className={`rounded-xl border px-5 py-4 ${nonCompliantAgents > 0 ? alertBg.red : alertBg.green}`}>
-          <p className="text-xs font-medium tracking-widest text-zinc-400 uppercase">Agentes No Aptos</p>
-          <p className={`mt-1 text-3xl font-bold tabular-nums ${nonCompliantAgents > 0 ? 'text-red-400' : 'text-lime-400'}`}>
-            {nonCompliantAgents}
-          </p>
-          <p className="mt-1 text-xs text-zinc-500">
-            {nonCompliantAgents > 0 ? 'requieren actualización' : 'todos en cumplimiento'}
-          </p>
+        {/* Inventory in armory */}
+        <div className="rounded-xl border bg-zinc-800/40 border-zinc-700/30 px-5 py-4">
+          <p className="text-xs font-medium tracking-widest text-zinc-400 uppercase">En Armería</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums text-lime-400">{inArmory}</p>
+          <p className="mt-1 text-xs text-zinc-500">de {firearms.length} totales</p>
         </div>
 
         {/* Assigned */}
