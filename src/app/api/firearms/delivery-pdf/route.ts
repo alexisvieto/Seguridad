@@ -23,11 +23,17 @@ export async function GET(request: NextRequest) {
     const { data: tenant } = await supabase.from('tenants').select('name').eq('id', assignment.tenant_id).maybeSingle();
 
     const agentId = assignment.user_id;
+    const stationId = assignment.work_station_id;
+    const isStationAssignment = !agentId && !!stationId;
+
     const { data: profile } = agentId
       ? await supabase.from('profiles').select('full_name').eq('id', agentId).maybeSingle()
       : { data: null };
     const { data: hrProfile } = agentId
       ? await supabase.from('hr_agent_profiles').select('cedula').eq('user_id', agentId).eq('tenant_id', assignment.tenant_id).maybeSingle()
+      : { data: null };
+    const { data: station } = stationId
+      ? await supabase.from('work_stations').select('name, properties_ph(name)').eq('id', stationId).maybeSingle()
       : { data: null };
 
     const firearm = assignment.firearms_inventory as {
@@ -37,6 +43,8 @@ export async function GET(request: NextRequest) {
 
     const agentName = profile?.full_name ?? 'Agente';
     const cedula = hrProfile?.cedula ?? 'No registrada';
+    const stationName = station?.name ?? 'Puesto';
+    const propertyName = (station?.properties_ph as { name: string } | null)?.name ?? '';
     const assignDate = new Date(assignment.assigned_at).toLocaleDateString('es-PA', { day: '2-digit', month: 'long', year: 'numeric' });
 
     const proto = request.headers.get('x-forwarded-proto') ?? 'http';
@@ -81,12 +89,20 @@ body{font-family:'Segoe UI',system-ui,sans-serif;color:#1a1a2e;background:#fff;l
 
 <div class="warning">DOCUMENTO CONFIDENCIAL — Control de armamento regulado por DIASP, República de Panamá. La posesión y porte de armas de fuego está sujeta a la legislación vigente.</div>
 
+${isStationAssignment ? `
+<div class="section"><h3>Datos del Puesto de Custodia</h3>
+<div class="field"><span class="field-label">Puesto:</span><span class="field-value">${stationName}</span></div>
+<div class="field"><span class="field-label">Propiedad:</span><span class="field-value">${propertyName}</span></div>
+<div class="field"><span class="field-label">Empresa:</span><span class="field-value">${tenant?.name ?? ''}</span></div>
+<div class="field"><span class="field-label">Fecha de asignación:</span><span class="field-value">${assignDate}</span></div>
+<div class="field"><span class="field-label">Modalidad:</span><span class="field-value">Arma compartida — custodia del puesto. Los agentes asignados a este puesto son responsables durante su turno.</span></div>
+</div>` : `
 <div class="section"><h3>Datos del Agente Receptor</h3>
 <div class="field"><span class="field-label">Nombre completo:</span><span class="field-value">${agentName}</span></div>
 <div class="field"><span class="field-label">Cédula de identidad:</span><span class="field-value">${cedula}</span></div>
 <div class="field"><span class="field-label">Empresa:</span><span class="field-value">${tenant?.name ?? ''}</span></div>
 <div class="field"><span class="field-label">Fecha de entrega:</span><span class="field-value">${assignDate}</span></div>
-</div>
+</div>`}
 
 <div class="section"><h3>Datos del Arma de Fuego</h3>
 <div class="field"><span class="field-label">Número de serie:</span><span class="field-value">${firearm?.serial_number ?? 'N/A'}</span></div>
@@ -97,6 +113,23 @@ body{font-family:'Segoe UI',system-ui,sans-serif;color:#1a1a2e;background:#fff;l
 <div class="field"><span class="field-label">Vencimiento del permiso:</span><span class="field-value">${firearm?.permit_expiry_date ? new Date(firearm.permit_expiry_date).toLocaleDateString('es-PA', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}</span></div>
 </div>
 
+${isStationAssignment ? `
+<div class="section"><h3>Acuerdo de Custodia por Puesto</h3>
+<div class="agreement">
+Por medio del presente documento, <strong>${tenant?.name ?? ''}</strong> asigna el arma de fuego detallada al puesto <strong>${stationName}</strong> ubicado en <strong>${propertyName}</strong>.<br><br>
+Condiciones de custodia:<br>
+1. El arma permanecerá en el puesto y será responsabilidad del agente en turno durante su jornada laboral.<br>
+2. Cada agente que inicie turno en este puesto asume la custodia del arma durante su horario asignado.<br>
+3. Al finalizar el turno, el agente saliente debe verificar que el arma se encuentre en su lugar y en buen estado antes de entregar el puesto al agente entrante.<br>
+4. Cualquier pérdida, daño o irregularidad debe reportarse inmediatamente al supervisor de operaciones.<br>
+5. Queda prohibido retirar el arma del puesto sin autorización expresa de la gerencia de operaciones.<br>
+6. Se cumplirán todas las disposiciones legales vigentes sobre porte y uso de armas de fuego en la República de Panamá.
+</div></div>
+
+<div class="signatures">
+<div class="sig-block"><p class="sig-line">Supervisor de Operaciones</p><p class="sig-sub">${tenant?.name ?? ''}</p></div>
+<div class="sig-block"><p class="sig-line">Responsable de Armería</p><p class="sig-sub">${tenant?.name ?? ''}</p></div>
+</div>` : `
 <div class="section"><h3>Acuerdo de Custodia y Responsabilidad</h3>
 <div class="agreement">
 Yo, <strong>${agentName}</strong>, identificado(a) con cédula <strong>${cedula}</strong>, declaro haber recibido de parte de <strong>${tenant?.name ?? ''}</strong> el arma de fuego detallada en el presente documento.<br><br>
@@ -113,7 +146,7 @@ En caso de pérdida, daño por negligencia o uso indebido, acepto la responsabil
 <div class="signatures">
 <div class="sig-block"><p class="sig-line">${agentName}</p><p class="sig-sub">Cédula: ${cedula}</p><p class="sig-sub">Agente Receptor</p></div>
 <div class="sig-block"><p class="sig-line">Operaciones ${tenant?.name ?? ''}</p><p class="sig-sub">Responsable de Armería</p></div>
-</div>
+</div>`}
 
 <div class="footer"><p>Generado por <strong>NexGuard360</strong> — www.nexguard360.com</p><p>Seguridad Operativa y Control 360</p></div>
 </body></html>`;
