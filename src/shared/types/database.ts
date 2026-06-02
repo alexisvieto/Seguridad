@@ -1635,6 +1635,12 @@ export interface Database {
         Update: { event_type?: string; actual_agent_id?: string | null; narrative?: string; arrival_time?: string | null; waiting_agent_id?: string | null; updated_at?: string };
         Relationships: [{ foreignKeyName: 'shift_change_events_report_id_fkey'; columns: ['report_id']; isOneToOne: false; referencedRelation: 'shift_change_reports'; referencedColumns: ['id'] }];
       };
+      alert_audit_log: {
+        Row: { id: string; tenant_id: string; source_type: string; source_id: string; old_status: string; new_status: string; notes: string; action_by: string; created_at: string };
+        Insert: { id?: string; tenant_id: string; source_type: string; source_id: string; old_status: string; new_status: string; notes?: string; action_by: string; created_at?: string };
+        Update: never;
+        Relationships: [{ foreignKeyName: 'alert_audit_log_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
+      };
       shift_alerts: {
         Row: { id: string; tenant_id: string; work_station_id: string; programmed_agent_id: string | null; shift_type: string; alert_date: string; status: string; resolved_by_shift_id: string | null; resolved_at: string | null; created_at: string };
         Insert: { id?: string; tenant_id: string; work_station_id: string; programmed_agent_id?: string | null; shift_type: string; alert_date: string; status?: string; resolved_by_shift_id?: string | null; resolved_at?: string | null; created_at?: string };

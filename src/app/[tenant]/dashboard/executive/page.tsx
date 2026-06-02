@@ -3,495 +3,294 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
-} from 'recharts';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface PayrollMetrics {
-  periodLabel: string | null;
-  periodStatus: string | null;
-  totalGross: number;
-  totalNet: number;
-  totalOvertimeHours: number;
-  agentCount: number;
-}
-
-interface ComplianceAlerts {
-  contractsPendingSeal: number;
-  trainingExpiringSoon: number;
-  trainingExpired: number;
-}
-
-interface IncidentAnalytics {
-  last30DaysTotal: number;
-  openIncidents: number;
-  resolvedIncidents: number;
-}
-
-interface DashboardData {
-  payroll: PayrollMetrics;
-  compliance: ComplianceAlerts;
-  incidents: IncidentAnalytics;
-  generatedAt: string;
-}
-
-interface PeriodBar {
-  label: string;
-  regular: number;
-  overtime: number;
-}
-
 interface AlertItem {
   id: string;
-  type: 'danger' | 'warning';
-  message: string;
-  detail: string;
+  sourceType: 'incident' | 'ticket' | 'damage';
+  title: string;
+  description: string;
+  propertyName: string;
+  status: string;
+  createdAt: string;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function fmt(v: number): string {
-  return v.toLocaleString('es-PA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+interface AuditEntry {
+  id: string;
+  old_status: string;
+  new_status: string;
+  notes: string;
+  action_by_name: string;
+  created_at: string;
 }
 
-function pct(part: number, total: number): number {
-  if (total <= 0) return 0;
-  return Math.min(100, Math.round((part / total) * 100));
+const statusFlow: Record<string, { label: string; cls: string; dotCls: string }> = {
+  open: { label: 'Sin Atender', cls: 'bg-red-500/15 text-red-400', dotCls: 'bg-red-500' },
+  abierto: { label: 'Sin Atender', cls: 'bg-red-500/15 text-red-400', dotCls: 'bg-red-500' },
+  bajo_investigacion: { label: 'Sin Atender', cls: 'bg-red-500/15 text-red-400', dotCls: 'bg-red-500' },
+  in_progress: { label: 'En Proceso', cls: 'bg-amber-500/15 text-amber-400', dotCls: 'bg-amber-500' },
+  en_proceso: { label: 'En Proceso', cls: 'bg-amber-500/15 text-amber-400', dotCls: 'bg-amber-500' },
+  resolved: { label: 'Resuelto', cls: 'bg-lime-500/15 text-lime-400', dotCls: 'bg-lime-500' },
+  resuelto: { label: 'Resuelto', cls: 'bg-lime-500/15 text-lime-400', dotCls: 'bg-lime-500' },
+  justified: { label: 'Justificada', cls: 'bg-lime-500/15 text-lime-400', dotCls: 'bg-lime-500' },
+  closed: { label: 'Cerrado', cls: 'bg-zinc-500/15 text-zinc-400', dotCls: 'bg-zinc-500' },
+  cerrado: { label: 'Cerrado', cls: 'bg-zinc-500/15 text-zinc-400', dotCls: 'bg-zinc-500' },
+  aceptado_empresa: { label: 'Aceptado', cls: 'bg-lime-500/15 text-lime-400', dotCls: 'bg-lime-500' },
+  rechazado_con_pruebas: { label: 'Rechazado', cls: 'bg-red-500/15 text-red-400', dotCls: 'bg-red-500' },
+  reparado: { label: 'Reparado', cls: 'bg-lime-500/15 text-lime-400', dotCls: 'bg-lime-500' },
+};
+
+const sourceLabels: Record<string, string> = { incident: 'Novedad de Campo', ticket: 'Ticket PQR', damage: 'Reporte de Daño' };
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleString('es-PA', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
 }
+
+function isOpen(s: string) { return ['open', 'abierto', 'bajo_investigacion'].includes(s); }
+function isProgress(s: string) { return ['in_progress', 'en_proceso'].includes(s); }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export default function ExecutiveDashboardPage() {
+export default function CentroComandoPage() {
   const params = useParams<{ tenant: string }>();
   const tenantSlug = params.tenant;
 
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [periods, setPeriods] = useState<PeriodBar[]>([]);
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [operations, setOperations] = useState<AlertItem[]>([]);
+  const [clientAlerts, setClientAlerts] = useState<AlertItem[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [auditTrail, setAuditTrail] = useState<AuditEntry[]>([]);
+  const [actionNotes, setActionNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
 
   const loadData = useCallback(async () => {
-    try {
-      // Fetch executive API
-      const res = await fetch('/api/dashboard/executive');
-      if (!res.ok) return;
-      const json = await res.json() as { data: DashboardData };
-      setData(json.data);
+    const supabase = getSupabaseBrowserClient();
+    const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
+    if (!tenant) return;
+    setTenantId(tenant.id);
 
-      // Fetch last 3 periods for chart
-      const supabase = getSupabaseBrowserClient();
-      const { data: tenant } = await supabase
-        .from('tenants').select('id').eq('slug', tenantSlug).single();
-      if (!tenant) return;
+    const [incRes, tickRes, dmgRes] = await Promise.all([
+      supabase.from('incidents_log').select('id, status, raw_text, ai_refined_text, created_at, work_stations(name, properties_ph(name))').eq('tenant_id', tenant.id).order('created_at', { ascending: false }).limit(50),
+      supabase.from('client_tickets').select('id, category, subject, description, priority, status, created_at, properties_ph(name)').eq('tenant_id', tenant.id).order('created_at', { ascending: false }).limit(50),
+      supabase.from('client_damage_reports').select('id, item_damaged, description, cost_estimate, status, created_at, properties_ph(name)').eq('tenant_id', tenant.id).order('created_at', { ascending: false }).limit(50),
+    ]);
 
-      const { data: recentPeriods } = await supabase
-        .from('payroll_periods')
-        .select('id, start_date, end_date')
-        .eq('tenant_id', tenant.id)
-        .in('status', ['calculado', 'cerrado_pagado'])
-        .order('end_date', { ascending: false })
-        .limit(3);
+    setOperations((incRes.data ?? []).map((i) => ({
+      id: i.id, sourceType: 'incident',
+      title: (i.work_stations as { name: string } | null)?.name ?? 'Puesto',
+      description: i.ai_refined_text ?? i.raw_text,
+      propertyName: (i.work_stations as { name: string; properties_ph: { name: string } | null } | null)?.properties_ph?.name ?? '',
+      status: i.status, createdAt: i.created_at,
+    })));
 
-      const bars: PeriodBar[] = [];
-      for (const p of (recentPeriods ?? []).reverse()) {
-        const { data: consolidated } = await supabase
-          .from('payroll_agent_consolidated')
-          .select('regular_hours_accumulated, overtime_hours_accumulated')
-          .eq('payroll_period_id', p.id);
+    setClientAlerts([
+      ...(tickRes.data ?? []).map((t) => ({
+        id: t.id, sourceType: 'ticket' as const, title: t.subject, description: t.description,
+        propertyName: (t.properties_ph as { name: string } | null)?.name ?? '',
+        status: t.status, createdAt: t.created_at,
+      })),
+      ...(dmgRes.data ?? []).map((d) => ({
+        id: d.id, sourceType: 'damage' as const, title: `Daño: ${d.item_damaged}`, description: d.description,
+        propertyName: (d.properties_ph as { name: string } | null)?.name ?? '',
+        status: d.status, createdAt: d.created_at,
+      })),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
 
-        const regular = (consolidated ?? []).reduce((s, r) => s + Number(r.regular_hours_accumulated), 0);
-        const overtime = (consolidated ?? []).reduce((s, r) => s + Number(r.overtime_hours_accumulated), 0);
-
-        const startParts = p.start_date.split('-');
-        const label = `${startParts[2]}/${startParts[1]}`;
-        bars.push({ label, regular, overtime });
-      }
-      setPeriods(bars);
-
-      // Build alerts
-      const alertList: AlertItem[] = [];
-
-      // Training expired
-      if (json.data.compliance.trainingExpired > 0) {
-        alertList.push({
-          id: 'training-expired',
-          type: 'danger',
-          message: `${json.data.compliance.trainingExpired} certificacion${json.data.compliance.trainingExpired > 1 ? 'es' : ''} vencida${json.data.compliance.trainingExpired > 1 ? 's' : ''}`,
-          detail: 'Agentes con cursos DIASP o capacitaciones obligatorias expiradas',
-        });
-      }
-
-      // Training expiring soon
-      if (json.data.compliance.trainingExpiringSoon > 0) {
-        alertList.push({
-          id: 'training-expiring',
-          type: 'warning',
-          message: `${json.data.compliance.trainingExpiringSoon} certificacion${json.data.compliance.trainingExpiringSoon > 1 ? 'es' : ''} por vencer en 30 dias`,
-          detail: 'Programar recertificacion antes de la fecha limite',
-        });
-      }
-
-      // Contracts pending seal
-      if (json.data.compliance.contractsPendingSeal > 0) {
-        alertList.push({
-          id: 'mitradel-pending',
-          type: 'danger',
-          message: `${json.data.compliance.contractsPendingSeal} contrato${json.data.compliance.contractsPendingSeal > 1 ? 's' : ''} pendiente${json.data.compliance.contractsPendingSeal > 1 ? 's' : ''} de sello MITRADEL`,
-          detail: 'Riesgo de multa por operar sin contrato sellado',
-        });
-      }
-
-      // Open incidents
-      if (json.data.incidents.openIncidents > 0) {
-        alertList.push({
-          id: 'incidents-open',
-          type: json.data.incidents.openIncidents > 5 ? 'danger' : 'warning',
-          message: `${json.data.incidents.openIncidents} incidente${json.data.incidents.openIncidents > 1 ? 's' : ''} abierto${json.data.incidents.openIncidents > 1 ? 's' : ''} sin resolver`,
-          detail: `${json.data.incidents.resolvedIncidents} resueltos en los ultimos 30 dias`,
-        });
-      }
-
-      setAlerts(alertList);
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(false);
   }, [tenantSlug]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // -------------------------------------------------------------------
-  // Skeleton
-  // -------------------------------------------------------------------
+  const loadAudit = useCallback(async (type: string, id: string) => {
+    try {
+      const res = await fetch(`/api/command-center?source_type=${type}&source_id=${id}`);
+      if (res.ok) { const { data } = await res.json() as { data: AuditEntry[] }; setAuditTrail(data); }
+    } catch { /* silent */ }
+  }, []);
+
+  const handleExpand = useCallback((item: AlertItem) => {
+    if (expandedId === item.id) { setExpandedId(null); return; }
+    setExpandedId(item.id); setActionNotes(''); setAuditTrail([]);
+    loadAudit(item.sourceType, item.id);
+  }, [expandedId, loadAudit]);
+
+  const handleAction = useCallback(async (item: AlertItem, newStatus: string) => {
+    if (!tenantId || !actionNotes.trim()) { setToast('Debe ingresar una nota'); return; }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/command-center', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_type: item.sourceType, source_id: item.id, tenant_id: tenantId, new_status: newStatus, notes: actionNotes.trim() }),
+      });
+      if (res.ok) { setToast('Acción registrada'); setExpandedId(null); setActionNotes(''); loadData(); }
+      else setToast('Error al registrar');
+    } catch { setToast('Error de conexión'); }
+    finally { setSaving(false); }
+  }, [tenantId, actionNotes, loadData]);
+
+  const openOps = operations.filter((o) => isOpen(o.status)).length;
+  const progressOps = operations.filter((o) => isProgress(o.status)).length;
+  const openClient = clientAlerts.filter((c) => isOpen(c.status)).length;
+  const progressAll = progressOps + clientAlerts.filter((c) => isProgress(c.status)).length;
+  const today = new Date().toISOString().split('T')[0]!;
+  const resolvedToday = operations.filter((o) => ['resolved', 'justified', 'closed'].includes(o.status) && o.createdAt.startsWith(today)).length
+    + clientAlerts.filter((c) => ['resuelto', 'cerrado', 'aceptado_empresa', 'reparado'].includes(c.status) && c.createdAt.startsWith(today)).length;
 
   if (isLoading) {
-    return (
-      <div className="flex h-dvh flex-col bg-[#0A0E1A] text-zinc-100 overflow-hidden">
-        <header className="border-b border-zinc-800/60 px-6 py-4">
-          <div className="h-4 w-48 rounded bg-zinc-800 animate-pulse" />
-          <div className="mt-2 h-7 w-72 rounded bg-zinc-800 animate-pulse" />
-        </header>
-        <div className="grid grid-cols-4 gap-4 border-b border-zinc-800/60 px-6 py-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="rounded-xl border border-zinc-800/40 bg-zinc-800/30 px-5 py-6">
-              <div className="h-3 w-24 rounded bg-zinc-700 animate-pulse" />
-              <div className="mt-3 h-8 w-32 rounded bg-zinc-700 animate-pulse" />
-              <div className="mt-2 h-2 w-20 rounded bg-zinc-800 animate-pulse" />
-            </div>
-          ))}
-        </div>
-        <div className="flex flex-1 gap-6 p-6">
-          <div className="flex-1 rounded-2xl border border-zinc-800/40 bg-zinc-800/20 p-6">
-            <div className="h-4 w-40 rounded bg-zinc-700 animate-pulse" />
-            <div className="mt-6 flex items-end gap-6 h-48">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex-1 flex gap-1">
-                  <div className="flex-1 rounded-t bg-zinc-700/50 animate-pulse" style={{ height: `${40 + i * 25}%` }} />
-                  <div className="flex-1 rounded-t bg-zinc-800/50 animate-pulse" style={{ height: `${20 + i * 10}%` }} />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="w-[360px] rounded-2xl border border-zinc-800/40 bg-zinc-800/20 p-6">
-            <div className="h-4 w-32 rounded bg-zinc-700 animate-pulse" />
-            <div className="mt-4 space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-16 rounded-xl bg-zinc-800/50 animate-pulse" />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]"><div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" /></div>;
   }
-
-  if (!data) {
-    return (
-      <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]">
-        <p className="text-sm text-zinc-500">Error al cargar el dashboard ejecutivo</p>
-      </div>
-    );
-  }
-
-  // Chart scale
-  const maxBarValue = Math.max(
-    ...periods.map((p) => p.regular + p.overtime),
-    1,
-  );
-
-  const netPct = pct(data.payroll.totalNet, data.payroll.totalGross);
-
-  // -------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------
 
   return (
     <div className="flex h-dvh flex-col bg-[#0A0E1A] text-zinc-100 overflow-hidden">
-
-      {/* HEADER */}
-      <header className="border-b border-zinc-800/60 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Centro de Comando</p>
-            <h1 className="mt-0.5 text-xl font-bold tracking-tight">NexGuard360</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-lime-500 animate-pulse" />
-            <span className="text-xs text-zinc-500">{tenantSlug}</span>
-          </div>
+      <header className="flex items-center justify-between border-b border-zinc-800/60 px-6 py-4">
+        <div>
+          <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Control Central</p>
+          <h1 className="text-lg font-bold">Centro de Comando</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          {openOps > 0 && <span className="rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold text-red-400">{openOps} novedad{openOps !== 1 ? 'es' : ''}</span>}
+          {openClient > 0 && <span className="rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold text-red-400">{openClient} cliente</span>}
+          {progressAll > 0 && <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-bold text-amber-400">{progressAll} en proceso</span>}
         </div>
       </header>
 
-      {/* KPIs */}
       <div className="grid grid-cols-4 gap-4 border-b border-zinc-800/60 px-6 py-4">
+        <KpiCard label="Novedades Abiertas" value={openOps} color="red" />
+        <KpiCard label="Tickets Cliente" value={openClient} color="red" />
+        <KpiCard label="En Proceso" value={progressAll} color="amber" />
+        <KpiCard label="Resueltos Hoy" value={resolvedToday} color="lime" />
+      </div>
 
-        {/* Payroll Cost */}
-        <div className="rounded-xl border border-lime-500/20 bg-lime-500/5 px-5 py-4">
-          <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Planilla Quincenal</p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-lime-400">B/.{fmt(data.payroll.totalNet)}</p>
-          <div className="mt-2">
-            <div className="flex items-center justify-between text-[10px] text-zinc-500">
-              <span>Neto</span>
-              <span>Bruto B/.{fmt(data.payroll.totalGross)}</span>
-            </div>
-            <div className="mt-1 h-1.5 rounded-full bg-zinc-800">
-              <div
-                className="h-1.5 rounded-full bg-lime-500 transition-all duration-500"
-                style={{ width: `${netPct}%` }}
-              />
-            </div>
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 border-r border-zinc-800/60 overflow-y-auto">
+          <div className="px-5 py-3 border-b border-zinc-800/30">
+            <p className="text-xs font-semibold tracking-widest text-red-400 uppercase">Novedades de Operaciones</p>
           </div>
-          <p className="mt-1.5 text-xs text-zinc-600">{data.payroll.agentCount} agentes</p>
+          <AlertList items={operations} expandedId={expandedId} onExpand={handleExpand} auditTrail={auditTrail} actionNotes={actionNotes} setActionNotes={setActionNotes} onAction={handleAction} saving={saving} />
         </div>
-
-        {/* Overtime */}
-        <div className={`rounded-xl border px-5 py-4 ${
-          data.payroll.totalOvertimeHours > 0 ? 'border-amber-500/20 bg-amber-500/5' : 'border-zinc-700/30 bg-zinc-800/40'
-        }`}>
-          <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Horas Extras Planas</p>
-          <p className={`mt-1.5 text-2xl font-bold tabular-nums ${
-            data.payroll.totalOvertimeHours > 0 ? 'text-amber-400' : 'text-zinc-600'
-          }`}>
-            {fmt(data.payroll.totalOvertimeHours)}h
-          </p>
-          <p className="mt-1.5 text-xs text-zinc-600">Acumuladas en el periodo</p>
-        </div>
-
-        {/* MITRADEL Risk */}
-        <div className={`rounded-xl border px-5 py-4 ${
-          data.compliance.contractsPendingSeal > 0 ? 'border-red-500/20 bg-red-500/5' : 'border-zinc-700/30 bg-zinc-800/40'
-        }`}>
-          <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Riesgo MITRADEL</p>
-          <p className={`mt-1.5 text-2xl font-bold tabular-nums ${
-            data.compliance.contractsPendingSeal > 0 ? 'text-red-400 animate-pulse' : 'text-zinc-600'
-          }`}>
-            {data.compliance.contractsPendingSeal}
-          </p>
-          <p className="mt-1.5 text-xs text-zinc-600">
-            {data.compliance.contractsPendingSeal > 0 ? 'contratos sin sellar' : 'todo en regla'}
-          </p>
-        </div>
-
-        {/* Incidents */}
-        <div className={`rounded-xl border px-5 py-4 ${
-          data.incidents.openIncidents > 0 ? 'border-red-500/20 bg-red-500/5' : 'border-zinc-700/30 bg-zinc-800/40'
-        }`}>
-          <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Incidentes Activos</p>
-          <p className={`mt-1.5 text-2xl font-bold tabular-nums ${
-            data.incidents.openIncidents > 0 ? 'text-red-400' : 'text-zinc-600'
-          }`}>
-            {data.incidents.openIncidents}
-          </p>
-          <p className="mt-1.5 text-xs text-zinc-600">
-            {data.incidents.last30DaysTotal} total en 30 dias
-          </p>
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-5 py-3 border-b border-zinc-800/30">
+            <p className="text-xs font-semibold tracking-widest text-amber-400 uppercase">Novedades de Cliente</p>
+          </div>
+          <AlertList items={clientAlerts} expandedId={expandedId} onExpand={handleExpand} auditTrail={auditTrail} actionNotes={actionNotes} setActionNotes={setActionNotes} onAction={handleAction} saving={saving} />
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
-      <div className="flex flex-1 gap-6 overflow-hidden p-6">
-
-        {/* ============================================================ */}
-        {/* CHART: Efficiency (Bar Chart)                                 */}
-        {/* ============================================================ */}
-        <div className="flex flex-1 flex-col rounded-2xl border border-zinc-800/40 bg-zinc-800/20 p-6">
-          <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">
-            Eficiencia Operativa — Ultimos 3 Periodos
-          </h2>
-          <p className="mt-1 text-[11px] text-zinc-600">
-            Horas ordinarias (tope 96/agente) vs horas extras planas acumuladas
-          </p>
-
-          {periods.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-800/60">
-                <svg className="h-7 w-7 text-zinc-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                </svg>
-              </div>
-              <p className="text-sm text-zinc-500">Esperando cierre del primer periodo de planilla</p>
-              <p className="text-xs text-zinc-600">Los datos apareceran automaticamente al calcular nominas</p>
-            </div>
-          ) : (
-            <div className="mt-4 flex-1">
-              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                <BarChart
-                  data={periods.map((p) => ({
-                    name: p.label,
-                    ordinarias: Math.round(p.regular),
-                    extras: Math.round(p.overtime),
-                    total: Math.round(p.regular + p.overtime),
-                    eficiencia: p.regular + p.overtime > 0
-                      ? Math.round((p.regular / (p.regular + p.overtime)) * 100)
-                      : 0,
-                  }))}
-                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                  barGap={4}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fill: '#71717a', fontSize: 12 }}
-                    axisLine={{ stroke: '#27272a' }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: '#52525b', fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v: number) => `${v}h`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#18181b',
-                      border: '1px solid #3f3f46',
-                      borderRadius: 12,
-                      padding: '12px 16px',
-                      fontSize: 13,
-                    }}
-                    labelStyle={{ color: '#e4e4e7', fontWeight: 600, marginBottom: 6 }}
-                    cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload || payload.length === 0) return null;
-                      const ord = (payload[0]?.value as number) ?? 0;
-                      const ext = (payload[1]?.value as number) ?? 0;
-                      const total = ord + ext;
-                      const eff = total > 0 ? Math.round((ord / total) * 100) : 0;
-                      return (
-                        <div style={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: 12, padding: '12px 16px', fontSize: 13 }}>
-                          <p style={{ color: '#e4e4e7', fontWeight: 600, marginBottom: 8 }}>Periodo {label}</p>
-                          <p style={{ color: '#10b981' }}>Ordinarias: {ord}h</p>
-                          <p style={{ color: '#f59e0b' }}>Extras planas: {ext}h</p>
-                          <div style={{ borderTop: '1px solid #27272a', marginTop: 8, paddingTop: 8 }}>
-                            <p style={{ color: '#a1a1aa' }}>Total: {total}h</p>
-                            <p style={{ color: eff >= 80 ? '#10b981' : eff >= 60 ? '#f59e0b' : '#ef4444', fontWeight: 600 }}>
-                              Eficiencia: {eff}%
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Legend
-                    iconType="square"
-                    iconSize={10}
-                    formatter={(value: string) => (
-                      <span style={{ color: '#71717a', fontSize: 11 }}>
-                        {value === 'ordinarias' ? 'Horas Ordinarias' : 'Horas Extras Planas'}
-                      </span>
-                    )}
-                  />
-                  <Bar dataKey="ordinarias" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={48} />
-                  <Bar dataKey="extras" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={48} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-
-        {/* ============================================================ */}
-        {/* ALERTS PANEL                                                  */}
-        {/* ============================================================ */}
-        <div className="flex w-[360px] shrink-0 flex-col rounded-2xl border border-zinc-800/40 bg-zinc-800/20 p-6">
-          <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">
-            Alertas Criticas
-          </h2>
-
-          {alerts.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center">
-              <div className="text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-lime-500/10">
-                  <CheckIcon />
-                </div>
-                <p className="mt-3 text-sm text-zinc-500">Sin alertas pendientes</p>
-                <p className="mt-1 text-xs text-zinc-600">La operacion funciona con normalidad</p>
-              </div>
-            </div>
-          ) : (
-            <ul className="mt-4 flex-1 space-y-3 overflow-y-auto">
-              {alerts.map((alert) => (
-                <li
-                  key={alert.id}
-                  className={`rounded-xl border px-4 py-3 ${
-                    alert.type === 'danger'
-                      ? 'border-red-500/20 bg-red-500/5'
-                      : 'border-amber-500/20 bg-amber-500/5'
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${
-                      alert.type === 'danger' ? 'bg-red-500 animate-pulse' : 'bg-amber-500'
-                    }`} />
-                    <div className="min-w-0">
-                      <p className={`text-sm font-medium ${
-                        alert.type === 'danger' ? 'text-red-300' : 'text-amber-300'
-                      }`}>
-                        {alert.message}
-                      </p>
-                      <p className="mt-0.5 text-xs text-zinc-500">{alert.detail}</p>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {/* Summary footer */}
-          <div className="mt-4 border-t border-zinc-800/40 pt-3">
-            <div className="grid grid-cols-2 gap-3 text-center">
-              <div>
-                <p className="text-lg font-bold tabular-nums text-zinc-200">{data.incidents.resolvedIncidents}</p>
-                <p className="text-[10px] text-zinc-600">Resueltos 30d</p>
-              </div>
-              <div>
-                <p className="text-lg font-bold tabular-nums text-zinc-200">
-                  {data.compliance.trainingExpired + data.compliance.trainingExpiringSoon}
-                </p>
-                <p className="text-[10px] text-zinc-600">Certs en riesgo</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {toast && <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-lime-600 px-5 py-3 text-sm font-medium text-white shadow-lg animate-[slideUp_0.3s_ease-out]">{toast}</div>}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Icons
+// Sub-components
 // ---------------------------------------------------------------------------
 
-function CheckIcon() {
+function AlertList({ items, expandedId, onExpand, auditTrail, actionNotes, setActionNotes, onAction, saving }: {
+  items: AlertItem[]; expandedId: string | null; onExpand: (i: AlertItem) => void;
+  auditTrail: AuditEntry[]; actionNotes: string; setActionNotes: (v: string) => void;
+  onAction: (i: AlertItem, s: string) => void; saving: boolean;
+}) {
+  if (items.length === 0) return <div className="flex h-48 items-center justify-center text-sm text-zinc-600">Sin alertas</div>;
+
   return (
-    <svg className="h-6 w-6 text-lime-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
+    <div className="divide-y divide-zinc-800/20">
+      {items.map((item) => {
+        const stat = statusFlow[item.status] ?? statusFlow['open']!;
+        const isExpanded = expandedId === item.id;
+        const canAct = isOpen(item.status) || isProgress(item.status);
+
+        const nextStatuses = item.sourceType === 'incident'
+          ? (isOpen(item.status) ? [{ v: 'in_progress', l: 'En Proceso', c: 'bg-amber-600' }, { v: 'resolved', l: 'Resolver', c: 'bg-lime-600' }] : [{ v: 'resolved', l: 'Resolver', c: 'bg-lime-600' }])
+          : item.sourceType === 'ticket'
+            ? (isOpen(item.status) ? [{ v: 'en_proceso', l: 'En Proceso', c: 'bg-amber-600' }, { v: 'resuelto', l: 'Resolver', c: 'bg-lime-600' }] : [{ v: 'resuelto', l: 'Resolver', c: 'bg-lime-600' }])
+            : (isOpen(item.status) ? [{ v: 'aceptado_empresa', l: 'Aceptar', c: 'bg-lime-600' }, { v: 'rechazado_con_pruebas', l: 'Rechazar', c: 'bg-red-600' }, { v: 'reparado', l: 'Reparado', c: 'bg-blue-600' }] : [{ v: 'reparado', l: 'Reparado', c: 'bg-blue-600' }]);
+
+        return (
+          <div key={item.id}>
+            <div className="flex items-start gap-3 px-5 py-3 cursor-pointer hover:bg-zinc-800/20 transition-colors" onClick={() => onExpand(item)}>
+              <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${stat.dotCls}`} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-zinc-600 font-mono shrink-0">{formatTime(item.createdAt)}</span>
+                  <span className="text-[10px] text-zinc-500">{sourceLabels[item.sourceType]}</span>
+                </div>
+                <p className="mt-0.5 text-sm font-medium text-zinc-200 truncate">{item.propertyName ? `${item.propertyName} — ` : ''}{item.title}</p>
+                <p className="mt-0.5 text-xs text-zinc-500 truncate">{item.description}</p>
+              </div>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${stat.cls}`}>{stat.label}</span>
+            </div>
+
+            {isExpanded && (
+              <div className="px-5 py-4 bg-zinc-800/10 border-t border-zinc-800/20 space-y-4">
+                <div>
+                  <p className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1">Detalle</p>
+                  <p className="text-sm text-zinc-300 leading-relaxed">{item.description}</p>
+                </div>
+
+                {auditTrail.length > 0 && (
+                  <div>
+                    <p className="text-[11px] text-zinc-500 uppercase tracking-wide mb-2">Historial de Acciones</p>
+                    <div className="space-y-2">
+                      {auditTrail.map((e) => {
+                        const from = statusFlow[e.old_status] ?? statusFlow['open']!;
+                        const to = statusFlow[e.new_status] ?? statusFlow['open']!;
+                        return (
+                          <div key={e.id} className="rounded-lg bg-zinc-800/30 px-4 py-2.5">
+                            <div className="flex items-center gap-2 text-[10px]">
+                              <span className={`rounded-full px-1.5 py-0.5 ${from.cls}`}>{from.label}</span>
+                              <span className="text-zinc-600">→</span>
+                              <span className={`rounded-full px-1.5 py-0.5 ${to.cls}`}>{to.label}</span>
+                              <span className="text-zinc-600 ml-auto">{e.action_by_name} · {formatTime(e.created_at)}</span>
+                            </div>
+                            <p className="mt-1 text-xs text-zinc-400">{e.notes}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {canAct && (
+                  <div className="space-y-3 border-t border-zinc-800/30 pt-3">
+                    <textarea value={actionNotes} onChange={(e) => setActionNotes(e.target.value)}
+                      placeholder="Describa la acción tomada (obligatorio)..." rows={2}
+                      className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none resize-none" />
+                    <div className="flex gap-2 justify-end">
+                      {nextStatuses.map((ns) => (
+                        <button key={ns.v} onClick={() => onAction(item, ns.v)} disabled={saving || !actionNotes.trim()}
+                          className={`rounded-lg ${ns.c} px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-40 cursor-pointer`}>
+                          {saving ? '...' : ns.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function KpiCard({ label, value, color }: { label: string; value: number; color: 'red' | 'amber' | 'lime' }) {
+  const cls = color === 'red' ? 'border-red-500/20 bg-red-500/5 text-red-400'
+    : color === 'amber' ? 'border-amber-500/20 bg-amber-500/5 text-amber-400'
+    : 'border-lime-500/20 bg-lime-500/5 text-lime-400';
+  return (
+    <div className={`rounded-xl border px-5 py-4 ${cls}`}>
+      <p className="text-xs font-medium tracking-widest text-zinc-500 uppercase">{label}</p>
+      <p className="mt-1 text-3xl font-bold tabular-nums">{value}</p>
+    </div>
   );
 }
