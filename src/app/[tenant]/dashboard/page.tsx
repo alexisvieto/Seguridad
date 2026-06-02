@@ -39,10 +39,19 @@ interface PermitExpiring {
   daysLeft: number;
 }
 
+interface ModelGroup {
+  key: string;
+  brand: string;
+  model: string;
+  type: string;
+  count: number;
+}
+
 interface LocationInventory {
   id: string;
   name: string;
-  count: number;
+  total: number;
+  models: ModelGroup[];
 }
 
 interface PayrollSummary {
@@ -159,15 +168,25 @@ export default function DashboardGerencialPage() {
         .sort((a, b) => a.daysLeft - b.daysLeft),
     );
 
-    // Location inventory
-    const locMap = new Map<string, { name: string; count: number }>();
-    for (const l of locsRes.data ?? []) locMap.set(l.id, { name: l.name, count: 0 });
+    // Location inventory grouped by model
+    const locMap = new Map<string, { name: string; models: Map<string, { brand: string; model: string; type: string; count: number }> }>();
+    for (const l of locsRes.data ?? []) locMap.set(l.id, { name: l.name, models: new Map() });
     for (const f of firearms) {
       if (f.location_id && !assignedIds.has(f.id) && locMap.has(f.location_id)) {
-        locMap.get(f.location_id)!.count++;
+        const loc = locMap.get(f.location_id)!;
+        const key = `${f.brand}-${f.model}-${f.type}`;
+        const existing = loc.models.get(key);
+        if (existing) {
+          existing.count++;
+        } else {
+          loc.models.set(key, { brand: f.brand, model: f.model, type: f.type, count: 1 });
+        }
       }
     }
-    setLocationInventory([...locMap.entries()].map(([id, v]) => ({ id, name: v.name, count: v.count })));
+    setLocationInventory([...locMap.entries()].map(([id, v]) => {
+      const models = [...v.models.entries()].map(([key, m]) => ({ key, ...m }));
+      return { id, name: v.name, total: models.reduce((s, m) => s + m.count, 0), models };
+    }));
 
     // Payroll summary
     const lastPeriod = (payrollRes.data ?? [])[0];
@@ -294,14 +313,31 @@ export default function DashboardGerencialPage() {
             </Section>
           )}
 
-          {/* Location inventory */}
+          {/* Location inventory grouped by model */}
           {locationInventory.length > 0 && (
-            <Section title="Inventario por Armería" count={locationInventory.reduce((s, l) => s + l.count, 0)} accent="default">
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-                {locationInventory.map((l) => (
-                  <div key={l.id} className="rounded-lg border border-zinc-800/40 bg-zinc-800/20 px-4 py-3 text-center">
-                    <p className="text-2xl font-bold tabular-nums text-lime-400">{l.count}</p>
-                    <p className="mt-1 text-xs text-zinc-400">{l.name}</p>
+            <Section title="Inventario por Armería" count={locationInventory.reduce((s, l) => s + l.total, 0)} accent="default">
+              <div className="space-y-3">
+                {locationInventory.map((loc) => (
+                  <div key={loc.id} className="rounded-xl border border-zinc-800/40 bg-zinc-800/20 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/30">
+                      <p className="text-sm font-semibold text-zinc-100">{loc.name}</p>
+                      <span className="rounded-full bg-lime-500/15 px-2.5 py-0.5 text-xs font-bold tabular-nums text-lime-400">{loc.total} armas</span>
+                    </div>
+                    {loc.models.length === 0 ? (
+                      <p className="px-4 py-3 text-xs text-zinc-600">Sin armas en esta ubicación</p>
+                    ) : (
+                      <div className="divide-y divide-zinc-800/20">
+                        {loc.models.map((m) => (
+                          <div key={m.key} className="flex items-center justify-between px-4 py-2.5">
+                            <div>
+                              <p className="text-sm text-zinc-200">{m.brand} {m.model}</p>
+                              <p className="text-[10px] text-zinc-600">{m.type === 'pistola' ? 'Pistola' : m.type === 'revolver' ? 'Revólver' : 'Escopeta'}</p>
+                            </div>
+                            <span className="text-sm font-bold tabular-nums text-zinc-300">{m.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
