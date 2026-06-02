@@ -443,7 +443,7 @@ export default function LiveMonitorPage() {
         {/* STATION GRID                                                */}
         {/* ---------------------------------------------------------- */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid grid-cols-3 gap-2.5 lg:grid-cols-4 xl:grid-cols-5">
             {[...stations].sort((a, b) => {
               const getOrder = (s: typeof a) => {
                 if (s.shiftId === null) return 2; // red last
@@ -480,61 +480,51 @@ export default function LiveMonitorPage() {
               return (
                 <div
                   key={station.id}
-                  className={`relative rounded-xl border px-4 py-4 transition-colors ${borderCls}`}
+                  className={`relative rounded-lg border px-3 py-3 transition-colors ${borderCls}`}
                 >
                   {/* Status dot */}
-                  <div className={`absolute right-3 top-3 h-2.5 w-2.5 rounded-full ${dotCls}`} />
+                  <div className={`absolute right-2.5 top-2.5 h-2 w-2 rounded-full ${dotCls}`} />
 
                   {/* Station info */}
-                  <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase truncate pr-6">
+                  <p className="text-[10px] font-medium tracking-widest text-zinc-500 uppercase truncate pr-5">
                     {station.propertyName}
                   </p>
-                  <p className="mt-0.5 text-base font-semibold text-zinc-100 truncate">
+                  <p className="mt-0.5 text-sm font-semibold text-zinc-100 truncate">
                     {station.name}
                   </p>
 
                   {isOccupied ? (
-                    <div className="mt-3 space-y-1.5">
-                      <div className="flex items-center gap-2">
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-1.5">
                         <AgentIcon />
-                        <span className="text-sm text-zinc-300 truncate">
-                          {station.agentName}
-                        </span>
+                        <span className="text-xs text-zinc-300 truncate">{station.agentName}</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <ClockIcon />
-                        <span className={`text-xs ${isLate ? 'text-amber-400' : 'text-zinc-500'}`}>
-                          Entrada {station.clockIn ? formatTimeShort(station.clockIn) : '--:--'}
+                        <span className={`text-[11px] ${isLate ? 'text-amber-400' : 'text-zinc-500'}`}>
+                          {station.clockIn ? formatTimeShort(station.clockIn) : '--:--'}
                         </span>
-                      </div>
-                      {isLate && (
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400 ring-1 ring-amber-500/30">
-                            TARDANZA
+                        {isLate && (
+                          <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-amber-400">
+                            TARDE
                           </span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                       {station.gpsValidated && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <GpsIcon />
-                          <span className="text-xs text-lime-500/80">GPS Validado</span>
+                          <span className="text-[11px] text-lime-500/80">GPS OK</span>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="mt-3">
-                      <p className="text-sm font-medium text-red-400">
-                        Sin agente asignado
-                      </p>
+                    <div className="mt-2">
+                      <p className="text-xs font-medium text-red-400">Sin agente</p>
                       {supervisor && (
-                        <a
-                          href={`tel:${supervisor.phone}`}
-                          className="mt-2 flex items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/25 cursor-pointer"
-                        >
+                        <a href={`tel:${supervisor.phone}`}
+                          className="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-500/15 px-2 py-1.5 text-[11px] font-medium text-red-300 hover:bg-red-500/25 cursor-pointer">
                           <PhoneIcon />
-                          <span className="truncate">
-                            {supervisor.name} &middot; {supervisor.phone}
-                          </span>
+                          <span className="truncate">{supervisor.name}</span>
                         </a>
                       )}
                     </div>
