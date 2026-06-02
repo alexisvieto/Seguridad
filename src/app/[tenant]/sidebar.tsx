@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -32,25 +32,7 @@ const sectionLabels: Record<string, string> = {
 export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
   const base = `/${tenantSlug}`;
-
-  useEffect(() => {
-    if (role !== 'owner' && role !== 'admin') return;
-    (async () => {
-      const { getSupabaseBrowserClient } = await import('@/lib/supabase/client');
-      const supabase = getSupabaseBrowserClient();
-      const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
-      if (!tenant) return;
-
-      const [ticketsRes, damagesRes] = await Promise.all([
-        supabase.from('client_tickets').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).in('status', ['abierto', 'en_proceso']),
-        supabase.from('client_damage_reports').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('status', 'bajo_investigacion'),
-      ]);
-
-      setPendingCount((ticketsRes.count ?? 0) + (damagesRes.count ?? 0));
-    })();
-  }, [tenantSlug, role]);
 
   const navItems: NavItem[] = [
     {
@@ -150,14 +132,6 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <WalletIcon />,
       roles: ['owner'],
       section: 'finance',
-    },
-    {
-      href: `${base}/dashboard/atencion-cliente`,
-      label: 'Atención al Cliente',
-      icon: <TicketIcon />,
-      roles: ['owner', 'admin'],
-      section: 'client',
-      badgeCount: pendingCount,
     },
     {
       href: `${base}/cliente`,
