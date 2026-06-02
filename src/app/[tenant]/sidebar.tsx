@@ -57,7 +57,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       href: `${base}/dashboard/comercial`,
       label: 'Clientes y Contratos',
       icon: <BriefcaseIcon />,
-      roles: ['owner', 'admin'],
+      roles: ['owner'],
       section: 'commercial',
     },
     {
@@ -92,6 +92,13 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       href: `${base}/dashboard/turnos`,
       label: 'Turnos',
       icon: <CalendarIcon />,
+      roles: ['owner', 'admin'],
+      section: 'operations',
+    },
+    {
+      href: `${base}/dashboard/consignas`,
+      label: 'Consignas',
+      icon: <ConsignaIcon />,
       roles: ['owner', 'admin'],
       section: 'operations',
     },
@@ -141,7 +148,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       href: `${base}/dashboard/nomina`,
       label: 'Nomina',
       icon: <WalletIcon />,
-      roles: ['owner', 'admin'],
+      roles: ['owner'],
       section: 'finance',
     },
     {
@@ -376,6 +383,14 @@ function SwapIcon() {
   return (
     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+    </svg>
+  );
+}
+
+function ConsignaIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
     </svg>
   );
 }
