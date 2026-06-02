@@ -12,6 +12,7 @@ const reportIncidentSchema = z.object({
     .string()
     .min(1, 'El reporte no puede estar vacío')
     .max(5000, 'El reporte no puede superar 5000 caracteres'),
+  action_taken: z.string().max(2000).nullable().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         raw_text: input.raw_text,
         ai_refined_text: aiRefinedText,
+        action_taken: input.action_taken ?? null,
       })
       .select()
       .single();

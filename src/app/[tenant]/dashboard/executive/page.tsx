@@ -16,6 +16,7 @@ interface AlertItem {
   propertyName: string;
   status: string;
   createdAt: string;
+  agentAction: string | null;
 }
 
 interface AuditEntry {
@@ -79,7 +80,7 @@ export default function CentroComandoPage() {
     setTenantId(tenant.id);
 
     const [incRes, tickRes, dmgRes] = await Promise.all([
-      supabase.from('incidents_log').select('id, status, raw_text, ai_refined_text, created_at, work_stations(name, properties_ph(name))').eq('tenant_id', tenant.id).order('created_at', { ascending: false }).limit(50),
+      supabase.from('incidents_log').select('id, status, raw_text, ai_refined_text, action_taken, created_at, work_stations(name, properties_ph(name))').eq('tenant_id', tenant.id).order('created_at', { ascending: false }).limit(50),
       supabase.from('client_tickets').select('id, category, subject, description, priority, status, created_at, properties_ph(name)').eq('tenant_id', tenant.id).order('created_at', { ascending: false }).limit(50),
       supabase.from('client_damage_reports').select('id, item_damaged, description, cost_estimate, status, created_at, properties_ph(name)').eq('tenant_id', tenant.id).order('created_at', { ascending: false }).limit(50),
     ]);
@@ -90,18 +91,19 @@ export default function CentroComandoPage() {
       description: i.ai_refined_text ?? i.raw_text,
       propertyName: (i.work_stations as { name: string; properties_ph: { name: string } | null } | null)?.properties_ph?.name ?? '',
       status: i.status, createdAt: i.created_at,
+      agentAction: i.action_taken ?? null,
     })));
 
     setClientAlerts([
       ...(tickRes.data ?? []).map((t) => ({
         id: t.id, sourceType: 'ticket' as const, title: t.subject, description: t.description,
         propertyName: (t.properties_ph as { name: string } | null)?.name ?? '',
-        status: t.status, createdAt: t.created_at,
+        status: t.status, createdAt: t.created_at, agentAction: null,
       })),
       ...(dmgRes.data ?? []).map((d) => ({
         id: d.id, sourceType: 'damage' as const, title: `Daño: ${d.item_damaged}`, description: d.description,
         propertyName: (d.properties_ph as { name: string } | null)?.name ?? '',
-        status: d.status, createdAt: d.created_at,
+        status: d.status, createdAt: d.created_at, agentAction: null,
       })),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
 
@@ -235,6 +237,13 @@ function AlertList({ items, expandedId, onExpand, auditTrail, actionNotes, setAc
                   <p className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1">Detalle</p>
                   <p className="text-sm text-zinc-300 leading-relaxed">{item.description}</p>
                 </div>
+
+                {item.agentAction && (
+                  <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+                    <p className="text-[11px] text-blue-400 uppercase tracking-wide mb-1">Acción del Agente</p>
+                    <p className="text-sm text-zinc-300">{item.agentAction}</p>
+                  </div>
+                )}
 
                 {auditTrail.length > 0 && (
                   <div>

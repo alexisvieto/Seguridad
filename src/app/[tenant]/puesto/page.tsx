@@ -73,6 +73,7 @@ export default function PuestoPage() {
   const [shift, setShift] = useState<ShiftState | null>(null);
   const [incidents, setIncidents] = useState<IncidentEntry[]>([]);
   const [reportText, setReportText] = useState('');
+  const [actionTaken, setActionTaken] = useState('');
   const [loading, setLoading] = useState<LoadingState>('idle');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isListening, setIsListening] = useState(false);
@@ -178,6 +179,7 @@ export default function PuestoPage() {
         body: JSON.stringify({
           work_station_id: shift.stationId,
           raw_text: reportText.trim(),
+          action_taken: actionTaken.trim() || null,
         }),
       });
 
@@ -206,6 +208,7 @@ export default function PuestoPage() {
       ]);
 
       setReportText('');
+      setActionTaken('');
       setToast({ type: 'success', message: 'Novedad registrada y procesada por IA' });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al enviar reporte';
@@ -213,7 +216,7 @@ export default function PuestoPage() {
     } finally {
       setLoading('idle');
     }
-  }, [shift, reportText]);
+  }, [shift, reportText, actionTaken]);
 
   // -------------------------------------------------------------------
   // Voice dictation (Web Speech API)
@@ -462,6 +465,22 @@ export default function PuestoPage() {
                   Escuchando... toca el micrófono para detener
                 </p>
               )}
+
+              {/* Action taken field */}
+              <div className="mt-3">
+                <label className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Acción Tomada
+                </label>
+                <textarea
+                  value={actionTaken}
+                  onChange={(e) => setActionTaken(e.target.value)}
+                  placeholder="Describa qué acción tomó ante esta novedad..."
+                  rows={3}
+                  maxLength={2000}
+                  disabled={loading === 'refining'}
+                  className="mt-1 w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500 disabled:opacity-50"
+                />
+              </div>
 
               <div className="mt-3 flex items-center justify-between gap-3">
                 <span className="text-xs text-zinc-400">

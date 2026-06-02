@@ -391,6 +391,7 @@ export interface Database {
           user_id: string;
           raw_text: string;
           ai_refined_text?: string | null;
+          action_taken?: string | null;
           status?: IncidentStatus;
           am_report_sent?: boolean;
           created_at?: string;
