@@ -333,11 +333,12 @@ export default function DashboardGerencialPage() {
                       <div className="divide-y divide-zinc-800/20">
                         {loc.models.map((m) => (
                           <div key={m.key} className="flex items-center justify-between px-4 py-2.5">
-                            <div>
-                              <p className="text-sm text-zinc-200">{m.brand} {m.model}</p>
-                              <p className="text-[10px] text-zinc-600">{m.type === 'pistola' ? 'Pistola' : m.type === 'revolver' ? 'Revólver' : 'Escopeta'}</p>
-                            </div>
-                            <span className="text-sm font-bold tabular-nums text-zinc-300">{m.count}</span>
+                            <p className="text-sm text-zinc-200">
+                              <span className="font-medium">{m.brand}</span>
+                              <span className="text-zinc-400"> {m.model}</span>
+                              <span className="text-zinc-600"> · {m.type === 'pistola' ? 'Pistola' : m.type === 'revolver' ? 'Revólver' : 'Escopeta'}</span>
+                            </p>
+                            <span className="text-sm font-bold tabular-nums text-lime-400 shrink-0 ml-3">{m.count}</span>
                           </div>
                         ))}
                       </div>
