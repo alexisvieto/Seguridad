@@ -13,7 +13,8 @@ interface KpiData {
   activeContracts: number;
   totalAgents: number;
   agentsRequired: number;
-  firearmsInService: number;
+  firearmsInPuestos: number;
+  firearmsInAgents: number;
   firearmsInArmory: number;
   vehiclesActive: number;
   vehiclesInShop: number;
@@ -86,7 +87,7 @@ export default function DashboardGerencialPage() {
 
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [kpi, setKpi] = useState<KpiData>({ monthlyRevenue: 0, activeContracts: 0, totalAgents: 0, agentsRequired: 0, firearmsInService: 0, firearmsInArmory: 0, vehiclesActive: 0, vehiclesInShop: 0, openTickets: 0 });
+  const [kpi, setKpi] = useState<KpiData>({ monthlyRevenue: 0, activeContracts: 0, totalAgents: 0, agentsRequired: 0, firearmsInPuestos: 0, firearmsInAgents: 0, firearmsInArmory: 0, vehiclesActive: 0, vehiclesInShop: 0, openTickets: 0 });
   const [contractsExpiring, setContractsExpiring] = useState<ContractExpiring[]>([]);
   const [permitsExpiring, setPermitsExpiring] = useState<PermitExpiring[]>([]);
   const [locationInventory, setLocationInventory] = useState<LocationInventory[]>([]);
@@ -107,7 +108,7 @@ export default function DashboardGerencialPage() {
       supabase.from('commercial_contracts').select('id, client_id, start_date, end_date, monthly_amount, agents_required, status, commercial_clients(company_name)').eq('tenant_id', tenant.id),
       supabase.from('memberships').select('user_id').eq('tenant_id', tenant.id),
       supabase.from('firearms_inventory').select('id, serial_number, type, brand, model, permit_number, permit_expiry_date, status, location_id').eq('tenant_id', tenant.id),
-      supabase.from('firearms_assignments').select('firearm_id').eq('tenant_id', tenant.id).is('returned_at', null),
+      supabase.from('firearms_assignments').select('firearm_id, work_station_id, user_id').eq('tenant_id', tenant.id).is('returned_at', null),
       supabase.from('fleet_vehicles').select('id, status').eq('tenant_id', tenant.id),
       supabase.from('client_tickets').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).in('status', ['abierto', 'en_proceso']),
       supabase.from('firearm_locations').select('id, name').eq('tenant_id', tenant.id).order('name'),
@@ -120,8 +121,9 @@ export default function DashboardGerencialPage() {
     const agentsRequired = activeContracts.reduce((sum, c) => sum + c.agents_required, 0);
 
     const firearms = firearmsRes.data ?? [];
-    const assignedIds = new Set((assignmentsRes.data ?? []).map((a) => a.firearm_id));
-    const firearmsInService = firearms.filter((f) => assignedIds.has(f.id)).length;
+    const activeAssigns = assignmentsRes.data ?? [];
+    const firearmsInPuestos = activeAssigns.filter((a) => 'work_station_id' in a && a.work_station_id !== null).length;
+    const firearmsInAgents = activeAssigns.filter((a) => 'user_id' in a && a.user_id !== null).length;
 
     const vehicles = vehiclesRes.data ?? [];
 
@@ -130,8 +132,9 @@ export default function DashboardGerencialPage() {
       activeContracts: activeContracts.length,
       totalAgents: (membersRes.data ?? []).length,
       agentsRequired,
-      firearmsInService,
-      firearmsInArmory: firearms.length - firearmsInService,
+      firearmsInPuestos,
+      firearmsInAgents,
+      firearmsInArmory: firearms.length - firearmsInPuestos - firearmsInAgents,
       vehiclesActive: vehicles.filter((v) => v.status === 'activo').length,
       vehiclesInShop: vehicles.filter((v) => v.status === 'taller').length,
       openTickets: ticketsRes.count ?? 0,
@@ -169,10 +172,11 @@ export default function DashboardGerencialPage() {
     );
 
     // Location inventory grouped by model
+    const assignedFirearmIds = new Set(activeAssigns.map((a) => a.firearm_id));
     const locMap = new Map<string, { name: string; models: Map<string, { brand: string; model: string; type: string; count: number }> }>();
     for (const l of locsRes.data ?? []) locMap.set(l.id, { name: l.name, models: new Map() });
     for (const f of firearms) {
-      if (f.location_id && !assignedIds.has(f.id) && locMap.has(f.location_id)) {
+      if (f.location_id && !assignedFirearmIds.has(f.id) && locMap.has(f.location_id)) {
         const loc = locMap.get(f.location_id)!;
         const key = `${f.brand}-${f.model}-${f.type}`;
         const existing = loc.models.get(key);
@@ -262,7 +266,7 @@ export default function DashboardGerencialPage() {
         <KpiCard label="Facturación Mensual" value={`B/.${fmt(kpi.monthlyRevenue)}`} color="lime" />
         <KpiCard label="Contratos Activos" value={String(kpi.activeContracts)} color="default" />
         <KpiCard label="Agentes / Requeridos" value={`${kpi.totalAgents} / ${kpi.agentsRequired}`} color={kpi.totalAgents < kpi.agentsRequired ? 'red' : 'default'} />
-        <KpiCard label="Armas en Servicio" value={String(kpi.firearmsInService)} sub={`${kpi.firearmsInArmory} en armería`} color="default" />
+        <KpiCard label="Armas en Puestos" value={String(kpi.firearmsInPuestos)} sub={`${kpi.firearmsInAgents} en agentes · ${kpi.firearmsInArmory} en armería`} color="default" />
         <KpiCard label="Flota Activa" value={String(kpi.vehiclesActive)} sub={kpi.vehiclesInShop > 0 ? `${kpi.vehiclesInShop} en taller` : undefined} color={kpi.vehiclesInShop > 0 ? 'amber' : 'default'} />
         <KpiCard label="Tickets Abiertos" value={String(kpi.openTickets)} color={kpi.openTickets > 0 ? 'red' : 'default'} />
       </div>

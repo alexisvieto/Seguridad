@@ -133,6 +133,8 @@ export default function ArmamentoPage() {
   const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [assignedToPuestos, setAssignedToPuestos] = useState(0);
+  const [assignedToAgents, setAssignedToAgents] = useState(0);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -249,6 +251,16 @@ export default function ArmamentoPage() {
         doping: { expiry: c.doping_test_expiry, level: alertLevel(c.doping_test_expiry) },
       })),
     );
+
+    // Global assignment counts
+    const { data: allAssignments } = await supabase
+      .from('firearms_assignments')
+      .select('work_station_id, user_id')
+      .eq('tenant_id', tenant.id)
+      .is('returned_at', null);
+
+    setAssignedToPuestos((allAssignments ?? []).filter((a) => a.work_station_id !== null).length);
+    setAssignedToAgents((allAssignments ?? []).filter((a) => a.user_id !== null).length);
 
     setIsLoading(false);
   }, [tenantSlug]);
@@ -491,8 +503,7 @@ export default function ArmamentoPage() {
   const nonCompliantAgents = compliance.filter(
     (c) => c.shooting.level === 'red' || c.psych.level === 'red' || c.doping.level === 'red',
   ).length;
-  const activeAssignments = assignments.filter((a) => a.returnedAt === null).length;
-  const inArmory = firearms.length - activeAssignments;
+  const inArmory = firearms.length - assignedToPuestos - assignedToAgents;
 
   // -------------------------------------------------------------------
   // Loading
@@ -569,15 +580,18 @@ export default function ArmamentoPage() {
           <p className="mt-1 text-xs text-zinc-500">de {firearms.length} totales</p>
         </div>
 
-        {/* Assigned */}
+        {/* Assigned to stations */}
         <div className="rounded-xl border bg-zinc-800/40 border-zinc-700/30 px-5 py-4">
-          <p className="text-xs font-medium tracking-widest text-zinc-400 uppercase">Armas en Puesto</p>
-          <p className="mt-1 text-3xl font-bold tabular-nums text-zinc-200">
-            {selected ? activeAssignments : '—'}
-          </p>
-          <p className="mt-1 text-xs text-zinc-500">
-            {selected ? 'asignación activa' : 'seleccione un arma'}
-          </p>
+          <p className="text-xs font-medium tracking-widest text-zinc-400 uppercase">En Puestos</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums text-zinc-200">{assignedToPuestos}</p>
+          <p className="mt-1 text-xs text-zinc-500">asignadas a puestos</p>
+        </div>
+
+        {/* Assigned to agents */}
+        <div className="rounded-xl border bg-zinc-800/40 border-zinc-700/30 px-5 py-4">
+          <p className="text-xs font-medium tracking-widest text-zinc-400 uppercase">En Agentes</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums text-zinc-200">{assignedToAgents}</p>
+          <p className="mt-1 text-xs text-zinc-500">custodia personal</p>
         </div>
       </div>
 
