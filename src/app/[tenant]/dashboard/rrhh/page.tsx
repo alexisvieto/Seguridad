@@ -42,6 +42,12 @@ interface AgentRow {
   baseSalary: number | null;
   contractStart: string | null;
   mitradelPdf: string | null;
+  polygraphDate: string | null;
+  polygraphResult: string | null;
+  polygraphDocUrl: string | null;
+  agentStatus: string;
+  terminationDate: string | null;
+  terminationReason: string | null;
 }
 
 interface DisciplinaryRow {
@@ -145,7 +151,7 @@ export default function RRHHPage() {
 
     const [profilesRes, hrRes, contractsRes] = await Promise.all([
       supabase.from('profiles').select('id, full_name').in('id', userIds),
-      supabase.from('hr_agent_profiles').select('user_id, cedula, hire_date, security_carnet_number, carnet_expiry_date, emergency_contact_name, emergency_contact_phone').eq('tenant_id', tenant.id),
+      supabase.from('hr_agent_profiles').select('user_id, cedula, hire_date, security_carnet_number, carnet_expiry_date, emergency_contact_name, emergency_contact_phone, polygraph_date, polygraph_result, polygraph_document_url, agent_status, termination_date, termination_reason').eq('tenant_id', tenant.id),
       supabase.from('hr_contracts').select('user_id, contract_type, status, base_salary, start_date, mitradel_sealed_pdf_url').eq('tenant_id', tenant.id).eq('status', 'activo').order('start_date', { ascending: false }),
     ]);
 
@@ -173,6 +179,12 @@ export default function RRHHPage() {
         baseSalary: contract?.base_salary ? Number(contract.base_salary) : null,
         contractStart: contract?.start_date ?? null,
         mitradelPdf: contract?.mitradel_sealed_pdf_url ?? null,
+        polygraphDate: hr?.polygraph_date ?? null,
+        polygraphResult: hr?.polygraph_result ?? null,
+        polygraphDocUrl: hr?.polygraph_document_url ?? null,
+        agentStatus: hr?.agent_status ?? 'activo',
+        terminationDate: hr?.termination_date ?? null,
+        terminationReason: hr?.termination_reason ?? null,
       };
     }));
 
@@ -358,6 +370,8 @@ export default function RRHHPage() {
                         <div className="mt-0.5 flex items-center gap-2 text-xs text-zinc-500">
                           {agent.cedula && <span className="font-mono">{agent.cedula}</span>}
                           {cBadge && <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${cBadge.cls}`}>{cBadge.label}</span>}
+                          {agent.agentStatus === 'baja' && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-400">Baja</span>}
+                          {agent.agentStatus === 'suspendido' && <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-400">Suspendido</span>}
                         </div>
                       </div>
                     </button>
@@ -413,14 +427,96 @@ export default function RRHHPage() {
 
                 {/* FICHA OPERATIVA */}
                 {detailTab === 'ficha' && (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <InfoCard label="Cedula" value={selected.cedula ?? 'No registrada'} />
-                    <InfoCard label="Fecha de Contratacion" value={selected.hireDate ? formatDate(selected.hireDate) : 'No registrada'} />
-                    <InfoCard label="Carnet DIASP" value={selected.carnetNumber ?? 'No registrado'} />
-                    <InfoCard label="Vencimiento Carnet" value={selected.carnetExpiry ? formatDate(selected.carnetExpiry) : 'No registrado'}
-                      alert={selected.carnetExpiry && new Date(selected.carnetExpiry) < new Date() ? 'VENCIDO' : undefined} />
-                    <InfoCard label="Contacto de Emergencia" value={selected.emergencyName ?? 'No registrado'} />
-                    <InfoCard label="Telefono Emergencia" value={selected.emergencyPhone ?? 'No registrado'} />
+                  <div className="space-y-6">
+                    {/* Status badge */}
+                    {selected.agentStatus !== 'activo' && (
+                      <div className={`rounded-xl border px-5 py-4 ${selected.agentStatus === 'baja' ? 'border-red-500/30 bg-red-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
+                        <p className={`text-sm font-semibold ${selected.agentStatus === 'baja' ? 'text-red-400' : 'text-amber-400'}`}>
+                          {selected.agentStatus === 'baja' ? 'AGENTE DADO DE BAJA' : 'AGENTE SUSPENDIDO'}
+                        </p>
+                        {selected.terminationDate && <p className="text-xs text-zinc-500 mt-1">Fecha: {formatDate(selected.terminationDate)}</p>}
+                        {selected.terminationReason && <p className="text-xs text-zinc-400 mt-1">{selected.terminationReason}</p>}
+                      </div>
+                    )}
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <InfoCard label="Cedula" value={selected.cedula ?? 'No registrada'} />
+                      <InfoCard label="Fecha de Contratacion" value={selected.hireDate ? formatDate(selected.hireDate) : 'No registrada'} />
+                      <InfoCard label="Carnet DIASP" value={selected.carnetNumber ?? 'No registrado'} />
+                      <InfoCard label="Vencimiento Carnet" value={selected.carnetExpiry ? formatDate(selected.carnetExpiry) : 'No registrado'}
+                        alert={selected.carnetExpiry && new Date(selected.carnetExpiry) < new Date() ? 'VENCIDO' : undefined} />
+                      <InfoCard label="Contacto de Emergencia" value={selected.emergencyName ?? 'No registrado'} />
+                      <InfoCard label="Telefono Emergencia" value={selected.emergencyPhone ?? 'No registrado'} />
+                    </div>
+
+                    {/* Poligrafía */}
+                    <div>
+                      <h3 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase mb-3">Poligrafía</h3>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <InfoCard label="Fecha" value={selected.polygraphDate ? formatDate(selected.polygraphDate) : 'No realizada'} />
+                        <InfoCard label="Resultado" value={
+                          selected.polygraphResult === 'aprobado' ? 'Aprobado' :
+                          selected.polygraphResult === 'no_aprobado' ? 'No Aprobado' :
+                          selected.polygraphResult === 'pendiente' ? 'Pendiente' : 'Sin registro'
+                        } alert={selected.polygraphResult === 'no_aprobado' ? 'NO APROBADO' : undefined} />
+                        <div className="rounded-xl border border-zinc-700/30 bg-zinc-800/40 px-5 py-4">
+                          <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Documento</p>
+                          {selected.polygraphDocUrl ? (
+                            <a href={selected.polygraphDocUrl} target="_blank" rel="noopener noreferrer" className="mt-1 text-sm text-lime-400 hover:text-lime-300 cursor-pointer">Ver documento</a>
+                          ) : (
+                            <p className="mt-1 text-sm text-zinc-200">Sin adjunto</p>
+                          )}
+                        </div>
+                      </div>
+                      <FileUpload
+                        bucket="hr-documents"
+                        basePath={`${tenantId}/poligrafia/${selected.userId}`}
+                        label="Adjuntar resultado de poligrafía"
+                        accept=".pdf,.jpg,.png"
+                        onUploaded={(url) => {
+                          const supabase = getSupabaseBrowserClient();
+                          supabase.from('hr_agent_profiles').update({ polygraph_document_url: url }).eq('user_id', selected.userId).eq('tenant_id', tenantId!).then(() => {
+                            setToast({ type: 'success', msg: 'Documento de poligrafía adjuntado' });
+                          });
+                        }}
+                      />
+                    </div>
+
+                    {/* Dar de baja */}
+                    {selected.agentStatus === 'activo' && (
+                      <div className="border-t border-zinc-800/40 pt-4">
+                        <details className="group">
+                          <summary className="flex items-center gap-2 text-xs font-medium text-red-400/70 cursor-pointer hover:text-red-400">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" /></svg>
+                            Dar de Baja al Agente
+                          </summary>
+                          <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4 space-y-3">
+                            <p className="text-xs text-zinc-400">Esta acción marcará al agente como dado de baja. No se eliminarán sus registros.</p>
+                            <input type="date" id="termDate"
+                              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 focus:border-red-500 focus:outline-none" />
+                            <textarea id="termReason" placeholder="Motivo de la baja (despido, renuncia, abandono...)" rows={2}
+                              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-600 focus:border-red-500 focus:outline-none resize-none" />
+                            <button
+                              onClick={async () => {
+                                const dateEl = document.getElementById('termDate') as HTMLInputElement;
+                                const reasonEl = document.getElementById('termReason') as HTMLTextAreaElement;
+                                if (!dateEl.value || !reasonEl.value.trim()) { setToast({ type: 'error', msg: 'Fecha y motivo son requeridos' }); return; }
+                                const supabase = getSupabaseBrowserClient();
+                                await supabase.from('hr_agent_profiles').update({
+                                  agent_status: 'baja',
+                                  termination_date: dateEl.value,
+                                  termination_reason: reasonEl.value.trim(),
+                                }).eq('user_id', selected.userId).eq('tenant_id', tenantId!);
+                                setToast({ type: 'success', msg: 'Agente dado de baja' });
+                                loadData();
+                              }}
+                              className="rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-500 cursor-pointer">
+                              Confirmar Baja
+                            </button>
+                          </div>
+                        </details>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -870,6 +870,12 @@ export interface Database {
           bank_name: string | null;
           bank_account_number: string | null;
           bank_account_type: 'ahorros' | 'corriente' | null;
+          polygraph_date: string | null;
+          polygraph_result: string | null;
+          polygraph_document_url: string | null;
+          agent_status: string;
+          termination_date: string | null;
+          termination_reason: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -889,6 +895,12 @@ export interface Database {
           bank_name?: string | null;
           bank_account_number?: string | null;
           bank_account_type?: 'ahorros' | 'corriente' | null;
+          polygraph_date?: string | null;
+          polygraph_result?: string | null;
+          polygraph_document_url?: string | null;
+          agent_status?: string;
+          termination_date?: string | null;
+          termination_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -905,6 +917,12 @@ export interface Database {
           bank_name?: string | null;
           bank_account_number?: string | null;
           bank_account_type?: 'ahorros' | 'corriente' | null;
+          polygraph_date?: string | null;
+          polygraph_result?: string | null;
+          polygraph_document_url?: string | null;
+          agent_status?: string;
+          termination_date?: string | null;
+          termination_reason?: string | null;
           updated_at?: string;
         };
         Relationships: [
