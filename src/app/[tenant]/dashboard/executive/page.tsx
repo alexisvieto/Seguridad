@@ -140,12 +140,9 @@ export default function CentroComandoPage() {
   }, [tenantId, actionNotes, loadData]);
 
   const openOps = operations.filter((o) => isOpen(o.status)).length;
-  const progressOps = operations.filter((o) => isProgress(o.status)).length;
   const openClient = clientAlerts.filter((c) => isOpen(c.status)).length;
-  const progressAll = progressOps + clientAlerts.filter((c) => isProgress(c.status)).length;
+  const progressAll = operations.filter((o) => isProgress(o.status)).length + clientAlerts.filter((c) => isProgress(c.status)).length;
   const today = new Date().toISOString().split('T')[0]!;
-  const resolvedToday = operations.filter((o) => ['resolved', 'justified', 'closed'].includes(o.status) && o.createdAt.startsWith(today)).length
-    + clientAlerts.filter((c) => ['resuelto', 'cerrado', 'aceptado_empresa', 'reparado'].includes(c.status) && c.createdAt.startsWith(today)).length;
 
   if (isLoading) {
     return <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]"><div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" /></div>;
@@ -165,15 +162,13 @@ export default function CentroComandoPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-4 gap-4 border-b border-zinc-800/60 px-6 py-4">
-        <KpiCard label="Novedades Abiertas" value={openOps} color="red" />
-        <KpiCard label="Tickets Cliente" value={openClient} color="red" />
-        <KpiCard label="En Proceso" value={progressAll} color="amber" />
-        <KpiCard label="Resueltos Hoy" value={resolvedToday} color="lime" />
-      </div>
-
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 border-r border-zinc-800/60 overflow-y-auto">
+          {/* Ops KPIs */}
+          <div className="grid grid-cols-2 gap-3 px-5 py-3 border-b border-zinc-800/30">
+            <KpiCard label="Abiertas" value={openOps} color="red" />
+            <KpiCard label="Resueltas Hoy" value={operations.filter((o) => !isOpen(o.status) && !isProgress(o.status) && o.createdAt.startsWith(today)).length} color="lime" />
+          </div>
           <div className="px-5 py-3 border-b border-zinc-800/30">
             <p className="text-xs font-semibold tracking-widest text-red-400 uppercase">Novedades de Operaciones</p>
           </div>
@@ -188,6 +183,11 @@ export default function CentroComandoPage() {
           )}
         </div>
         <div className="flex-1 overflow-y-auto">
+          {/* Client KPIs */}
+          <div className="grid grid-cols-2 gap-3 px-5 py-3 border-b border-zinc-800/30">
+            <KpiCard label="Abiertas" value={openClient} color="red" />
+            <KpiCard label="Resueltas Hoy" value={clientAlerts.filter((c) => !isOpen(c.status) && !isProgress(c.status) && c.createdAt.startsWith(today)).length} color="lime" />
+          </div>
           <div className="px-5 py-3 border-b border-zinc-800/30">
             <p className="text-xs font-semibold tracking-widest text-amber-400 uppercase">Novedades de Cliente</p>
           </div>
