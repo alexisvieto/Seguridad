@@ -525,6 +525,8 @@ export interface Database {
           assigned_at: string;
           returned_at: string | null;
           notes: string | null;
+          return_location_id: string | null;
+          signature_data: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -537,6 +539,8 @@ export interface Database {
           assigned_at?: string;
           returned_at?: string | null;
           notes?: string | null;
+          return_location_id?: string | null;
+          signature_data?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -546,6 +550,8 @@ export interface Database {
           user_id?: string | null;
           returned_at?: string | null;
           notes?: string | null;
+          return_location_id?: string | null;
+          signature_data?: string | null;
           updated_at?: string;
         };
         Relationships: [

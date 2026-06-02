@@ -377,22 +377,32 @@ export default function ArmamentoPage() {
   // Return firearm
   // -------------------------------------------------------------------
 
-  const handleReturn = useCallback(async (assignmentId: string) => {
-    const supabase = getSupabaseBrowserClient();
+  const handleReturn = useCallback(async () => {
+    if (!showReturnModal || !returnLocId) return;
+    setReturnLoading(true);
 
-    const { error } = await supabase
-      .from('firearms_assignments')
-      .update({ returned_at: new Date().toISOString() })
-      .eq('id', assignmentId);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      await supabase
+        .from('firearms_assignments')
+        .update({ returned_at: new Date().toISOString(), return_location_id: returnLocId })
+        .eq('id', showReturnModal);
 
-    if (error) {
+      // Update firearm location to the return location
+      if (selected) {
+        await supabase.from('firearms_inventory').update({ location_id: returnLocId }).eq('id', selected.id);
+      }
+
+      setToast({ type: 'success', msg: 'Arma devuelta correctamente' });
+      setShowReturnModal(null);
+      if (selected) selectFirearm(selected);
+      loadData();
+    } catch {
       setToast({ type: 'error', msg: 'Error al registrar devolución' });
-      return;
+    } finally {
+      setReturnLoading(false);
     }
-
-    setToast({ type: 'success', msg: 'Arma devuelta correctamente' });
-    if (selected) selectFirearm(selected);
-  }, [selected, selectFirearm]);
+  }, [showReturnModal, returnLocId, selected, selectFirearm, loadData]);
 
   // -------------------------------------------------------------------
   // Create firearm
@@ -681,7 +691,7 @@ export default function ArmamentoPage() {
               {/* Details grid */}
               <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
                 <DetailCard label="Estado" value={statusBadge[selected.status]?.label ?? selected.status} />
-                <DetailCard label="Permiso" value={selected.permitNumber} />
+                <DetailCard label="Permiso DIASP" value={selected.permitNumber} />
                 <DetailCard
                   label="Vence"
                   value={formatDate(selected.permitExpiry)}
@@ -689,7 +699,18 @@ export default function ArmamentoPage() {
                   sub={selected.daysToExpiry <= 0 ? 'VENCIDO' : `${selected.daysToExpiry} días`}
                 />
                 <DetailCard label="Tipo" value={typeLabels[selected.type] ?? selected.type} />
+                <DetailCard label="Ubicación" value={selected.locationName ?? 'Sin asignar'} />
+                <DetailCard label="Marca / Modelo" value={`${selected.brand} ${selected.model}`} />
               </div>
+
+              {/* Permit document */}
+              {selected.permitDocUrl && (
+                <a href={selected.permitDocUrl} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                  Ver Permiso DIASP
+                </a>
+              )}
 
               {/* Assignments history */}
               <div>
@@ -728,14 +749,19 @@ export default function ArmamentoPage() {
 
                         {a.returnedAt === null ? (
                           <button
-                            onClick={() => handleReturn(a.id)}
+                            onClick={() => { setShowReturnModal(a.id); setReturnLocId(locations[0]?.id ?? ''); }}
                             className="flex min-h-[44px] items-center gap-2 rounded-lg bg-zinc-700 px-4 py-2 text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-600 cursor-pointer"
                           >
                             <ReturnIcon />
                             Devolver
                           </button>
                         ) : (
-                          <span className="text-xs text-zinc-600">Devuelta</span>
+                          <div className="text-right">
+                            <span className="text-xs text-zinc-600">Devuelta</span>
+                            {a.returnLocationName && <p className="text-[10px] text-zinc-600">{a.returnLocationName}</p>}
+                            <a href={`/api/firearms/delivery-pdf?id=${a.id}`} target="_blank" rel="noopener noreferrer"
+                              className="text-[10px] text-lime-400 hover:text-lime-300 cursor-pointer">PDF</a>
+                          </div>
                         )}
                       </li>
                     ))}
@@ -908,7 +934,47 @@ export default function ArmamentoPage() {
                 <input type="date" value={newPermitExpiry} onChange={(e) => setNewPermitExpiry(e.target.value)}
                   className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
+
+              {/* Location */}
+              <label className="block sm:col-span-2">
+                <span className="text-xs font-medium text-zinc-400">Ubicación (Armería)</span>
+                <div className="flex gap-2 mt-1">
+                  <select value={newLocationId} onChange={(e) => setNewLocationId(e.target.value)}
+                    className="flex-1 rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
+                    <option value="">Sin ubicación</option>
+                    {locations.map((l) => (<option key={l.id} value={l.id}>{l.name}</option>))}
+                  </select>
+                  <button type="button" onClick={() => setShowLocForm(true)}
+                    className="rounded-xl border border-dashed border-zinc-700 px-4 py-3 text-xs font-medium text-lime-400 hover:border-lime-500/30 cursor-pointer">+ Nueva</button>
+                </div>
+              </label>
             </div>
+
+            {/* Inline location creation */}
+            {showLocForm && (
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/50 p-3">
+                <input type="text" value={newLocName} onChange={(e) => setNewLocName(e.target.value)}
+                  placeholder="Nombre de la armería (ej: Armería Central)"
+                  className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-100 focus:border-lime-500 focus:outline-none" />
+                <button onClick={() => setShowLocForm(false)} className="px-3 py-2 text-xs text-zinc-500 cursor-pointer">Cancelar</button>
+                <button
+                  onClick={async () => {
+                    if (!tenantId || !newLocName.trim()) return;
+                    setLocLoading(true);
+                    const supabase = getSupabaseBrowserClient();
+                    const { data } = await supabase.from('firearm_locations').insert({ tenant_id: tenantId, name: newLocName.trim() }).select().maybeSingle();
+                    if (data) {
+                      setLocations((prev) => [...prev, { id: data.id, name: data.name }]);
+                      setNewLocationId(data.id);
+                    }
+                    setShowLocForm(false); setNewLocName(''); setLocLoading(false);
+                  }}
+                  disabled={locLoading || !newLocName.trim()}
+                  className="rounded-lg bg-lime-600 px-4 py-2 text-xs font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer">
+                  {locLoading ? '...' : 'Crear'}
+                </button>
+              </div>
+            )}
 
             <div className="mt-6 flex gap-3">
               <button
@@ -927,6 +993,31 @@ export default function ArmamentoPage() {
                 ) : (
                   'Registrar Arma'
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RETURN MODAL */}
+      {showReturnModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowReturnModal(null); }}>
+          <div className="w-full max-w-sm rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl space-y-5">
+            <h3 className="text-lg font-semibold text-zinc-100">Devolver Arma</h3>
+            <p className="text-xs text-zinc-500">Seleccione la ubicación a donde se devuelve el arma</p>
+            <label className="block">
+              <span className="text-xs font-medium text-zinc-400">Ubicación de destino</span>
+              <select value={returnLocId} onChange={(e) => setReturnLocId(e.target.value)}
+                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
+                {locations.map((l) => (<option key={l.id} value={l.id}>{l.name}</option>))}
+              </select>
+            </label>
+            <div className="flex gap-3">
+              <button onClick={() => setShowReturnModal(null)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
+              <button onClick={handleReturn} disabled={returnLoading || !returnLocId}
+                className="flex-1 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                {returnLoading ? '...' : 'Confirmar Devolución'}
               </button>
             </div>
           </div>
