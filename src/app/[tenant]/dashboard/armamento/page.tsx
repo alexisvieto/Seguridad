@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -365,6 +365,8 @@ export default function ArmamentoPage() {
 
       setToast({ type: 'success', msg: 'Arma asignada correctamente' });
       setShowModal(false);
+      setHasSigned(false);
+      setSignKey((k) => k + 1);
       selectFirearm(selected);
     } catch {
       setToast({ type: 'error', msg: 'Error al asignar el arma' });
@@ -841,17 +843,23 @@ export default function ArmamentoPage() {
               />
             </label>
 
+            {/* Signature */}
+            <div className="mt-4">
+              <span className="text-xs font-medium text-zinc-400">Firma Digital del Receptor</span>
+              <SignaturePad key={signKey} onSign={() => setHasSigned(true)} onClear={() => setHasSigned(false)} />
+            </div>
+
             {/* Actions */}
             <div className="mt-6 flex gap-3">
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); setHasSigned(false); setSignKey((k) => k + 1); }}
                 className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700 cursor-pointer min-h-[48px]"
               >
                 Cancelar
               </button>
               <button
                 onClick={submitAssignment}
-                disabled={!assignTargetId || assignLoading}
+                disabled={!assignTargetId || !hasSigned || assignLoading}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]"
               >
                 {assignLoading ? (
@@ -1115,5 +1123,67 @@ function ReturnIcon() {
     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
     </svg>
+  );
+}
+
+function SignaturePad({ onSign, onClear }: { onSign: () => void; onClear: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isDrawingRef = useRef(false);
+  const hasStrokesRef = useRef(false);
+
+  const getPos = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    canvas.setPointerCapture(e.pointerId);
+    isDrawingRef.current = true;
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  };
+
+  const handlePointerMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const pos = getPos(e);
+    ctx.strokeStyle = '#84CC16';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    if (!hasStrokesRef.current) { hasStrokesRef.current = true; onSign(); }
+  };
+
+  const handlePointerUp = () => { isDrawingRef.current = false; };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasStrokesRef.current = false;
+    onClear();
+  };
+
+  return (
+    <div className="mt-1">
+      <div className="relative rounded-xl border border-zinc-700 bg-zinc-900 overflow-hidden">
+        <canvas ref={canvasRef} width={460} height={120} className="w-full touch-none cursor-crosshair" style={{ height: 120 }}
+          onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} />
+        {!hasStrokesRef.current && (
+          <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-zinc-600">Firme aquí</p>
+        )}
+      </div>
+      <button onClick={clearCanvas} type="button" className="mt-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">Limpiar firma</button>
+    </div>
   );
 }
