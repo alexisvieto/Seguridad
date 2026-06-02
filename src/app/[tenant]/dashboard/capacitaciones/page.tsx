@@ -103,6 +103,13 @@ export default function CapacitacionesPage() {
   const [modalFile, setModalFile] = useState<File | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
 
+  // Create course
+  const [showCourseForm, setShowCourseForm] = useState(false);
+  const [newCourseName, setNewCourseName] = useState('');
+  const [newCourseDesc, setNewCourseDesc] = useState('');
+  const [newCourseValidity, setNewCourseValidity] = useState('12');
+  const [courseLoading, setCourseLoading] = useState(false);
+
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 4000);
@@ -259,6 +266,31 @@ export default function CapacitacionesPage() {
     }
   }, [tenantId, modalAgent, modalCourse, modalDate, modalGrade, modalFile, courses, loadData]);
 
+  const handleCreateCourse = useCallback(async () => {
+    if (!tenantId || !newCourseName.trim()) return;
+    setCourseLoading(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.from('training_courses').insert({
+        tenant_id: tenantId,
+        course_name: newCourseName.trim(),
+        description: newCourseDesc.trim() || null,
+        validity_months: parseInt(newCourseValidity) || 12,
+      });
+      if (error) throw error;
+      setToast({ type: 'success', msg: 'Curso agregado' });
+      setShowCourseForm(false);
+      setNewCourseName('');
+      setNewCourseDesc('');
+      setNewCourseValidity('12');
+      loadData();
+    } catch {
+      setToast({ type: 'error', msg: 'Error al crear curso' });
+    } finally {
+      setCourseLoading(false);
+    }
+  }, [tenantId, newCourseName, newCourseDesc, newCourseValidity, loadData]);
+
   // -------------------------------------------------------------------
   // KPIs
   // -------------------------------------------------------------------
@@ -295,13 +327,16 @@ export default function CapacitacionesPage() {
           <h1 className="text-lg font-semibold tracking-wide">Matriz de Competencias</h1>
           <span className="text-sm text-zinc-500">{tenantSlug}</span>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer"
-        >
-          <PlusIcon />
-          Registrar Capacitación
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowCourseForm(true)}
+            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/50 px-5 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800 cursor-pointer">
+            <PlusIcon /> Agregar Curso
+          </button>
+          <button onClick={() => setShowModal(true)}
+            className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer">
+            <PlusIcon /> Registrar Capacitación
+          </button>
+        </div>
       </header>
 
       {/* KPIs */}
@@ -507,6 +542,43 @@ export default function CapacitacionesPage() {
                 ) : (
                   'Registrar'
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE COURSE MODAL */}
+      {showCourseForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowCourseForm(false); }}>
+          <div className="w-full max-w-md rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl space-y-5">
+            <h3 className="text-lg font-semibold text-zinc-100">Agregar Curso</h3>
+            <p className="text-xs text-zinc-500">Los cursos se crean una vez y quedan disponibles para asignar a cualquier agente.</p>
+            <label className="block">
+              <span className="text-xs font-medium text-zinc-400">Nombre del Curso</span>
+              <input type="text" value={newCourseName} onChange={(e) => setNewCourseName(e.target.value)}
+                placeholder="Ej: Manejo de Armas de Fuego"
+                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-zinc-400">Descripción (opcional)</span>
+              <input type="text" value={newCourseDesc} onChange={(e) => setNewCourseDesc(e.target.value)}
+                placeholder="Ej: Certificación DIASP para porte y uso"
+                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-zinc-400">Vigencia (meses)</span>
+              <input type="number" value={newCourseValidity} onChange={(e) => setNewCourseValidity(e.target.value)} min="1" max="120"
+                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
+              <p className="mt-1 text-[10px] text-zinc-600">Después de este período, la certificación se marca como vencida.</p>
+            </label>
+            <div className="flex gap-3">
+              <button onClick={() => setShowCourseForm(false)}
+                className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
+              <button onClick={handleCreateCourse} disabled={courseLoading || !newCourseName.trim()}
+                className="flex-1 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                {courseLoading ? '...' : 'Crear Curso'}
               </button>
             </div>
           </div>

@@ -9,7 +9,7 @@ import { FileUpload } from '@/lib/upload/file-upload';
 // Types
 // ---------------------------------------------------------------------------
 
-type DetailTab = 'ficha' | 'contrato' | 'activos' | 'incapacidades' | 'disciplina';
+type DetailTab = 'ficha' | 'contrato' | 'poligrafia' | 'activos' | 'incapacidades' | 'disciplina';
 
 interface MedicalLeave {
   id: string;
@@ -409,6 +409,7 @@ export default function RRHHPage() {
                 {([
                   { key: 'ficha' as DetailTab, label: 'Ficha' },
                   { key: 'contrato' as DetailTab, label: 'Contrato' },
+                  { key: 'poligrafia' as DetailTab, label: 'Poligrafía' },
                   { key: 'activos' as DetailTab, label: `Activos (${assignedAssets.length})` },
                   { key: 'incapacidades' as DetailTab, label: `Incapac. (${medicalLeaves.length})` },
                   { key: 'disciplina' as DetailTab, label: `Discip. (${disciplinary.length})` },
@@ -449,39 +450,6 @@ export default function RRHHPage() {
                       <InfoCard label="Telefono Emergencia" value={selected.emergencyPhone ?? 'No registrado'} />
                     </div>
 
-                    {/* Poligrafía */}
-                    <div>
-                      <h3 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase mb-3">Poligrafía</h3>
-                      <div className="grid gap-4 sm:grid-cols-3">
-                        <InfoCard label="Fecha" value={selected.polygraphDate ? formatDate(selected.polygraphDate) : 'No realizada'} />
-                        <InfoCard label="Resultado" value={
-                          selected.polygraphResult === 'aprobado' ? 'Aprobado' :
-                          selected.polygraphResult === 'no_aprobado' ? 'No Aprobado' :
-                          selected.polygraphResult === 'pendiente' ? 'Pendiente' : 'Sin registro'
-                        } alert={selected.polygraphResult === 'no_aprobado' ? 'NO APROBADO' : undefined} />
-                        <div className="rounded-xl border border-zinc-700/30 bg-zinc-800/40 px-5 py-4">
-                          <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Documento</p>
-                          {selected.polygraphDocUrl ? (
-                            <a href={selected.polygraphDocUrl} target="_blank" rel="noopener noreferrer" className="mt-1 text-sm text-lime-400 hover:text-lime-300 cursor-pointer">Ver documento</a>
-                          ) : (
-                            <p className="mt-1 text-sm text-zinc-200">Sin adjunto</p>
-                          )}
-                        </div>
-                      </div>
-                      <FileUpload
-                        bucket="hr-documents"
-                        basePath={`${tenantId}/poligrafia/${selected.userId}`}
-                        label="Adjuntar resultado de poligrafía"
-                        accept=".pdf,.jpg,.png"
-                        onUploaded={(url) => {
-                          const supabase = getSupabaseBrowserClient();
-                          supabase.from('hr_agent_profiles').update({ polygraph_document_url: url }).eq('user_id', selected.userId).eq('tenant_id', tenantId!).then(() => {
-                            setToast({ type: 'success', msg: 'Documento de poligrafía adjuntado' });
-                          });
-                        }}
-                      />
-                    </div>
-
                     {/* Dar de baja */}
                     {selected.agentStatus === 'activo' && (
                       <div className="border-t border-zinc-800/40 pt-4">
@@ -517,6 +485,78 @@ export default function RRHHPage() {
                         </details>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* POLIGRAFÍA */}
+                {detailTab === 'poligrafia' && (
+                  <div className="space-y-6">
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <InfoCard label="Fecha" value={selected.polygraphDate ? formatDate(selected.polygraphDate) : 'No realizada'} />
+                      <InfoCard label="Resultado" value={
+                        selected.polygraphResult === 'aprobado' ? 'Aprobado' :
+                        selected.polygraphResult === 'no_aprobado' ? 'No Aprobado' :
+                        selected.polygraphResult === 'pendiente' ? 'Pendiente' : 'Sin registro'
+                      } alert={selected.polygraphResult === 'no_aprobado' ? 'NO APROBADO' : undefined} />
+                      <div className="rounded-xl border border-zinc-700/30 bg-zinc-800/40 px-5 py-4">
+                        <p className="text-[11px] font-medium tracking-widest text-zinc-500 uppercase">Documento</p>
+                        {selected.polygraphDocUrl ? (
+                          <a href={selected.polygraphDocUrl} target="_blank" rel="noopener noreferrer" className="mt-1 text-sm text-lime-400 hover:text-lime-300 cursor-pointer">Ver documento</a>
+                        ) : (
+                          <p className="mt-1 text-sm text-zinc-200">Sin adjunto</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Update polygraph data */}
+                    <div className="rounded-xl border border-zinc-800/40 bg-zinc-800/20 p-5 space-y-4">
+                      <h3 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Registrar / Actualizar Poligrafía</h3>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="text-xs font-medium text-zinc-400">Fecha de Examen</span>
+                          <input type="date" id="polyDate" defaultValue={selected.polygraphDate ?? ''}
+                            className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-medium text-zinc-400">Resultado</span>
+                          <select id="polyResult" defaultValue={selected.polygraphResult ?? ''}
+                            className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
+                            <option value="">Sin registro</option>
+                            <option value="aprobado">Aprobado</option>
+                            <option value="no_aprobado">No Aprobado</option>
+                            <option value="pendiente">Pendiente</option>
+                          </select>
+                        </label>
+                      </div>
+                      <button onClick={async () => {
+                        const dateEl = document.getElementById('polyDate') as HTMLInputElement;
+                        const resultEl = document.getElementById('polyResult') as HTMLSelectElement;
+                        const supabase = getSupabaseBrowserClient();
+                        await supabase.from('hr_agent_profiles').update({
+                          polygraph_date: dateEl.value || null,
+                          polygraph_result: resultEl.value || null,
+                        }).eq('user_id', selected.userId).eq('tenant_id', tenantId!);
+                        setToast({ type: 'success', msg: 'Poligrafía actualizada' });
+                        loadData();
+                      }} className="rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
+                        Guardar
+                      </button>
+                    </div>
+
+                    {/* Upload document */}
+                    <FileUpload
+                      bucket="hr-documents"
+                      basePath={`${tenantId}/poligrafia/${selected.userId}`}
+                      label="Adjuntar resultado de poligrafía (PDF o imagen)"
+                      accept=".pdf,.jpg,.png"
+                      onUploaded={(url) => {
+                        const supabase = getSupabaseBrowserClient();
+                        supabase.from('hr_agent_profiles').update({ polygraph_document_url: url }).eq('user_id', selected.userId).eq('tenant_id', tenantId!).then(() => {
+                          setToast({ type: 'success', msg: 'Documento de poligrafía adjuntado' });
+                          loadData();
+                        });
+                      }}
+                    />
                   </div>
                 )}
 
