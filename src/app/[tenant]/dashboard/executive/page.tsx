@@ -29,9 +29,9 @@ interface AuditEntry {
 }
 
 const statusFlow: Record<string, { label: string; cls: string; dotCls: string }> = {
-  open: { label: 'Sin Atender', cls: 'bg-red-500/15 text-red-400', dotCls: 'bg-red-500' },
-  abierto: { label: 'Sin Atender', cls: 'bg-red-500/15 text-red-400', dotCls: 'bg-red-500' },
-  bajo_investigacion: { label: 'Sin Atender', cls: 'bg-red-500/15 text-red-400', dotCls: 'bg-red-500' },
+  open: { label: 'Sin Atender', cls: 'bg-red-500/15 text-red-400 animate-pulse', dotCls: 'bg-red-500 animate-pulse' },
+  abierto: { label: 'Sin Atender', cls: 'bg-red-500/15 text-red-400 animate-pulse', dotCls: 'bg-red-500 animate-pulse' },
+  bajo_investigacion: { label: 'Sin Atender', cls: 'bg-red-500/15 text-red-400 animate-pulse', dotCls: 'bg-red-500 animate-pulse' },
   in_progress: { label: 'En Proceso', cls: 'bg-amber-500/15 text-amber-400', dotCls: 'bg-amber-500' },
   en_proceso: { label: 'En Proceso', cls: 'bg-amber-500/15 text-amber-400', dotCls: 'bg-amber-500' },
   resolved: { label: 'Resuelto', cls: 'bg-lime-500/15 text-lime-400', dotCls: 'bg-lime-500' },
@@ -177,13 +177,29 @@ export default function CentroComandoPage() {
           <div className="px-5 py-3 border-b border-zinc-800/30">
             <p className="text-xs font-semibold tracking-widest text-red-400 uppercase">Novedades de Operaciones</p>
           </div>
-          <AlertList items={operations} expandedId={expandedId} onExpand={handleExpand} auditTrail={auditTrail} actionNotes={actionNotes} setActionNotes={setActionNotes} onAction={handleAction} saving={saving} />
+          <AlertList items={operations.filter((o) => isOpen(o.status) || isProgress(o.status))} expandedId={expandedId} onExpand={handleExpand} auditTrail={auditTrail} actionNotes={actionNotes} setActionNotes={setActionNotes} onAction={handleAction} saving={saving} />
+          {operations.some((o) => !isOpen(o.status) && !isProgress(o.status)) && (
+            <details className="border-t border-zinc-800/30">
+              <summary className="px-5 py-2 text-[10px] text-zinc-600 cursor-pointer hover:text-zinc-400">
+                Resueltas ({operations.filter((o) => !isOpen(o.status) && !isProgress(o.status)).length})
+              </summary>
+              <AlertList items={operations.filter((o) => !isOpen(o.status) && !isProgress(o.status))} expandedId={expandedId} onExpand={handleExpand} auditTrail={auditTrail} actionNotes={actionNotes} setActionNotes={setActionNotes} onAction={handleAction} saving={saving} />
+            </details>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="px-5 py-3 border-b border-zinc-800/30">
             <p className="text-xs font-semibold tracking-widest text-amber-400 uppercase">Novedades de Cliente</p>
           </div>
-          <AlertList items={clientAlerts} expandedId={expandedId} onExpand={handleExpand} auditTrail={auditTrail} actionNotes={actionNotes} setActionNotes={setActionNotes} onAction={handleAction} saving={saving} />
+          <AlertList items={clientAlerts.filter((c) => isOpen(c.status) || isProgress(c.status))} expandedId={expandedId} onExpand={handleExpand} auditTrail={auditTrail} actionNotes={actionNotes} setActionNotes={setActionNotes} onAction={handleAction} saving={saving} />
+          {clientAlerts.some((c) => !isOpen(c.status) && !isProgress(c.status)) && (
+            <details className="border-t border-zinc-800/30">
+              <summary className="px-5 py-2 text-[10px] text-zinc-600 cursor-pointer hover:text-zinc-400">
+                Resueltas ({clientAlerts.filter((c) => !isOpen(c.status) && !isProgress(c.status)).length})
+              </summary>
+              <AlertList items={clientAlerts.filter((c) => !isOpen(c.status) && !isProgress(c.status))} expandedId={expandedId} onExpand={handleExpand} auditTrail={auditTrail} actionNotes={actionNotes} setActionNotes={setActionNotes} onAction={handleAction} saving={saving} />
+            </details>
+          )}
         </div>
       </div>
 
@@ -211,9 +227,9 @@ function AlertList({ items, expandedId, onExpand, auditTrail, actionNotes, setAc
         const canAct = isOpen(item.status) || isProgress(item.status);
 
         const nextStatuses = item.sourceType === 'incident'
-          ? (isOpen(item.status) ? [{ v: 'in_progress', l: 'En Proceso', c: 'bg-amber-600' }, { v: 'resolved', l: 'Resolver', c: 'bg-lime-600' }] : [{ v: 'resolved', l: 'Resolver', c: 'bg-lime-600' }])
+          ? (isOpen(item.status) ? [{ v: 'in_progress', l: 'En Proceso', c: 'bg-amber-600' }, { v: 'resolved', l: 'Resuelto', c: 'bg-lime-600' }] : [{ v: 'resolved', l: 'Resuelto', c: 'bg-lime-600' }])
           : item.sourceType === 'ticket'
-            ? (isOpen(item.status) ? [{ v: 'en_proceso', l: 'En Proceso', c: 'bg-amber-600' }, { v: 'resuelto', l: 'Resolver', c: 'bg-lime-600' }] : [{ v: 'resuelto', l: 'Resolver', c: 'bg-lime-600' }])
+            ? (isOpen(item.status) ? [{ v: 'en_proceso', l: 'En Proceso', c: 'bg-amber-600' }, { v: 'resuelto', l: 'Resuelto', c: 'bg-lime-600' }] : [{ v: 'resuelto', l: 'Resuelto', c: 'bg-lime-600' }])
             : (isOpen(item.status) ? [{ v: 'aceptado_empresa', l: 'Aceptar', c: 'bg-lime-600' }, { v: 'rechazado_con_pruebas', l: 'Rechazar', c: 'bg-red-600' }, { v: 'reparado', l: 'Reparado', c: 'bg-blue-600' }] : [{ v: 'reparado', l: 'Reparado', c: 'bg-blue-600' }]);
 
         return (
