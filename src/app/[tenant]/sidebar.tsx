@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -17,6 +17,7 @@ interface NavItem {
   icon: React.ReactNode;
   roles: string[];
   section: 'commercial' | 'operations' | 'resources' | 'hr' | 'finance' | 'client';
+  badgeCount?: number;
 }
 
 const sectionLabels: Record<string, string> = {
@@ -31,7 +32,25 @@ const sectionLabels: Record<string, string> = {
 export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const base = `/${tenantSlug}`;
+
+  useEffect(() => {
+    if (role !== 'owner' && role !== 'admin') return;
+    (async () => {
+      const { getSupabaseBrowserClient } = await import('@/lib/supabase/client');
+      const supabase = getSupabaseBrowserClient();
+      const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
+      if (!tenant) return;
+
+      const [ticketsRes, damagesRes] = await Promise.all([
+        supabase.from('client_tickets').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).in('status', ['abierto', 'en_proceso']),
+        supabase.from('client_damage_reports').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('status', 'bajo_investigacion'),
+      ]);
+
+      setPendingCount((ticketsRes.count ?? 0) + (damagesRes.count ?? 0));
+    })();
+  }, [tenantSlug, role]);
 
   const navItems: NavItem[] = [
     {
@@ -126,10 +145,18 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       section: 'finance',
     },
     {
+      href: `${base}/dashboard/atencion-cliente`,
+      label: 'Atención al Cliente',
+      icon: <TicketIcon />,
+      roles: ['owner', 'admin'],
+      section: 'client',
+      badgeCount: pendingCount,
+    },
+    {
       href: `${base}/cliente`,
       label: 'Portal Cliente',
       icon: <BuildingIcon />,
-      roles: ['owner', 'admin', 'viewer'],
+      roles: ['viewer'],
       section: 'client',
     },
   ];
@@ -177,14 +204,26 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
                     key={item.href}
                     href={item.href}
                     title={collapsed ? item.label : undefined}
-                    className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors cursor-pointer mb-0.5 min-h-[36px] ${
+                    className={`relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors cursor-pointer mb-0.5 min-h-[36px] ${
                       isActive
                         ? 'bg-lime-500/10 text-lime-400'
                         : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
                     }`}
                   >
-                    <span className="shrink-0">{item.icon}</span>
-                    {!collapsed && <span className="truncate">{item.label}</span>}
+                    <span className="relative shrink-0">
+                      {item.icon}
+                      {item.badgeCount !== undefined && item.badgeCount > 0 && collapsed && (
+                        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">{item.badgeCount > 9 ? '9+' : item.badgeCount}</span>
+                      )}
+                    </span>
+                    {!collapsed && (
+                      <>
+                        <span className="truncate">{item.label}</span>
+                        {item.badgeCount !== undefined && item.badgeCount > 0 && (
+                          <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">{item.badgeCount > 99 ? '99+' : item.badgeCount}</span>
+                        )}
+                      </>
+                    )}
                   </Link>
                 );
               })}
@@ -337,6 +376,14 @@ function SwapIcon() {
   return (
     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+    </svg>
+  );
+}
+
+function TicketIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
     </svg>
   );
 }
