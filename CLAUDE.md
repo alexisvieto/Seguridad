@@ -2,61 +2,108 @@
 
 ## Qué es este proyecto
 
-ERP multi-tenant SaaS para empresas de seguridad privada en Panamá y LATAM. Gestiona el ciclo completo: gestión comercial de clientes, operaciones de campo, RRHH, armamento, flota vehicular con GPS, inventario, capacitaciones, atención al cliente, nómina quincenal y analítica con IA. Aislamiento total de datos por tenant.
+ERP multi-tenant SaaS para empresas de seguridad privada en Panamá y LATAM. Gestiona el ciclo completo: gestión comercial de clientes, operaciones de campo, RRHH, armamento con ubicaciones y custodia, flota vehicular con GPS, inventario con entregas firmadas, capacitaciones, centro de comando con trazabilidad, nómina quincenal y analítica con IA. Aislamiento total de datos por tenant.
 
 ## Stack tecnológico
 
-- **Framework:** Next.js 15 (App Router), TypeScript strict (zero `any`)
+- **Framework:** Next.js 16 (App Router), TypeScript strict (zero `any`)
 - **Base de datos:** Supabase (PostgreSQL 17) con Row Level Security en todas las tablas
 - **Auth:** Supabase Auth con JWT refresh en Server Components
 - **AI:** Anthropic SDK (Claude Sonnet) para refinamiento de bitácoras + motor de analítica
 - **Email:** Resend para reportes diarios automatizados
 - **Mapas:** Leaflet + react-leaflet para rastreo vehicular
-- **Gráficos:** Recharts para dashboards ejecutivos
+- **Gráficos:** Recharts para dashboards
 - **Validación:** Zod v4 en todos los inputs
-- **Estilos:** Tailwind CSS, tema dark OLED para dashboards
+- **Estilos:** Tailwind CSS v4, tema dark OLED (lime tactical #84CC16)
+- **Animaciones:** Framer Motion (sitio público)
+- **Iconos:** Lucide React (sitio público) + SVG inline (dashboard)
+- **QR:** qrcode.react para códigos QR de puestos
 - **Storage:** Supabase Storage (bucket privado `hr-documents`) con compresión client-side
 - **Middleware:** Edge-compatible (zero deps, puro URL parsing)
+- **Deploy:** Vercel (www.nexguard360.com) + Namecheap DNS
 
 ## Arquitectura
 
 ### Multi-tenancy
-- Aislamiento por `tenant_id` en todas las tablas operativas (36 tablas)
+- Aislamiento por `tenant_id` en todas las tablas operativas (42+ tablas)
 - RLS con funciones helper `get_user_tenant_ids()` y `get_user_role_in_tenant()`
-- Subdominios dinámicos en producción: `tenant.nexguard360.com` → rewrite a `/[tenant]/...`
+- Path-based routing en producción: `nexguard360.com/{tenant}/dashboard`
 - Ruta directa en desarrollo: `localhost:3000/{tenant}/...`
-- Roles: `owner`, `admin`, `editor`, `viewer`
+- Roles: `owner` (gerente), `admin` (operador), `editor` (agente), `viewer` (auditor/cliente)
+
+### Roles y permisos
+| Módulo | owner | admin | editor | viewer |
+|--------|:-----:|:-----:|:------:|:------:|
+| Clientes y Contratos | ✓ | — | — | — |
+| Gerencial + IA | ✓ | ✓ | — | — |
+| NOC Monitor | ✓ | ✓ | — | — |
+| Centro de Comando | ✓ | ✓ | — | — |
+| Cambio de Turno | ✓ | ✓ | — | — |
+| Turnos | ✓ | ✓ | — | — |
+| Consignas | ✓ | ✓ | — | — |
+| Mi Puesto | ✓ | ✓ | ✓ | — |
+| Armamento | ✓ | ✓ | — | — |
+| Inventario | ✓ | ✓ | — | — |
+| Flota | ✓ | ✓ | — | — |
+| RRHH | ✓ | ✓ | — | — |
+| Capacitaciones | ✓ | ✓ | — | — |
+| Nómina | ✓ | — | — | — |
+| Portal Cliente | — | — | — | ✓ |
 
 ### Estructura de código
 ```
 src/
 ├── app/
-│   ├── page.tsx              # Landing page pública NexGuard360
+│   ├── page.tsx              # Landing page pública (lime tactical)
+│   ├── precios/              # 7 bandas de pricing
+│   ├── producto/             # 14 módulos con screenshots + lightbox zoom
+│   ├── sobre/                # Historia Nexera
+│   ├── contacto/             # Formulario de demo
+│   ├── terminos/             # Términos de servicio
+│   ├── privacidad/           # Política de privacidad
+│   ├── seguridad/            # Seguridad de datos
+│   ├── admin/                # Super admin panel (crear tenants/usuarios)
 │   ├── login/                # Login centralizado con routing por rol
+│   ├── opengraph-image.tsx   # OG image para WhatsApp/LinkedIn
+│   ├── sitemap.ts            # SEO sitemap
+│   ├── robots.ts             # SEO robots
 │   ├── [tenant]/
-│   │   ├── sidebar.tsx       # Navegación lateral con 12 módulos
-│   │   ├── layout.tsx        # Validación de tenant + auth + role
-│   │   ├── puesto/           # UI del agente (mobile-first, consignas, voz)
+│   │   ├── sidebar.tsx       # Navegación lateral con permisos por rol
+│   │   ├── layout.tsx        # Validación de tenant + auth + role + RealtimeAlerts
+│   │   ├── realtime-alerts.tsx # Banner global de alertas + no-show persistentes
+│   │   ├── puesto/           # UI del agente (mobile-first, consignas, voz, acción tomada)
 │   │   ├── cliente/          # Portal del cliente contratante (PQR, daños)
 │   │   └── dashboard/
 │   │       ├── page.tsx           # Dashboard Gerencial + IA Analytics
-│   │       ├── executive/         # Centro de Comando (Recharts)
-│   │       ├── live-monitor/      # NOC Monitor (WebSockets)
-│   │       ├── comercial/         # Clientes, contratos, consignas
-│   │       ├── armamento/         # Control de armas (master-detail)
-│   │       ├── inventario/        # Stock, activos, entregas con firma
+│   │       ├── executive/         # Centro de Comando (operaciones + cliente + auditoría)
+│   │       ├── live-monitor/      # NOC Monitor (3 estados: verde/amarillo/rojo)
+│   │       ├── cambio-turno/      # Reporte de cambio de turno con narrativa
+│   │       ├── turnos/            # Programación (fijo/temporal/mensual)
+│   │       ├── consignas/         # Consignas por puesto (operador)
+│   │       ├── comercial/         # Clientes, contratos, propiedades, puestos, QR
+│   │       ├── armamento/         # Armas con ubicaciones, firma, custodia, PDF
+│   │       ├── inventario/        # Stock, activos por puesto, entregas con firma + PDF
 │   │       ├── flota/             # Rastreo GPS + Leaflet + mantenimiento
 │   │       ├── rrhh/              # Expedientes (5 tabs + file upload)
 │   │       ├── capacitaciones/    # Matriz de competencias
-│   │       └── nomina/            # Periodos + sábana de pagos inline
+│   │       └── nomina/            # Periodos + informe de planilla inline
 │   └── api/
-│       ├── shift/clock-in/        # QR + GPS + membership validation
-│       ├── incidents/report/      # AI text refinement
+│       ├── admin/                 # Super admin (crear tenants/usuarios)
+│       ├── command-center/        # Centro de Comando (acciones + auditoría)
+│       ├── shift/clock-in/        # QR + GPS + membership + doble turno
+│       ├── shifts/assignments/    # Programación de turnos
+│       ├── shifts/change-report/  # Reporte cambio turno + PDF
+│       ├── incidents/report/      # Novedad con AI refinement + acción tomada
+│       ├── incidents/justify/     # Justificación de incidencias
+│       ├── firearms/delivery-pdf/ # Acta de custodia de arma (agente o puesto)
+│       ├── inventory/loans-pdf/   # Acta de entrega de equipo
 │       ├── fleet/telemetry/       # GPS webhook (timing-safe auth)
 │       ├── cron/daily-reports/    # Reporte 8AM con Resend
+│       ├── cron/shift-alerts/     # Alerta no-show 6:05/18:05
 │       ├── payroll/calculate/     # Motor de liquidación quincenal
 │       ├── dashboard/executive/   # Agregación paralela (7 queries)
-│       └── analytics/chat/        # IA conversacional + keyword fallback
+│       ├── analytics/chat/        # IA conversacional + keyword fallback
+│       └── contact/               # Formulario de contacto (pendiente Resend)
 ├── modules/                  # 15 módulos de negocio
 ├── lib/
 │   ├── supabase/             # Clientes (browser, server, admin)
@@ -66,80 +113,41 @@ src/
 │   ├── storage/              # Signed URLs
 │   ├── errors/               # AppError centralizado
 │   └── reports/              # HTML email generator
-├── shared/types/database.ts  # ~1600 líneas de tipos manuales
+├── shared/types/database.ts  # Tipos manuales de todas las tablas
 └── scripts/
     ├── admin-cli.ts          # CLI para crear tenants/usuarios
     └── generate-demo-data.ts # Generador de data masiva
 ```
 
-### Módulos de negocio (15)
-tenant, auth, documents, properties, shifts, incidents, firearms, inventory, fleet, hr, training, client-service, payroll, commercial (+ analytics engine)
-
-### Migraciones SQL (20)
-`supabase/migrations/` — 00001 a 00019 + audit fixes. Nunca crear tablas desde el dashboard.
+### Migraciones SQL (26)
+`supabase/migrations/` — 00001 a 00026. Nunca crear tablas desde el dashboard.
 
 ## Fases completadas
 
-### Fase 1 — Operaciones Core
-- Tenants, memberships, profiles con auto-seed via trigger
-- Properties, work stations con QR tokens
-- Agent shifts con clock-in/out (QR + GPS + membership validation)
-- Incidents log con AI text refinement (Claude Sonnet)
-- Daily report cron (7:45 AM → HTML email via Resend)
-- Middleware edge-compatible para subdominios
+### Fase 1-5 — Core + RRHH + Nómina + Dashboard + Comercial
+(Ver historial de commits para detalle)
 
-### Fase 2 — Recursos Críticos
-- Firearms inventory con permisos DIASP y semáforo de vencimientos
-- Agent compliance (tiro, psicología, dopaje)
-- Firearms assignments con partial unique index
-- Inventory items con stock atómico (decrement/increment SQL functions)
-- Station asset custody con reporte de daños
-- Agent equipment loans con firma digital (canvas)
-- Fleet vehicles con GPS device binding
-- Vehicle GPS logs (BIGINT, alta frecuencia)
-- Geofence violations (velocidad, zona, parada)
-- Telemetry webhook con timing-safe auth
-
-### Fase 3 — RRHH y Compliance Legal
-- HR agent profiles (cédula, CSS, seguro, carnet DIASP, datos bancarios)
-- HR contracts (definido/indefinido, MITRADEL seal, pendiente_sello default)
-- HR disciplinary records (evidencia fotográfica, validez legal)
-- HR employee vault (bóveda documental indexada)
-- HR agent requests (portal autoservicio del agente)
-- HR medical leaves (incapacidades con certificado)
-- Training courses + agent training logs (auto-expiry)
-- Station required trainings (motor de idoneidad)
-- Client tickets (PQR system)
-- Client damage reports (costo, evidencia, responsable)
-- Storage bucket privado hr-documents con RLS
-- File upload con compresión client-side (Canvas API, 75% quality, max 1200px)
-
-### Fase 4 — Nómina Quincenal
-- Payroll configs per tenant (96h cap, flat OT, CSS 9.75%, SE 1.25%)
-- Payroll periods (abierto → calculado → cerrado_pagado)
-- Payroll agent consolidated (espejo del Excel MICRO)
-- Motor de liquidación: shifts → hours → distribute → calculate → upsert
-- Retenciones CSS/SE calculadas sobre bruto ANTES de deducciones (fix auditoría)
-- ACH generator (formato bancario Panamá, sanitización de texto)
-- Sábana de pagos con inline editing + debounce save
-- Auto-init payroll configs via trigger on tenant creation
-
-### Fase 5 — Dashboard Ejecutivo + Analytics
-- Executive dashboard API (7 queries paralelas)
-- Executive dashboard UI (Recharts bar chart, KPIs, alertas)
-- Dashboard Gerencial con date range picker
-- Rankings: asistencia perfecta, puntualidad, preservación de flota
-- Motor de analítica IA (40+ intents, 8 categorías)
-- Keyword classifier local (funciona sin API key)
-- Upgrade opcional con Claude cuando ANTHROPIC_API_KEY disponible
-- Preguntas respondidas con datos reales: Bradford, CPK, overtime por propiedad/agente
-- Station consignas (tareas por puesto, descargadas al clock-in)
-- Commercial clients + contracts + contract_properties
-- Cadena completa: Cliente → Contrato → Propiedad → Puestos → Consignas → Agente
-
-### Auditorías (2 completadas)
-- Auditoría 1: Race conditions (partial unique indexes), RLS gaps, middleware edge
-- Auditoría 2: Payroll math (CSS/SE base), stale closures, timing-safe auth, RLS tightening
+### Fase 6 — Operaciones en Tiempo Real + Sitio Web
+- Realtime notification banner global (Supabase Realtime, solo owner/admin)
+- Incident detail modal con justificación y acción tomada
+- Shift assignments (fijo/temporal/mensual, nocturno, anti-solapamiento)
+- Cambio de turno con detección automática + narrativa + PDF
+- NOC Monitor: 3 estados (verde on-time, amarillo tardanza, rojo vacante), 5 por fila
+- Centro de Comando: operaciones + cliente, flujo rojo→ambar→verde, auditoría completa
+- Consignas por puesto (página separada del comercial)
+- Armamento: ubicaciones (armerías), firma digital, devolución con destino, PDF adaptativo
+- Inventario: activos por puesto colapsables, entregas con firma + historial por mes + PDF legal
+- Comercial: flujo completo cliente→contrato→propiedad→puestos→QR
+- QR codes por puesto descargables
+- Super admin panel (/admin) para crear tenants y usuarios
+- Cron de no-show alerts (6:05/18:05) con alertas persistentes
+- Doble turno: re-scan QR en mismo puesto auto-cierra anterior
+- Acción tomada: agente documenta qué hizo al reportar novedad
+- Alert audit log: trazabilidad completa de acciones del operador
+- Sitio web público: landing, producto (14 screenshots + lightbox zoom), precios (7 bandas + toggle + comparador), sobre, contacto, legales, SEO, OG image
+- Producción en www.nexguard360.com (Vercel + Namecheap)
+- Migración visual emerald → lime tactical (#84CC16) en todo el app
+- Logo SVG con transparencia real
 
 ## Metodología de desarrollo
 
@@ -155,6 +163,8 @@ Construcción en fases secuenciales. Al cerrar cada fase se ejecuta auditoría c
 - API routes: validan membership del tenant explícitamente
 - Inputs numéricos: strings en estado, parseo al submit (evita leading zeros)
 - Las agencias custodian todo tipo de negocios (no solo PHs o galeras)
+- Color principal: lime tactical #84CC16 (no emerald)
+- Perfiles join: query separada (agent_shifts FK → auth.users, no profiles)
 
 ## Modelo de nómina — IMPORTANTE
 
@@ -173,12 +183,11 @@ npx tsc --noEmit               # Type-check
 npm run admin-cli help         # CLI de administración
 npm run admin-cli create-tenant --name="X" --slug="x"
 npm run admin-cli create-user --email="x" --password="x" --name="x" --tenant="x" --role="admin"
-npx tsx scripts/generate-demo-data.ts  # Data demo masiva
 ```
 
 ## Variables de entorno
 
-Ver `.env.local.example`:
+Ver `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (server-side only)
 - `NEXT_PUBLIC_ROOT_DOMAIN`
@@ -187,16 +196,31 @@ Ver `.env.local.example`:
 - `CRON_SECRET`
 - `GPS_PROVIDER_SECRET`
 
+Vercel tiene las mismas variables configuradas para producción.
+
 ## Estado actual
 
 ```
-Tablas Supabase:    36 (todas con RLS)
-Migraciones:        20
-Módulos:            15
-Páginas frontend:   13
-API Routes:          8
+Tablas Supabase:    42+
+Migraciones:        26
+Módulos:            17
+Páginas frontend:   20+
+API Routes:         14
 Scripts:             3
 Auditorías:          2
 TS errors:           0
-Brand:               NexGuard360
+Brand:               NexGuard360 (lime tactical #84CC16)
+Producción:          www.nexguard360.com
 ```
+
+## Pendientes priorizados
+
+1. **Módulos activables por tenant** — admin panel selecciona qué módulos ve cada agencia (ALTA PRIORIDAD)
+2. **Banner para cliente del PH** — filtrado por property_id, solo novedades de SUS propiedades
+3. **Conectar novedades al Cambio de Turno** — contexto para el operador
+4. **Modo manual por puesto** — UI para que operador registre entrada/salida sin QR
+5. **Stripe Checkout** — integración de pagos con trial sin tarjeta
+6. **API /api/contact** — conectar formulario con Resend
+7. **Blog** — estructura ISR
+8. **PDF reporte ejecutivo** con branding
+9. **Wizard de onboarding** para nuevo cliente
