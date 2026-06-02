@@ -750,13 +750,20 @@ export default function ArmamentoPage() {
                         </div>
 
                         {a.returnedAt === null ? (
-                          <button
-                            onClick={() => { setShowReturnModal(a.id); setReturnLocId(locations[0]?.id ?? ''); }}
-                            className="flex min-h-[44px] items-center gap-2 rounded-lg bg-zinc-700 px-4 py-2 text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-600 cursor-pointer"
-                          >
-                            <ReturnIcon />
-                            Devolver
-                          </button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <a href={`/api/firearms/delivery-pdf?id=${a.id}`} target="_blank" rel="noopener noreferrer"
+                              className="flex min-h-[36px] items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-1.5 text-[11px] font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer">
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                              Acta PDF
+                            </a>
+                            <button
+                              onClick={() => { setShowReturnModal(a.id); setReturnLocId(locations[0]?.id ?? ''); }}
+                              className="flex min-h-[36px] items-center gap-1.5 rounded-lg bg-zinc-700 px-3 py-1.5 text-[11px] font-medium text-zinc-200 transition-colors hover:bg-zinc-600 cursor-pointer"
+                            >
+                              <ReturnIcon />
+                              Devolver
+                            </button>
+                          </div>
                         ) : (
                           <div className="text-right">
                             <span className="text-xs text-zinc-600">Devuelta</span>
