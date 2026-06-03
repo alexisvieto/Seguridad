@@ -1642,9 +1642,9 @@ export interface Database {
         ];
       };
       commercial_clients: {
-        Row: { id: string; tenant_id: string; company_name: string; ruc: string | null; legal_rep: string | null; contact_email: string | null; contact_phone: string | null; status: string; created_at: string; updated_at: string };
-        Insert: { id?: string; tenant_id: string; company_name: string; ruc?: string | null; legal_rep?: string | null; contact_email?: string | null; contact_phone?: string | null; status?: string; created_at?: string; updated_at?: string };
-        Update: { company_name?: string; ruc?: string | null; legal_rep?: string | null; contact_email?: string | null; contact_phone?: string | null; status?: string; updated_at?: string };
+        Row: { id: string; tenant_id: string; company_name: string; ruc: string | null; legal_rep: string | null; contact_email: string | null; contact_phone: string | null; admin_contact: string | null; status: string; created_at: string; updated_at: string };
+        Insert: { id?: string; tenant_id: string; company_name: string; ruc?: string | null; legal_rep?: string | null; contact_email?: string | null; contact_phone?: string | null; admin_contact?: string | null; status?: string; created_at?: string; updated_at?: string };
+        Update: { company_name?: string; ruc?: string | null; legal_rep?: string | null; contact_email?: string | null; contact_phone?: string | null; admin_contact?: string | null; status?: string; updated_at?: string };
         Relationships: [{ foreignKeyName: 'commercial_clients_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
       };
       commercial_contracts: {

@@ -101,6 +101,7 @@ export default function ComercialPage() {
   const [cRep, setCRep] = useState('');
   const [cEmail, setCEmail] = useState('');
   const [cPhone, setCPhone] = useState('');
+  const [cAdmin, setCAdmin] = useState('');
   const [clientLoading, setClientLoading] = useState(false);
 
   // Create contract
@@ -330,11 +331,11 @@ export default function ComercialPage() {
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.from('commercial_clients').insert({
         tenant_id: tenantId, company_name: cName.trim(), ruc: cRuc.trim() || null,
-        legal_rep: cRep.trim() || null, contact_email: cEmail.trim() || null, contact_phone: cPhone.trim() || null,
+        legal_rep: cRep.trim() || null, contact_email: cEmail.trim() || null, contact_phone: cPhone.trim() || null, admin_contact: cAdmin.trim() || null,
       });
       if (error) throw error;
       setToast({ type: 'success', msg: 'Cliente registrado' });
-      setShowClientForm(false); setCName(''); setCRuc(''); setCRep(''); setCEmail(''); setCPhone('');
+      setShowClientForm(false); setCName(''); setCRuc(''); setCRep(''); setCEmail(''); setCPhone(''); setCAdmin('');
       loadData();
     } catch { setToast({ type: 'error', msg: 'Error al registrar cliente' }); }
     finally { setClientLoading(false); }
@@ -581,6 +582,9 @@ export default function ComercialPage() {
                 <label className="block"><span className="text-xs font-medium text-zinc-400">Telefono</span>
                   <input type="text" value={cPhone} onChange={(e) => setCPhone(e.target.value)} className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
               </div>
+              <label className="block"><span className="text-xs font-medium text-zinc-400">Contacto Administracion</span>
+                <input type="text" value={cAdmin} onChange={(e) => setCAdmin(e.target.value)} placeholder="Nombre y telefono del administrador"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" /></label>
               <div className="flex gap-3">
                 <button onClick={() => setShowClientForm(false)} className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
                 <button onClick={handleCreateClient} disabled={!cName.trim() || clientLoading} className="flex flex-1 items-center justify-center rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
