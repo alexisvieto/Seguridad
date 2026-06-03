@@ -27,6 +27,7 @@ interface PayrollDeduction {
 interface PayrollConfig {
   deductions: PayrollDeduction[];
   max_regular_hours: string;
+  overtime_enabled: boolean;
 }
 
 interface FirearmsConfig {
@@ -66,6 +67,7 @@ export default function ConfiguracionPage() {
       { name: 'Seguro Educativo', pct: '1.25' },
     ],
     max_regular_hours: '96',
+    overtime_enabled: true,
   });
   const [firearms, setFirearms] = useState<FirearmsConfig>({ regulatory_entity: 'DIASP', default_permit_months: '12' });
 
@@ -286,13 +288,25 @@ export default function ConfiguracionPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-medium text-zinc-400">Máximo de Horas Ordinarias por Quincena</span>
-              <input type="number" value={payroll.max_regular_hours} onChange={(e) => setPayroll((p) => ({ ...p, max_regular_hours: e.target.value }))} placeholder="96"
-                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none" />
-              <p className="mt-1 text-[10px] text-zinc-600">Horas que se pagan a tarifa normal. El excedente se paga como horas extras.</p>
+          <div className="space-y-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={payroll.overtime_enabled}
+                onChange={(e) => setPayroll((p) => ({ ...p, overtime_enabled: e.target.checked }))}
+                className="h-4 w-4 rounded border-zinc-600 text-lime-600 focus:ring-lime-500 cursor-pointer" />
+              <div>
+                <span className="text-sm font-medium text-zinc-200">Pagar horas extras</span>
+                <p className="text-[10px] text-zinc-500">Si está desactivado, todas las horas se pagan a tarifa normal sin recargo por extras.</p>
+              </div>
             </label>
+
+            {payroll.overtime_enabled && (
+              <label className="block max-w-xs">
+                <span className="text-xs font-medium text-zinc-400">Máximo de Horas Ordinarias por Quincena</span>
+                <input type="number" value={payroll.max_regular_hours} onChange={(e) => setPayroll((p) => ({ ...p, max_regular_hours: e.target.value }))} placeholder="96"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none" />
+                <p className="mt-1 text-[10px] text-zinc-600">Las horas que excedan este tope se pagan como horas extras.</p>
+              </label>
+            )}
           </div>
         </Section>
 
