@@ -79,16 +79,16 @@ export default function FlotaPage() {
   const [vType, setVType] = useState('auto');
   const [vBrand, setVBrand] = useState('');
   const [vGps, setVGps] = useState('');
-  const [vOdometer, setVOdometer] = useState(0);
-  const [vNextMaint, setVNextMaint] = useState(5000);
+  const [vOdometer, setVOdometer] = useState('');
+  const [vNextMaint, setVNextMaint] = useState('5000');
   const [createLoading, setCreateLoading] = useState(false);
 
   // Maintenance
   const [showMaintModal, setShowMaintModal] = useState(false);
   const [maintVehicle, setMaintVehicle] = useState('');
   const [maintType, setMaintType] = useState('');
-  const [maintKm, setMaintKm] = useState(0);
-  const [maintCost, setMaintCost] = useState(0);
+  const [maintKm, setMaintKm] = useState('');
+  const [maintCost, setMaintCost] = useState('');
   const [maintDate, setMaintDate] = useState('');
   const [maintLoading, setMaintLoading] = useState(false);
 
@@ -174,8 +174,8 @@ export default function FlotaPage() {
           vehicle_type: vType as 'auto' | 'moto' | 'scooter' | 'bicicleta',
           brand_model: vBrand.trim(),
           gps_device_id: vGps.trim() || null,
-          current_odometer: vOdometer,
-          next_maintenance_odometer: vNextMaint,
+          current_odometer: parseInt(vOdometer) || 0,
+          next_maintenance_odometer: parseInt(vNextMaint) || 5000,
         })
         .select()
         .single();
@@ -197,7 +197,7 @@ export default function FlotaPage() {
 
       setToast({ type: 'success', msg: 'Vehiculo registrado' });
       setShowCreateModal(false);
-      setVPlate(''); setVBrand(''); setVGps(''); setVOdometer(0); setVNextMaint(5000);
+      setVPlate(''); setVBrand(''); setVGps(''); setVOdometer(''); setVNextMaint('5000');
     } catch {
       setToast({ type: 'error', msg: 'Error al registrar vehiculo' });
     } finally {
@@ -216,12 +216,13 @@ export default function FlotaPage() {
     try {
       const supabase = getSupabaseBrowserClient();
       const vehicle = vehicles.find((v) => v.id === maintVehicle);
-      const newNextMaint = maintKm + 5000;
+      const kmVal = parseInt(maintKm) || 0;
+      const newNextMaint = kmVal + 5000;
 
       await supabase
         .from('fleet_vehicles')
         .update({
-          current_odometer: maintKm,
+          current_odometer: kmVal,
           next_maintenance_odometer: newNextMaint,
           status: 'activo',
         })
@@ -229,13 +230,13 @@ export default function FlotaPage() {
 
       setVehicles((prev) => prev.map((v) =>
         v.id === maintVehicle
-          ? { ...v, currentOdometer: maintKm, nextMaintenance: newNextMaint, status: 'activo' }
+          ? { ...v, currentOdometer: kmVal, nextMaintenance: newNextMaint, status: 'activo' }
           : v,
       ));
 
       setToast({ type: 'success', msg: `Mantenimiento registrado para ${vehicle?.plateNumber ?? 'vehiculo'}` });
       setShowMaintModal(false);
-      setMaintVehicle(''); setMaintType(''); setMaintKm(0); setMaintCost(0); setMaintDate('');
+      setMaintVehicle(''); setMaintType(''); setMaintKm(''); setMaintCost(''); setMaintDate('');
     } catch {
       setToast({ type: 'error', msg: 'Error al registrar mantenimiento' });
     } finally {
@@ -499,12 +500,12 @@ export default function FlotaPage() {
               </label>
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Odometro Actual (km)</span>
-                <input type="number" min={0} value={vOdometer} onChange={(e) => setVOdometer(Math.max(0, parseInt(e.target.value) || 0))}
+                <input type="number" min={0} value={vOdometer} onChange={(e) => setVOdometer(e.target.value)}
                   className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
               <label className="block sm:col-span-2">
                 <span className="text-xs font-medium text-zinc-400">Proximo Mantenimiento (km)</span>
-                <input type="number" min={1} value={vNextMaint} onChange={(e) => setVNextMaint(Math.max(1, parseInt(e.target.value) || 5000))}
+                <input type="number" min={1} value={vNextMaint} onChange={(e) => setVNextMaint(e.target.value)}
                   className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
             </div>
@@ -542,12 +543,12 @@ export default function FlotaPage() {
               <div className="grid grid-cols-2 gap-4">
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Kilometraje Actual</span>
-                  <input type="number" min={0} value={maintKm} onChange={(e) => setMaintKm(Math.max(0, parseInt(e.target.value) || 0))}
+                  <input type="number" min={0} value={maintKm} onChange={(e) => setMaintKm(e.target.value)}
                     className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                 </label>
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Costo (B/.)</span>
-                  <input type="number" min={0} step="0.01" value={maintCost} onChange={(e) => setMaintCost(Math.max(0, parseFloat(e.target.value) || 0))}
+                  <input type="number" min={0} step="0.01" value={maintCost} onChange={(e) => setMaintCost(e.target.value)}
                     className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                 </label>
               </div>

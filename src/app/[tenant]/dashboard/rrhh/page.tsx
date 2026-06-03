@@ -113,7 +113,7 @@ export default function RRHHPage() {
   // Medical leave form
   const [showLeaveForm, setShowLeaveForm] = useState(false);
   const [leaveStart, setLeaveStart] = useState('');
-  const [leaveDays, setLeaveDays] = useState(1);
+  const [leaveDays, setLeaveDays] = useState('');
   const [leaveReason, setLeaveReason] = useState('');
   const [leaveClinic, setLeaveClinic] = useState('');
   const [leaveDoctor, setLeaveDoctor] = useState('');
@@ -263,7 +263,7 @@ export default function RRHHPage() {
         tenant_id: tenantId,
         user_id: selected.userId,
         start_date: leaveStart,
-        days: leaveDays,
+        days: parseInt(leaveDays) || 1,
         reason: leaveReason.trim(),
         clinic: leaveClinic.trim() || null,
         doctor: leaveDoctor.trim() || null,
@@ -272,7 +272,7 @@ export default function RRHHPage() {
       if (error) throw error;
       setToast({ type: 'success', msg: 'Incapacidad registrada' });
       setShowLeaveForm(false);
-      setLeaveReason(''); setLeaveStart(''); setLeaveDays(1); setLeaveClinic(''); setLeaveDoctor(''); setLeaveCertUrl('');
+      setLeaveReason(''); setLeaveStart(''); setLeaveDays(''); setLeaveClinic(''); setLeaveDoctor(''); setLeaveCertUrl('');
       selectAgent(selected);
     } catch {
       setToast({ type: 'error', msg: 'Error al registrar incapacidad' });
@@ -667,7 +667,7 @@ export default function RRHHPage() {
                           </label>
                           <label className="block">
                             <span className="text-xs font-medium text-zinc-400">Dias de Incapacidad</span>
-                            <input type="number" min={1} value={leaveDays} onChange={(e) => setLeaveDays(Math.max(1, parseInt(e.target.value) || 1))}
+                            <input type="number" min={1} value={leaveDays} onChange={(e) => setLeaveDays(e.target.value)}
                               className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[44px] focus:border-blue-500 focus:outline-none" />
                           </label>
                         </div>

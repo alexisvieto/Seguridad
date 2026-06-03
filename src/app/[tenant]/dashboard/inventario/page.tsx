@@ -108,7 +108,7 @@ export default function InventarioPage() {
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [loanAgent, setLoanAgent] = useState('');
   const [loanItem, setLoanItem] = useState('');
-  const [loanQty, setLoanQty] = useState(1);
+  const [loanQty, setLoanQty] = useState('');
   const [loanLoading, setLoanLoading] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
   const [loanKey, setLoanKey] = useState(0);
@@ -124,8 +124,8 @@ export default function InventarioPage() {
   const [showStockModal, setShowStockModal] = useState(false);
   const [newCategory, setNewCategory] = useState('uniforme');
   const [newItemName, setNewItemName] = useState('');
-  const [newQty, setNewQty] = useState(0);
-  const [newMinAlert, setNewMinAlert] = useState(5);
+  const [newQty, setNewQty] = useState('');
+  const [newMinAlert, setNewMinAlert] = useState('5');
   const [newLote, setNewLote] = useState('');
   const [stockCreateLoading, setStockCreateLoading] = useState(false);
 
@@ -298,8 +298,8 @@ export default function InventarioPage() {
           item_name: newItemName.trim(),
           category: newCategory as 'uniforme' | 'calzado' | 'comunicacion' | 'defensa' | 'otros',
           size_or_model: newLote.trim() || null,
-          current_stock: newQty,
-          min_stock_alert: newMinAlert,
+          current_stock: parseInt(newQty) || 0,
+          min_stock_alert: parseInt(newMinAlert) || 5,
         })
         .select()
         .single();
@@ -324,8 +324,8 @@ export default function InventarioPage() {
       setToast({ type: 'success', msg: 'Articulo ingresado a bodega' });
       setShowStockModal(false);
       setNewItemName('');
-      setNewQty(0);
-      setNewMinAlert(5);
+      setNewQty('');
+      setNewMinAlert('5');
       setNewLote('');
       setNewCategory('uniforme');
     } catch {
@@ -423,7 +423,7 @@ export default function InventarioPage() {
 
       const { error: stockErr } = await supabase.rpc('decrement_stock', {
         p_item_id: loanItem,
-        p_quantity: loanQty,
+        p_quantity: parseInt(loanQty) || 1,
       });
 
       if (stockErr) {
@@ -438,20 +438,20 @@ export default function InventarioPage() {
           tenant_id: tenantId,
           user_id: loanAgent,
           item_id: loanItem,
-          quantity: loanQty,
+          quantity: parseInt(loanQty) || 1,
         });
 
       if (loanErr) {
         await supabase.rpc('increment_stock', {
           p_item_id: loanItem,
-          p_quantity: loanQty,
+          p_quantity: parseInt(loanQty) || 1,
         });
         throw loanErr;
       }
 
       setInventory((prev) =>
         prev.map((i) =>
-          i.id === loanItem ? { ...i, currentStock: i.currentStock - loanQty } : i,
+          i.id === loanItem ? { ...i, currentStock: i.currentStock - (parseInt(loanQty) || 1) } : i,
         ),
       );
 
@@ -728,7 +728,7 @@ export default function InventarioPage() {
                 Entregas Realizadas — {loanHistory.length} registro{loanHistory.length !== 1 ? 's' : ''}
               </h2>
               <button
-                onClick={() => { setShowLoanForm(true); setLoanSuccess(false); setLoanAgent(''); setLoanItem(''); setLoanQty(1); setHasSigned(false); setLoanKey((k) => k + 1); }}
+                onClick={() => { setShowLoanForm(true); setLoanSuccess(false); setLoanAgent(''); setLoanItem(''); setLoanQty(''); setHasSigned(false); setLoanKey((k) => k + 1); }}
                 className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-lime-500 cursor-pointer"
               >
                 <PlusIcon /> Formulario de Entrega
@@ -841,7 +841,7 @@ export default function InventarioPage() {
                       className="rounded-xl bg-zinc-800 px-5 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer">
                       Cerrar
                     </button>
-                    <button onClick={() => { setLoanSuccess(false); setLoanAgent(''); setLoanItem(''); setLoanQty(1); setHasSigned(false); setLoanKey((k) => k + 1); }}
+                    <button onClick={() => { setLoanSuccess(false); setLoanAgent(''); setLoanItem(''); setLoanQty(''); setHasSigned(false); setLoanKey((k) => k + 1); }}
                       className="rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
                       Nueva Entrega
                     </button>
@@ -870,7 +870,7 @@ export default function InventarioPage() {
                     <label className="block">
                       <span className="text-xs font-medium text-zinc-400">Cantidad</span>
                       <input type="number" min={1} max={inventory.find((i) => i.id === loanItem)?.currentStock ?? 99} value={loanQty}
-                        onChange={(e) => setLoanQty(Math.max(1, parseInt(e.target.value) || 1))}
+                        onChange={(e) => setLoanQty(e.target.value)}
                         className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                     </label>
                     <div>
@@ -973,12 +973,12 @@ export default function InventarioPage() {
               <div className="grid grid-cols-2 gap-4">
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Cantidad Inicial</span>
-                  <input type="number" min={0} value={newQty} onChange={(e) => setNewQty(Math.max(0, parseInt(e.target.value) || 0))}
+                  <input type="number" min={0} value={newQty} onChange={(e) => setNewQty(e.target.value)}
                     className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                 </label>
                 <label className="block">
                   <span className="text-xs font-medium text-zinc-400">Alerta Minima</span>
-                  <input type="number" min={0} value={newMinAlert} onChange={(e) => setNewMinAlert(Math.max(0, parseInt(e.target.value) || 0))}
+                  <input type="number" min={0} value={newMinAlert} onChange={(e) => setNewMinAlert(e.target.value)}
                     className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
                 </label>
               </div>
