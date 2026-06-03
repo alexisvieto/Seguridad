@@ -19,11 +19,13 @@ interface RegionalConfig {
   timezone: string;
 }
 
+interface PayrollDeduction {
+  name: string;
+  pct: string;
+}
+
 interface PayrollConfig {
-  deduction1_name: string;
-  deduction1_pct: string;
-  deduction2_name: string;
-  deduction2_pct: string;
+  deductions: PayrollDeduction[];
   max_regular_hours: string;
 }
 
@@ -58,7 +60,13 @@ export default function ConfiguracionPage() {
 
   const [branding, setBranding] = useState<BrandingConfig>({ logo_url: '', address: '', phone: '', email: '', website: '' });
   const [regional, setRegional] = useState<RegionalConfig>({ country: 'PA', currency_symbol: 'B/.', currency_code: 'USD', timezone: 'America/Panama' });
-  const [payroll, setPayroll] = useState<PayrollConfig>({ deduction1_name: 'CSS (Seguro Social)', deduction1_pct: '9.75', deduction2_name: 'Seguro Educativo', deduction2_pct: '1.25', max_regular_hours: '96' });
+  const [payroll, setPayroll] = useState<PayrollConfig>({
+    deductions: [
+      { name: 'CSS (Seguro Social)', pct: '9.75' },
+      { name: 'Seguro Educativo', pct: '1.25' },
+    ],
+    max_regular_hours: '96',
+  });
   const [firearms, setFirearms] = useState<FirearmsConfig>({ regulatory_entity: 'DIASP', default_permit_months: '12' });
 
   // Logo upload
@@ -83,7 +91,21 @@ export default function ConfiguracionPage() {
     const s = data.settings ?? {};
     if (s['branding']) setBranding(s['branding'] as BrandingConfig);
     if (s['regional']) setRegional(s['regional'] as RegionalConfig);
-    if (s['payroll']) setPayroll(s['payroll'] as PayrollConfig);
+    if (s['payroll']) {
+      const p = s['payroll'] as Record<string, unknown>;
+      if (Array.isArray(p['deductions'])) {
+        setPayroll(p as unknown as PayrollConfig);
+      } else {
+        // Migrate old format
+        setPayroll({
+          deductions: [
+            { name: String(p['deduction1_name'] ?? 'CSS'), pct: String(p['deduction1_pct'] ?? '9.75') },
+            { name: String(p['deduction2_name'] ?? 'SE'), pct: String(p['deduction2_pct'] ?? '1.25') },
+          ],
+          max_regular_hours: String(p['max_regular_hours'] ?? '96'),
+        });
+      }
+    }
     if (s['firearms']) setFirearms(s['firearms'] as FirearmsConfig);
 
     setIsLoading(false);
@@ -132,7 +154,6 @@ export default function ConfiguracionPage() {
 
   const updateBranding = (key: keyof BrandingConfig, val: string) => setBranding((p) => ({ ...p, [key]: val }));
   const updateRegional = (key: keyof RegionalConfig, val: string) => setRegional((p) => ({ ...p, [key]: val }));
-  const updatePayroll = (key: keyof PayrollConfig, val: string) => setPayroll((p) => ({ ...p, [key]: val }));
   const updateFirearms = (key: keyof FirearmsConfig, val: string) => setFirearms((p) => ({ ...p, [key]: val }));
 
   if (isLoading) {
@@ -235,12 +256,43 @@ export default function ConfiguracionPage() {
         {/* PAYROLL */}
         <Section title="Configuración de Nómina">
           <p className="text-xs text-zinc-500 mb-4">Estos valores se usan para calcular las retenciones en la planilla quincenal.</p>
+
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-zinc-400">Deducciones sobre el salario bruto</span>
+              <button onClick={() => setPayroll((p) => ({ ...p, deductions: [...p.deductions, { name: '', pct: '' }] }))}
+                className="text-[11px] font-medium text-lime-400 hover:text-lime-300 cursor-pointer">+ Agregar Deducción</button>
+            </div>
+            <div className="space-y-3">
+              {payroll.deductions.map((d, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <input type="text" value={d.name} placeholder="Nombre de la deducción"
+                    onChange={(e) => setPayroll((p) => ({ ...p, deductions: p.deductions.map((dd, j) => j === i ? { ...dd, name: e.target.value } : dd) }))}
+                    className="flex-1 rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none" />
+                  <div className="flex items-center gap-1">
+                    <input type="number" value={d.pct} placeholder="%" step="0.01"
+                      onChange={(e) => setPayroll((p) => ({ ...p, deductions: p.deductions.map((dd, j) => j === i ? { ...dd, pct: e.target.value } : dd) }))}
+                      className="w-24 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-3 text-sm text-zinc-100 text-center focus:border-lime-500 focus:outline-none" />
+                    <span className="text-xs text-zinc-500">%</span>
+                  </div>
+                  {payroll.deductions.length > 1 && (
+                    <button onClick={() => setPayroll((p) => ({ ...p, deductions: p.deductions.filter((_, j) => j !== i) }))}
+                      className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-red-500/10 hover:text-red-400 cursor-pointer shrink-0">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Nombre Deducción 1" value={payroll.deduction1_name} onChange={(v) => updatePayroll('deduction1_name', v)} placeholder="CSS (Seguro Social)" />
-            <Field label="Porcentaje Deducción 1 (%)" value={payroll.deduction1_pct} onChange={(v) => updatePayroll('deduction1_pct', v)} placeholder="9.75" type="number" />
-            <Field label="Nombre Deducción 2" value={payroll.deduction2_name} onChange={(v) => updatePayroll('deduction2_name', v)} placeholder="Seguro Educativo" />
-            <Field label="Porcentaje Deducción 2 (%)" value={payroll.deduction2_pct} onChange={(v) => updatePayroll('deduction2_pct', v)} placeholder="1.25" type="number" />
-            <Field label="Tope Horas Ordinarias por Quincena" value={payroll.max_regular_hours} onChange={(v) => updatePayroll('max_regular_hours', v)} placeholder="96" type="number" />
+            <label className="block">
+              <span className="text-xs font-medium text-zinc-400">Máximo de Horas Ordinarias por Quincena</span>
+              <input type="number" value={payroll.max_regular_hours} onChange={(e) => setPayroll((p) => ({ ...p, max_regular_hours: e.target.value }))} placeholder="96"
+                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none" />
+              <p className="mt-1 text-[10px] text-zinc-600">Horas que se pagan a tarifa normal. El excedente se paga como horas extras.</p>
+            </label>
           </div>
         </Section>
 
