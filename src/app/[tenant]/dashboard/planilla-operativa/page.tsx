@@ -22,6 +22,14 @@ interface CellData {
   hours: number;
   bonus: number;
   penalty: number;
+  stationId: string | null;
+  stationName: string | null;
+}
+
+interface Station {
+  id: string;
+  name: string;
+  property: string;
 }
 
 const entryConfig: Record<EntryType, { label: string; short: string; color: string; defaultHours: number }> = {
@@ -56,6 +64,7 @@ export default function PlanillaOperativaPage() {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [agents, setAgents] = useState<AgentRow[]>([]);
+  const [stations, setStations] = useState<Station[]>([]);
   const [toast, setToast] = useState<string | null>(null);
 
   // Period
@@ -79,6 +88,7 @@ export default function PlanillaOperativaPage() {
   const [editBonus, setEditBonus] = useState('0');
   const [editPenalty, setEditPenalty] = useState('0');
   const [editNotes, setEditNotes] = useState('');
+  const [editStation, setEditStation] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
@@ -98,21 +108,35 @@ export default function PlanillaOperativaPage() {
     const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', userIds);
     const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
 
-    const { data: entries } = await supabase
-      .from('operative_paysheet')
-      .select('*')
-      .eq('tenant_id', tenant.id)
-      .gte('shift_date', startDate)
-      .lte('shift_date', endDate);
+    const [entriesRes, stationsRes] = await Promise.all([
+      supabase.from('operative_paysheet')
+        .select('*, work_stations(name, properties_ph(name))')
+        .eq('tenant_id', tenant.id)
+        .gte('shift_date', startDate)
+        .lte('shift_date', endDate),
+      supabase.from('work_stations')
+        .select('id, name, properties_ph(name)')
+        .eq('tenant_id', tenant.id)
+        .order('name'),
+    ]);
+
+    setStations((stationsRes.data ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      property: (s.properties_ph as { name: string } | null)?.name ?? '',
+    })));
 
     const entryMap = new Map<string, CellData>();
-    for (const e of entries ?? []) {
+    for (const e of entriesRes.data ?? []) {
+      const ws = e.work_stations as { name: string; properties_ph: { name: string } | null } | null;
       entryMap.set(`${e.user_id}_${e.shift_date}`, {
         id: e.id,
         type: e.entry_type as EntryType,
         hours: Number(e.hours),
         bonus: Number(e.bonus),
         penalty: Number(e.penalty),
+        stationId: e.work_station_id ?? null,
+        stationName: ws?.name ?? null,
       });
     }
 
@@ -121,7 +145,7 @@ export default function PlanillaOperativaPage() {
       name: nameMap.get(uid) ?? 'Agente',
       entries: new Map(days.map((d) => {
         const key = `${uid}_${d}`;
-        return [d, entryMap.get(key) ?? { id: null, type: 'dia_libre' as EntryType, hours: 0, bonus: 0, penalty: 0 }];
+        return [d, entryMap.get(key) ?? { id: null, type: 'dia_libre' as EntryType, hours: 0, bonus: 0, penalty: 0, stationId: null, stationName: null }];
       })),
     })).sort((a, b) => a.name.localeCompare(b.name)));
 
@@ -137,6 +161,7 @@ export default function PlanillaOperativaPage() {
     setEditHours(String(cell?.hours ?? 0));
     setEditBonus(String(cell?.bonus ?? 0));
     setEditPenalty(String(cell?.penalty ?? 0));
+    setEditStation(cell?.stationId ?? '');
     setEditNotes('');
   }, []);
 
@@ -162,6 +187,7 @@ export default function PlanillaOperativaPage() {
         hours: parseFloat(editHours) || 0,
         bonus: parseFloat(editBonus) || 0,
         penalty: parseFloat(editPenalty) || 0,
+        work_station_id: editStation || null,
         notes: editNotes.trim(),
         updated_at: new Date().toISOString(),
       }, { onConflict: 'tenant_id,user_id,shift_date' });
@@ -171,7 +197,7 @@ export default function PlanillaOperativaPage() {
       loadData();
     } catch { setToast('Error al guardar'); }
     finally { setSaving(false); }
-  }, [tenantId, editAgent, editType, editHours, editBonus, editPenalty, editNotes, loadData]);
+  }, [tenantId, editAgent, editType, editHours, editBonus, editPenalty, editStation, editNotes, loadData]);
 
   if (isLoading) {
     return <div className="flex h-dvh items-center justify-center bg-[#0A0E1A]"><div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-lime-500" /></div>;
@@ -307,6 +333,19 @@ export default function PlanillaOperativaPage() {
                   className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-red-400 text-center focus:border-red-500 focus:outline-none" />
               </label>
             </div>
+
+            {stations.length > 0 && (
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Puesto de Trabajo</span>
+                <select value={editStation} onChange={(e) => setEditStation(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-100 focus:border-lime-500 focus:outline-none cursor-pointer">
+                  <option value="">— Sin asignar —</option>
+                  {stations.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}{s.property ? ` · ${s.property}` : ''}</option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <label className="block">
               <span className="text-xs font-medium text-zinc-400">Notas (opcional)</span>
