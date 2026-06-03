@@ -868,7 +868,7 @@ export default function RRHHPage() {
                   className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 focus:border-lime-500 focus:outline-none" />
               </label>
               <label className="block">
-                <span className="text-xs font-medium text-zinc-400">Contraseña Temporal</span>
+                <span className="text-xs font-medium text-zinc-400">Contraseña</span>
                 <input type="text" value={empPassword} onChange={(e) => setEmpPassword(e.target.value)} placeholder="Mínimo 6 caracteres"
                   className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 font-mono focus:border-lime-500 focus:outline-none" />
               </label>
