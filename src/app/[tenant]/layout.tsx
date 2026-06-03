@@ -47,7 +47,10 @@ export default async function TenantLayout({
   }
 
   const role = membership.role;
-  const employeeType = membership.employee_type ?? (role === 'owner' ? 'gerente' : role === 'viewer' ? 'cliente' : 'agente');
+  const rawType = membership.employee_type;
+  const employeeType = (rawType && rawType !== 'agente')
+    ? rawType
+    : role === 'owner' ? 'gerente' : role === 'viewer' ? 'cliente' : rawType ?? 'agente';
 
   return (
     <div className="flex h-dvh bg-[#0A0E1A]" data-tenant-id={tenant.id} data-tenant-slug={tenant.slug}>
