@@ -60,6 +60,7 @@ interface AgentRow {
   polygraphDate: string | null;
   polygraphResult: string | null;
   polygraphDocUrl: string | null;
+  photoUrl: string | null;
   agentStatus: string;
   terminationDate: string | null;
   terminationReason: string | null;
@@ -182,7 +183,7 @@ export default function RRHHPage() {
 
     const [profilesRes, hrRes, contractsRes] = await Promise.all([
       supabase.from('profiles').select('id, full_name').in('id', userIds),
-      supabase.from('hr_agent_profiles').select('user_id, cedula, hire_date, security_carnet_number, carnet_expiry_date, emergency_contact_name, emergency_contact_phone, polygraph_date, polygraph_result, polygraph_document_url, agent_status, termination_date, termination_reason').eq('tenant_id', tenant.id),
+      supabase.from('hr_agent_profiles').select('user_id, cedula, hire_date, security_carnet_number, carnet_expiry_date, emergency_contact_name, emergency_contact_phone, polygraph_date, polygraph_result, polygraph_document_url, photo_url, agent_status, termination_date, termination_reason').eq('tenant_id', tenant.id),
       supabase.from('hr_contracts').select('user_id, contract_type, status, base_salary, start_date, mitradel_sealed_pdf_url').eq('tenant_id', tenant.id).eq('status', 'activo').order('start_date', { ascending: false }),
     ]);
 
@@ -213,6 +214,7 @@ export default function RRHHPage() {
         polygraphDate: hr?.polygraph_date ?? null,
         polygraphResult: hr?.polygraph_result ?? null,
         polygraphDocUrl: hr?.polygraph_document_url ?? null,
+        photoUrl: hr?.photo_url ?? null,
         agentStatus: hr?.agent_status ?? 'activo',
         terminationDate: hr?.termination_date ?? null,
         terminationReason: hr?.termination_reason ?? null,
@@ -618,6 +620,43 @@ export default function RRHHPage() {
                 {/* FICHA OPERATIVA */}
                 {detailTab === 'ficha' && (
                   <div className="space-y-6">
+                    {/* Photo + Name */}
+                    <div className="flex items-center gap-5">
+                      <div className="relative group">
+                        {selected.photoUrl ? (
+                          <img src={selected.photoUrl} alt={selected.name}
+                            className="h-20 w-20 rounded-full object-cover border-2 border-zinc-700" />
+                        ) : (
+                          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-zinc-800 border-2 border-zinc-700 text-2xl font-bold text-zinc-500">
+                            {selected.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                          <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                          </svg>
+                          <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !tenantId || !selected) return;
+                            const { compressImage } = await import('@/lib/upload/compress-image');
+                            const { blob } = await compressImage(file);
+                            const supabase = getSupabaseBrowserClient();
+                            const path = `${tenantId}/photos/${selected.userId}.webp`;
+                            await supabase.storage.from('hr-documents').upload(path, blob, { contentType: 'image/webp', upsert: true });
+                            const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/hr-documents/${path}?t=${Date.now()}`;
+                            await supabase.from('hr_agent_profiles').update({ photo_url: url }).eq('user_id', selected.userId).eq('tenant_id', tenantId);
+                            setToast({ type: 'success', msg: 'Foto actualizada' });
+                            loadData();
+                          }} />
+                        </label>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-zinc-100">{selected.name}</h3>
+                        <p className="text-xs text-zinc-500">{selected.cedula ?? 'Sin cedula'}</p>
+                      </div>
+                    </div>
+
                     {/* Status badge */}
                     {selected.agentStatus !== 'activo' && (
                       <div className={`rounded-xl border px-5 py-4 ${selected.agentStatus === 'baja' ? 'border-red-500/30 bg-red-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>

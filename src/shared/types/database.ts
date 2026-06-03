@@ -881,6 +881,7 @@ export interface Database {
           polygraph_date: string | null;
           polygraph_result: string | null;
           polygraph_document_url: string | null;
+          photo_url: string | null;
           agent_status: string;
           termination_date: string | null;
           termination_reason: string | null;
@@ -906,6 +907,7 @@ export interface Database {
           polygraph_date?: string | null;
           polygraph_result?: string | null;
           polygraph_document_url?: string | null;
+          photo_url?: string | null;
           agent_status?: string;
           termination_date?: string | null;
           termination_reason?: string | null;
@@ -928,6 +930,7 @@ export interface Database {
           polygraph_date?: string | null;
           polygraph_result?: string | null;
           polygraph_document_url?: string | null;
+          photo_url?: string | null;
           agent_status?: string;
           termination_date?: string | null;
           termination_reason?: string | null;
