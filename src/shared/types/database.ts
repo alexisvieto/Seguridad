@@ -1666,6 +1666,12 @@ export interface Database {
         Update: { event_type?: string; actual_agent_id?: string | null; narrative?: string; arrival_time?: string | null; waiting_agent_id?: string | null; updated_at?: string };
         Relationships: [{ foreignKeyName: 'shift_change_events_report_id_fkey'; columns: ['report_id']; isOneToOne: false; referencedRelation: 'shift_change_reports'; referencedColumns: ['id'] }];
       };
+      fleet_inspections: {
+        Row: { id: string; tenant_id: string; vehicle_id: string; inspection_date: string; mileage: number; chassis_paint: string; rims_tires: string; image_urls: string[]; notes: string; created_by: string; created_at: string };
+        Insert: { id?: string; tenant_id: string; vehicle_id: string; inspection_date: string; mileage?: number; chassis_paint?: string; rims_tires?: string; image_urls?: string[]; notes?: string; created_by: string; created_at?: string };
+        Update: { inspection_date?: string; mileage?: number; chassis_paint?: string; rims_tires?: string; image_urls?: string[]; notes?: string };
+        Relationships: [{ foreignKeyName: 'fleet_inspections_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
+      };
       firearm_locations: {
         Row: { id: string; tenant_id: string; name: string; address: string; created_at: string };
         Insert: { id?: string; tenant_id: string; name: string; address?: string; created_at?: string };
