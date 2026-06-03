@@ -69,11 +69,18 @@ export default function LoginPage() {
         return;
       }
 
-      // 4. Route based on role
+      // 4. Check if first-time setup needed (owner with no logo)
       let dashboardPath: string;
 
-      if (membership.role === 'owner' || membership.role === 'admin') {
-        dashboardPath = '/dashboard/live-monitor';
+      if (membership.role === 'owner') {
+        const { data: tenant } = await supabase.from('tenants').select('logo_url, settings').eq('slug', tenantSlug).maybeSingle();
+        const settings = (tenant?.settings ?? {}) as Record<string, unknown>;
+        const branding = settings['branding'] as Record<string, string> | undefined;
+        const hasLogo = !!tenant?.logo_url || !!branding?.['logo_url'];
+
+        dashboardPath = hasLogo ? '/dashboard' : '/dashboard/configuracion';
+      } else if (membership.role === 'admin') {
+        dashboardPath = '/dashboard/executive';
       } else if (membership.role === 'viewer') {
         dashboardPath = '/cliente';
       } else {
