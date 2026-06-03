@@ -47,7 +47,7 @@ export function generatePdfHtml({
   footer?: string;
 }): string {
   const logoHtml = tenantLogoUrl
-    ? `<img src="${tenantLogoUrl}" alt="${tenantName}" style="height:44px;max-width:200px;object-fit:contain;" />`
+    ? `<img src="${tenantLogoUrl}" alt="${tenantName}" style="height:56px;max-width:260px;object-fit:contain;" />`
     : `<div style="font-family:Helvetica-Bold,Helvetica,sans-serif;font-size:16px;font-weight:800;color:${pdfColors.primary};letter-spacing:0.5px;">${tenantName}</div>`;
 
   return `<!DOCTYPE html>

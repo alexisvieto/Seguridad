@@ -30,20 +30,20 @@ export async function GET(request: NextRequest) {
 
   /* Cover page */
   .cover { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 60px 40px; page-break-after: always; }
-  .cover-logo { height: 60px; margin-bottom: 48px; }
+  .cover-logo { height: 120px; margin-bottom: 56px; }
   .cover h1 { font-size: 36px; font-weight: 800; color: #0C1528; letter-spacing: -0.5px; margin-bottom: 8px; }
   .cover .subtitle { font-size: 18px; color: #84CC16; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 40px; }
   .cover .tenant { font-size: 22px; font-weight: 700; color: #0C1528; padding: 16px 40px; border: 2px solid #84CC16; border-radius: 12px; margin-bottom: 48px; }
   .cover .meta { font-size: 13px; color: #94A3B8; }
   .cover .nexera { margin-top: 60px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-  .cover .nexera img { height: 32px; mix-blend-mode: multiply; }
+  .cover .nexera img { height: 44px; mix-blend-mode: multiply; }
   .cover .nexera span { font-size: 11px; color: #94A3B8; letter-spacing: 0.5px; }
 
   /* Page header/footer */
   .page { page-break-before: always; padding: 0; }
   .page:first-of-type { page-break-before: auto; }
   .page-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #0C1528; margin-bottom: 28px; }
-  .page-header-logo { height: 28px; }
+  .page-header-logo { height: 36px; }
   .page-header-right { font-size: 10px; color: #94A3B8; text-align: right; letter-spacing: 0.5px; }
   .page-footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; font-size: 10px; color: #94A3B8; }
 
@@ -591,7 +591,7 @@ export async function GET(request: NextRequest) {
 <!-- BACK COVER                                                        -->
 <!-- ================================================================ -->
 <div class="back-cover">
-  <img src="${logoNg}" alt="NexGuard360" style="height:50px;margin-bottom:32px;" />
+  <img src="${logoNg}" alt="NexGuard360" style="height:100px;margin-bottom:40px;" />
   <h2 style="font-size:28px;margin-bottom:8px;">¿Necesita ayuda?</h2>
   <p style="font-size:16px;color:#475569;max-width:400px;">Nuestro equipo de soporte está disponible para guiarle en cualquier momento. No dude en contactarnos.</p>
   <p style="margin-top:24px;font-size:14px;color:#84CC16;font-weight:600;">www.nexguard360.com</p>
@@ -599,7 +599,7 @@ export async function GET(request: NextRequest) {
 
   <div style="margin-top:80px;display:flex;flex-direction:column;align-items:center;gap:8px;">
     <span style="font-size:11px;color:#94A3B8;">Un producto de</span>
-    <img src="${logoNexera}" alt="Nexera" style="height:32px;mix-blend-mode:multiply;" />
+    <img src="${logoNexera}" alt="Nexera" style="height:44px;mix-blend-mode:multiply;" />
     <span style="font-size:11px;color:#94A3B8;">www.nexerai.io</span>
   </div>
 
