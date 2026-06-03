@@ -584,6 +584,51 @@ export default function FlotaPage() {
             )}
           </div>
         )}
+
+        {/* TAB: Inspections */}
+        {tab === 'inspections' && (
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Inspecciones Registradas</h2>
+              <button onClick={() => { setShowInspForm(true); setInspVehicle(''); setInspDate(''); setInspMileage(''); setInspChassis(''); setInspRims(''); setInspNotes(''); setInspFiles([]); }}
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
+                <PlusIcon /> Inspección
+              </button>
+            </div>
+            {inspections.length === 0 ? (
+              <div className="flex h-48 items-center justify-center text-sm text-zinc-600">Sin inspecciones registradas</div>
+            ) : (
+              <div className="space-y-3">
+                {inspections.map((insp) => (
+                  <div key={insp.id} className="rounded-xl border border-zinc-800/40 bg-zinc-800/20 overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-3.5">
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-200">{insp.vehiclePlate} — {insp.vehicleModel}</p>
+                        <p className="text-xs text-zinc-500">{new Date(insp.inspectionDate).toLocaleDateString('es-PA', { day: '2-digit', month: 'short', year: 'numeric' })} · {insp.mileage.toLocaleString()} km</p>
+                      </div>
+                    </div>
+                    <div className="border-t border-zinc-800/30 px-5 py-3 space-y-2">
+                      {insp.chassisPaint && (<div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Chasis y Pintura:</span><p className="text-xs text-zinc-300">{insp.chassisPaint}</p></div>)}
+                      {insp.rimsTires && (<div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Rines y Llantas:</span><p className="text-xs text-zinc-300">{insp.rimsTires}</p></div>)}
+                      {insp.notes && (<div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Notas:</span><p className="text-xs text-zinc-400 italic">{insp.notes}</p></div>)}
+                      {insp.imageUrls.length > 0 && (
+                        <div>
+                          <span className="text-[10px] text-zinc-500 uppercase tracking-wide">Evidencia ({insp.imageUrls.length}):</span>
+                          <div className="mt-1 flex gap-2 flex-wrap">
+                            {insp.imageUrls.map((url, i) => (
+                              <a key={i} href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/hr-documents/${url}`} target="_blank" rel="noopener noreferrer"
+                                className="rounded-lg bg-zinc-800 px-3 py-1.5 text-[10px] text-lime-400 hover:bg-zinc-700 cursor-pointer">Imagen {i + 1}</a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* CREATE VEHICLE MODAL */}
@@ -689,59 +734,6 @@ export default function FlotaPage() {
         </div>
       )}
 
-      {/* INSPECTION TAB */}
-      {tab === 'inspections' && (
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Inspecciones Registradas</h2>
-            <button onClick={() => { setShowInspForm(true); setInspVehicle(''); setInspDate(''); setInspMileage(''); setInspChassis(''); setInspRims(''); setInspNotes(''); setInspFiles([]); }}
-              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
-              <PlusIcon /> Inspección
-            </button>
-          </div>
-
-          {inspections.length === 0 ? (
-            <div className="flex h-48 items-center justify-center text-sm text-zinc-600">Sin inspecciones registradas</div>
-          ) : (
-            <div className="space-y-3">
-              {inspections.map((insp) => (
-                <div key={insp.id} className="rounded-xl border border-zinc-800/40 bg-zinc-800/20 overflow-hidden">
-                  <div className="flex items-center justify-between px-5 py-3.5">
-                    <div>
-                      <p className="text-sm font-semibold text-zinc-200">{insp.vehiclePlate} — {insp.vehicleModel}</p>
-                      <p className="text-xs text-zinc-500">{new Date(insp.inspectionDate).toLocaleDateString('es-PA', { day: '2-digit', month: 'short', year: 'numeric' })} · {insp.mileage.toLocaleString()} km</p>
-                    </div>
-                  </div>
-                  <div className="border-t border-zinc-800/30 px-5 py-3 space-y-2">
-                    {insp.chassisPaint && (
-                      <div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Chasis y Pintura:</span><p className="text-xs text-zinc-300">{insp.chassisPaint}</p></div>
-                    )}
-                    {insp.rimsTires && (
-                      <div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Rines y Llantas:</span><p className="text-xs text-zinc-300">{insp.rimsTires}</p></div>
-                    )}
-                    {insp.notes && (
-                      <div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Notas:</span><p className="text-xs text-zinc-400 italic">{insp.notes}</p></div>
-                    )}
-                    {insp.imageUrls.length > 0 && (
-                      <div>
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wide">Evidencia ({insp.imageUrls.length} imagen{insp.imageUrls.length !== 1 ? 'es' : ''}):</span>
-                        <div className="mt-1 flex gap-2 flex-wrap">
-                          {insp.imageUrls.map((url, i) => (
-                            <a key={i} href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/hr-documents/${url}`} target="_blank" rel="noopener noreferrer"
-                              className="rounded-lg bg-zinc-800 px-3 py-1.5 text-[10px] text-lime-400 hover:bg-zinc-700 cursor-pointer">
-                              Imagen {i + 1}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* INSPECTION FORM MODAL */}
       {showInspForm && (
