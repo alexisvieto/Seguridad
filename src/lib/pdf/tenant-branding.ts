@@ -29,7 +29,7 @@ export async function getTenantBranding(
 
   return {
     name: tenant?.name ?? '',
-    logoUrl: branding['logo_url'] || tenant?.logo_url || null,
+    logoUrl: branding['logo_url'] || tenant?.logo_url || '/brand/logo-nexguard360-light.svg',
     address: branding['address'] ?? '',
     phone: branding['phone'] ?? '',
     email: branding['email'] ?? '',

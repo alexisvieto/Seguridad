@@ -4,7 +4,7 @@ export async function GET(request: NextRequest) {
   const tenantName = request.nextUrl.searchParams.get('empresa') ?? 'Su Empresa';
   const proto = request.headers.get('x-forwarded-proto') ?? 'http';
   const host = request.headers.get('host') ?? 'localhost:3000';
-  const logoNg = `${proto}://${host}/brand/logo-nexguard360-dark.svg`;
+  const logoNg = `${proto}://${host}/brand/logo-nexguard360-light.svg`;
   const logoNexera = `${proto}://${host}/brand/nexera-logo.png`;
 
   const html = `<!DOCTYPE html>
