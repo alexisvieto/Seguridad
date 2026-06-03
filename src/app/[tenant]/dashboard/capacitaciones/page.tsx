@@ -227,24 +227,12 @@ export default function CapacitacionesPage() {
         certUrl = path;
       }
 
-      // Get course validity to compute expiry
-      const course = courses.find((c) => c.id === modalCourse);
-      if (!course) {
-        setToast({ type: 'error', msg: 'Curso no encontrado' });
-        setModalLoading(false);
-        return;
-      }
-
-      const completionDate = new Date(modalDate);
-      const expiryDate = new Date(completionDate);
-      expiryDate.setMonth(expiryDate.getMonth() + course.validityMonths);
-
       const { error } = await supabase.from('agent_training_logs').insert({
         tenant_id: tenantId,
         user_id: modalAgent,
         course_id: modalCourse,
-        completion_date: modalDate,
-        expiry_date: expiryDate.toISOString().split('T')[0]!,
+        completion_date: new Date().toISOString().split('T')[0]!,
+        expiry_date: modalDate,
         grade: modalGrade || null,
         certificate_pdf_url: certUrl,
       });
@@ -461,66 +449,49 @@ export default function CapacitacionesPage() {
               {/* Agent */}
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Agente</span>
-                <select
-                  value={modalAgent}
-                  onChange={(e) => setModalAgent(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer"
-                >
+                <select value={modalAgent} onChange={(e) => setModalAgent(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
                   <option value="">Seleccionar agente...</option>
-                  {agents.map((a) => (
-                    <option key={a.userId} value={a.userId}>{a.name}</option>
-                  ))}
+                  {agents.map((a) => (<option key={a.userId} value={a.userId}>{a.name}</option>))}
                 </select>
               </label>
 
-              {/* Course */}
-              <label className="block">
+              {/* Course + add inline */}
+              <div>
                 <span className="text-xs font-medium text-zinc-400">Curso</span>
-                <select
-                  value={modalCourse}
-                  onChange={(e) => setModalCourse(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer"
-                >
-                  <option value="">Seleccionar curso...</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name} ({c.validityMonths} meses)</option>
-                  ))}
-                </select>
-              </label>
+                <div className="flex gap-2 mt-1">
+                  <select value={modalCourse} onChange={(e) => setModalCourse(e.target.value)}
+                    className="flex-1 rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none cursor-pointer">
+                    <option value="">Seleccionar curso...</option>
+                    {courses.map((c) => (<option key={c.id} value={c.id}>{c.name} ({c.validityMonths} meses)</option>))}
+                  </select>
+                  <button type="button" onClick={() => setShowCourseForm(true)}
+                    className="rounded-xl border border-dashed border-zinc-700 px-4 py-3 text-xs font-medium text-lime-400 hover:border-lime-500/30 cursor-pointer whitespace-nowrap">+ Nuevo</button>
+                </div>
+              </div>
 
-              {/* Date */}
+              {/* Expiry date */}
               <label className="block">
-                <span className="text-xs font-medium text-zinc-400">Fecha de finalización</span>
-                <input
-                  type="date"
-                  value={modalDate}
-                  onChange={(e) => setModalDate(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none"
-                />
+                <span className="text-xs font-medium text-zinc-400">Fecha de Vencimiento</span>
+                <input type="date" value={modalDate} onChange={(e) => setModalDate(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 min-h-[48px] focus:border-lime-500 focus:outline-none" />
+                <p className="mt-1 text-[10px] text-amber-400/70">El sistema enviará una alerta 60 días antes de la fecha de vencimiento.</p>
               </label>
 
               {/* Grade */}
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Calificación (opcional)</span>
-                <input
-                  type="text"
-                  value={modalGrade}
-                  onChange={(e) => setModalGrade(e.target.value)}
-                  placeholder="Ej: Aprobado, 95/100"
-                  maxLength={50}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none"
-                />
+                <input type="text" value={modalGrade} onChange={(e) => setModalGrade(e.target.value)}
+                  placeholder="Ej: Aprobado, 95/100" maxLength={50}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 min-h-[48px] focus:border-lime-500 focus:outline-none" />
               </label>
 
-              {/* Certificate PDF */}
+              {/* Certificate */}
               <label className="block">
-                <span className="text-xs font-medium text-zinc-400">Certificado PDF (opcional)</span>
-                <input
-                  type="file"
-                  accept=".pdf,image/jpeg,image/png"
+                <span className="text-xs font-medium text-zinc-400">Adjuntar Certificado (PDF o imagen)</span>
+                <input type="file" accept=".pdf,image/jpeg,image/png"
                   onChange={(e) => setModalFile(e.target.files?.[0] ?? null)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-400 min-h-[48px] file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-700 file:px-3 file:py-1 file:text-xs file:text-zinc-300 file:cursor-pointer cursor-pointer"
-                />
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-400 min-h-[48px] file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-700 file:px-3 file:py-1 file:text-xs file:text-zinc-300 file:cursor-pointer cursor-pointer" />
               </label>
             </div>
 
