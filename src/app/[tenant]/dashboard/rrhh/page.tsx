@@ -127,6 +127,16 @@ export default function RRHHPage() {
   const [amonDate, setAmonDate] = useState('');
   const [amonLoading, setAmonLoading] = useState(false);
 
+  // Create employee
+  const [showNewEmployee, setShowNewEmployee] = useState(false);
+  const [empName, setEmpName] = useState('');
+  const [empCedula, setEmpCedula] = useState('');
+  const [empEmail, setEmpEmail] = useState('');
+  const [empPassword, setEmpPassword] = useState('');
+  const [empType, setEmpType] = useState('agente');
+  const [empSalary, setEmpSalary] = useState('');
+  const [empLoading, setEmpLoading] = useState(false);
+
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 4000);
@@ -333,8 +343,12 @@ export default function RRHHPage() {
         <div className="flex items-center gap-3">
           <UserIcon />
           <h1 className="text-lg font-semibold tracking-wide">Expedientes de Personal</h1>
-          <span className="text-sm text-zinc-500">{agents.length} agentes</span>
+          <span className="text-sm text-zinc-500">{agents.length} empleados</span>
         </div>
+        <button onClick={() => setShowNewEmployee(true)}
+          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
+          <PlusIcon /> Nuevo Empleado
+        </button>
       </header>
 
       {/* MASTER-DETAIL */}
@@ -818,6 +832,99 @@ export default function RRHHPage() {
           )}
         </div>
       </div>
+
+      {/* CREATE EMPLOYEE MODAL */}
+      {showNewEmployee && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowNewEmployee(false); }}>
+          <div className="w-full max-w-lg rounded-2xl border border-zinc-700/50 bg-[#12162A] p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
+            <h3 className="text-lg font-semibold text-zinc-100">Nuevo Empleado</h3>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block sm:col-span-2">
+                <span className="text-xs font-medium text-zinc-400">Nombre Completo</span>
+                <input type="text" value={empName} onChange={(e) => setEmpName(e.target.value)} placeholder="Juan Pérez"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 focus:border-lime-500 focus:outline-none" />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Cédula</span>
+                <input type="text" value={empCedula} onChange={(e) => setEmpCedula(e.target.value)} placeholder="8-888-888"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 font-mono focus:border-lime-500 focus:outline-none" />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Tipo de Empleado</span>
+                <select value={empType} onChange={(e) => setEmpType(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 focus:border-lime-500 focus:outline-none cursor-pointer">
+                  <option value="agente">Agente de Campo</option>
+                  <option value="conductor">Conductor</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="operador">Operador</option>
+                  <option value="administrativo">Administrativo</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Email (para acceso al sistema)</span>
+                <input type="email" value={empEmail} onChange={(e) => setEmpEmail(e.target.value)} placeholder="juan@empresa.com"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 focus:border-lime-500 focus:outline-none" />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Contraseña Temporal</span>
+                <input type="text" value={empPassword} onChange={(e) => setEmpPassword(e.target.value)} placeholder="Mínimo 6 caracteres"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 font-mono focus:border-lime-500 focus:outline-none" />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-zinc-400">Salario Mensual</span>
+                <input type="number" value={empSalary} onChange={(e) => setEmpSalary(e.target.value)} placeholder="Ej: 800"
+                  className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 focus:border-lime-500 focus:outline-none" />
+                <p className="mt-1 text-[10px] text-zinc-600">Este salario se usa para calcular la nómina. Se puede modificar por aumentos.</p>
+              </label>
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => setShowNewEmployee(false)}
+                className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer min-h-[48px]">Cancelar</button>
+              <button disabled={empLoading || !empName.trim() || !empEmail.trim() || !empPassword || empPassword.length < 6}
+                onClick={async () => {
+                  if (!tenantId) return;
+                  setEmpLoading(true);
+                  try {
+                    const roleMap: Record<string, string> = { agente: 'editor', conductor: 'editor', supervisor: 'admin', operador: 'admin', administrativo: 'admin' };
+                    const res = await fetch('/api/admin', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        action: 'create_user',
+                        email: empEmail.trim(),
+                        password: empPassword,
+                        full_name: empName.trim(),
+                        tenant_id: tenantId,
+                        role: roleMap[empType] ?? 'editor',
+                        employee_type: empType,
+                        cedula: empCedula.trim(),
+                        salary: empSalary,
+                      }),
+                    });
+                    if (res.ok) {
+                      setToast({ type: 'success', msg: `Empleado ${empName} creado exitosamente` });
+                      setShowNewEmployee(false);
+                      setEmpName(''); setEmpCedula(''); setEmpEmail(''); setEmpPassword(''); setEmpType('agente'); setEmpSalary('');
+                      loadData();
+                    } else {
+                      const err = await res.json() as Record<string, unknown>;
+                      const msg = (err['error'] && typeof err['error'] === 'object' && 'message' in (err['error'] as object))
+                        ? String((err['error'] as { message: unknown }).message) : 'Error al crear empleado';
+                      setToast({ type: 'error', msg });
+                    }
+                  } catch { setToast({ type: 'error', msg: 'Error de conexión' }); }
+                  finally { setEmpLoading(false); }
+                }}
+                className="flex-1 rounded-xl bg-lime-600 px-4 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer min-h-[48px]">
+                {empLoading ? 'Creando...' : 'Crear Empleado'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TOAST */}
       {toast && (

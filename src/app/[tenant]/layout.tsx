@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getCurrentTenant, getCurrentUserRole } from '@/lib/tenant/get-tenant';
+import { getCurrentTenant, getCurrentUserRole, getCurrentUserMembership } from '@/lib/tenant/get-tenant';
 import { TenantSidebar } from './sidebar';
 import { RealtimeAlerts } from './realtime-alerts';
 
@@ -40,15 +40,18 @@ export default async function TenantLayout({
     notFound();
   }
 
-  const role = await getCurrentUserRole(tenant.id);
+  const membership = await getCurrentUserMembership(tenant.id);
 
-  if (!role) {
+  if (!membership) {
     notFound();
   }
 
+  const role = membership.role;
+  const employeeType = membership.employee_type ?? (role === 'owner' ? 'gerente' : role === 'viewer' ? 'cliente' : 'agente');
+
   return (
     <div className="flex h-dvh bg-[#0A0E1A]" data-tenant-id={tenant.id} data-tenant-slug={tenant.slug}>
-      <TenantSidebar tenantSlug={slug} tenantName={tenant.name} role={role} enabledModules={((tenant.settings as Record<string, unknown>)?.['enabled_modules'] as string[] | undefined) ?? []} />
+      <TenantSidebar tenantSlug={slug} tenantName={tenant.name} role={role} employeeType={employeeType} enabledModules={((tenant.settings as Record<string, unknown>)?.['enabled_modules'] as string[] | undefined) ?? []} />
       <main className="relative flex-1 overflow-hidden">
         {(role === 'owner' || role === 'admin') && (
           <RealtimeAlerts tenantId={tenant.id} tenantSlug={slug} />

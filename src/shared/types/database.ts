@@ -149,6 +149,7 @@ export interface Database {
           tenant_id: string;
           user_id: string;
           role: MembershipRole;
+          employee_type: string;
           created_at: string;
           updated_at: string;
         };
@@ -157,6 +158,7 @@ export interface Database {
           tenant_id: string;
           user_id: string;
           role?: MembershipRole;
+          employee_type?: string;
           created_at?: string;
           updated_at?: string;
         };

@@ -9,8 +9,19 @@ interface SidebarProps {
   tenantSlug: string;
   tenantName: string;
   role: string;
+  employeeType: string;
   enabledModules: string[];
 }
+
+const modulesByEmployeeType: Record<string, string[]> = {
+  gerente: ['comercial', 'gerencial', 'noc', 'comando', 'cambio_turno', 'turnos', 'consignas', 'puesto', 'armamento', 'inventario', 'flota', 'rrhh', 'capacitaciones', 'nomina', 'cliente', 'configuracion'],
+  administrativo: ['noc', 'comando', 'cambio_turno', 'turnos', 'consignas', 'armamento', 'inventario', 'flota', 'rrhh', 'capacitaciones', 'comercial', 'nomina', 'configuracion', 'gerencial'],
+  operador: ['noc', 'comando', 'cambio_turno', 'turnos', 'consignas', 'armamento', 'inventario', 'flota', 'capacitaciones'],
+  supervisor: ['noc', 'comando', 'cambio_turno', 'turnos', 'consignas', 'armamento', 'inventario', 'flota', 'puesto'],
+  conductor: ['flota'],
+  agente: ['puesto'],
+  cliente: ['cliente'],
+};
 
 interface NavItem {
   href: string;
@@ -31,7 +42,7 @@ const sectionLabels: Record<string, string> = {
   client: 'Clientes',
 };
 
-export function TenantSidebar({ tenantSlug, tenantName, role, enabledModules }: SidebarProps) {
+export function TenantSidebar({ tenantSlug, tenantName, role, employeeType, enabledModules }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const base = `/${tenantSlug}`;
@@ -41,7 +52,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role, enabledModules }: 
       href: `${base}/dashboard/comercial`,
       label: 'Clientes y Contratos',
       icon: <BriefcaseIcon />,
-      roles: ['owner'],
+      roles: ['owner', 'admin'],
       section: 'commercial',
       moduleKey: 'comercial',
     },
@@ -145,7 +156,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role, enabledModules }: 
       href: `${base}/dashboard/nomina`,
       label: 'Nomina',
       icon: <WalletIcon />,
-      roles: ['owner'],
+      roles: ['owner', 'admin'],
       section: 'finance',
       moduleKey: 'nomina',
     },
@@ -161,16 +172,22 @@ export function TenantSidebar({ tenantSlug, tenantName, role, enabledModules }: 
       href: `${base}/dashboard/configuracion`,
       label: 'Configuración',
       icon: <GearIcon />,
-      roles: ['owner'],
+      roles: ['owner', 'admin'],
       section: 'commercial',
-      moduleKey: 'comercial',
+      moduleKey: 'configuracion',
     },
   ];
 
+  const typeModules = modulesByEmployeeType[employeeType] ?? modulesByEmployeeType['agente']!;
+
   const visibleItems = navItems.filter((item) => {
+    // Must have the DB role
     if (!item.roles.includes(role)) return false;
-    if (enabledModules.length === 0) return true; // no restriction = all modules
-    return enabledModules.includes(item.moduleKey);
+    // Must be allowed by employee type
+    if (!typeModules.includes(item.moduleKey)) return false;
+    // Must be enabled for the tenant (empty = all)
+    if (enabledModules.length > 0 && !enabledModules.includes(item.moduleKey)) return false;
+    return true;
   });
 
   const sections = [...new Set(visibleItems.map((i) => i.section))];

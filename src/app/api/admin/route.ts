@@ -101,6 +101,9 @@ export async function POST(request: NextRequest) {
       const fullName = String(body['full_name'] ?? '').trim();
       const tenantId = String(body['tenant_id'] ?? '');
       const role = String(body['role'] ?? 'admin');
+      const employeeType = String(body['employee_type'] ?? '');
+      const cedula = String(body['cedula'] ?? '').trim();
+      const salary = String(body['salary'] ?? '');
 
       if (!email || !password || !fullName || !tenantId) {
         throw new AppError('VALIDATION_ERROR', 'Email, contraseña, nombre y tenant son requeridos');
@@ -122,16 +125,41 @@ export async function POST(request: NextRequest) {
         throw new AppError('INTERNAL_ERROR', `Error al crear usuario: ${authError.message}`);
       }
 
+      const memberInsert: Record<string, unknown> = {
+        tenant_id: tenantId,
+        user_id: authUser.user.id,
+        role,
+      };
+      if (employeeType) memberInsert['employee_type'] = employeeType;
+
       const { error: memberError } = await admin
         .from('memberships')
-        .insert({
-          tenant_id: tenantId,
-          user_id: authUser.user.id,
-          role,
-        });
+        .insert(memberInsert);
 
       if (memberError) {
         throw new AppError('INTERNAL_ERROR', 'Usuario creado pero error al asignar membership');
+      }
+
+      // Create HR profile if cedula or salary provided
+      if (cedula || salary) {
+        const hrInsert: Record<string, unknown> = {
+          tenant_id: tenantId,
+          user_id: authUser.user.id,
+        };
+        if (cedula) hrInsert['cedula'] = cedula;
+
+        await admin.from('hr_agent_profiles').upsert(hrInsert, { onConflict: 'tenant_id,user_id' });
+
+        // Create contract with salary if provided
+        if (salary && parseFloat(salary) > 0) {
+          await admin.from('hr_contracts').insert({
+            tenant_id: tenantId,
+            user_id: authUser.user.id,
+            contract_type: 'indefinido',
+            base_salary: parseFloat(salary),
+            start_date: new Date().toISOString().split('T')[0],
+          });
+        }
       }
 
       return NextResponse.json({

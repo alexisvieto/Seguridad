@@ -50,3 +50,19 @@ export async function getCurrentUserRole(tenantId: string) {
 
   return data?.role ?? null;
 }
+
+export async function getCurrentUserMembership(tenantId: string) {
+  const supabase = await getSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from('memberships')
+    .select('role, employee_type')
+    .eq('tenant_id', tenantId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  return data ?? null;
+}
