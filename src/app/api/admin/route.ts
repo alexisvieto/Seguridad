@@ -54,7 +54,8 @@ export async function GET(request: NextRequest) {
 
       const settings = (t.settings ?? {}) as Record<string, unknown>;
       const enabledModules = (settings['enabled_modules'] as string[] | undefined) ?? [];
-      return { ...t, members, enabledModules };
+      const maxAgents = Number(settings['max_agents'] ?? 0);
+      return { ...t, members, enabledModules, maxAgents };
     });
 
     return NextResponse.json({ data: tenantsWithUsers });
@@ -76,13 +77,16 @@ export async function POST(request: NextRequest) {
       const slug = String(body['slug'] ?? '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
       const plan = String(body['plan'] ?? 'pro');
       const enabledModules = (body['enabled_modules'] as string[] | undefined) ?? [];
+      const maxAgents = Number(body['max_agents'] ?? 0);
 
       if (!name || !slug) throw new AppError('VALIDATION_ERROR', 'Nombre y slug son requeridos');
 
       const { data: existing } = await admin.from('tenants').select('id').eq('slug', slug).maybeSingle();
       if (existing) throw new AppError('CONFLICT', `El slug "${slug}" ya existe`);
 
-      const settings = enabledModules.length > 0 ? { enabled_modules: enabledModules } : {};
+      const settings: Record<string, unknown> = {};
+      if (enabledModules.length > 0) settings['enabled_modules'] = enabledModules;
+      if (maxAgents > 0) settings['max_agents'] = maxAgents;
 
       const { data: tenant, error } = await admin
         .from('tenants')
@@ -110,6 +114,18 @@ export async function POST(request: NextRequest) {
       }
 
       if (password.length < 6) throw new AppError('VALIDATION_ERROR', 'Contraseña debe tener al menos 6 caracteres');
+
+      // Check agent limit
+      const { data: tenantData } = await admin.from('tenants').select('settings').eq('id', tenantId).maybeSingle();
+      const tenantSettings = (tenantData?.settings ?? {}) as Record<string, unknown>;
+      const maxAgentsLimit = Number(tenantSettings['max_agents'] ?? 0);
+
+      if (maxAgentsLimit > 0) {
+        const { count } = await admin.from('memberships').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId);
+        if ((count ?? 0) >= maxAgentsLimit) {
+          throw new AppError('CONFLICT', `Ha alcanzado el máximo de ${maxAgentsLimit} usuarios de su plan. Contacte a NexGuard360 para actualizar.`);
+        }
+      }
 
       const { data: authUser, error: authError } = await admin.auth.admin.createUser({
         email,

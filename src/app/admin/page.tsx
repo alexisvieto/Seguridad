@@ -18,6 +18,7 @@ interface TenantRow {
   created_at: string;
   members: TenantMember[];
   enabledModules: string[];
+  maxAgents: number;
 }
 
 const ALL_MODULES = [
@@ -50,6 +51,7 @@ export default function AdminPage() {
   const [tSlug, setTSlug] = useState('');
   const [tPlan, setTPlan] = useState('pro');
   const [tModules, setTModules] = useState<string[]>(ALL_MODULES.map((m) => m.key));
+  const [tMaxAgents, setTMaxAgents] = useState('');
   const [tLoading, setTLoading] = useState(false);
   const [tMsg, setTMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
@@ -102,7 +104,7 @@ export default function AdminPage() {
       const res = await fetch('/api/admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create_tenant', name: tName.trim(), slug: tSlug.trim(), plan: tPlan, enabled_modules: tModules }),
+        body: JSON.stringify({ action: 'create_tenant', name: tName.trim(), slug: tSlug.trim(), plan: tPlan, enabled_modules: tModules, max_agents: parseInt(tMaxAgents) || 0 }),
       });
 
       if (res.ok) {
@@ -215,7 +217,7 @@ export default function AdminPage() {
                   <div>
                     <p className="text-sm font-semibold text-zinc-100">{t.name}</p>
                     <p className="mt-0.5 text-xs text-zinc-500">
-                      /{t.slug} — Plan: <span className="text-zinc-300">{t.plan}</span> — {t.members.length} usuario{t.members.length !== 1 ? 's' : ''}
+                      /{t.slug} — Plan: <span className="text-zinc-300">{t.plan}</span> — {t.members.length}{t.maxAgents > 0 ? `/${t.maxAgents}` : ''} usuario{t.members.length !== 1 ? 's' : ''}
                     </p>
                   </div>
                   <span className="text-xs text-zinc-600">{new Date(t.created_at).toLocaleDateString('es-PA')}</span>
@@ -332,6 +334,11 @@ export default function AdminPage() {
                 <option value="pro">Pro</option>
                 <option value="enterprise">Enterprise</option>
               </select>
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-zinc-400">Límite de usuarios (0 = sin límite)</span>
+              <input type="number" value={tMaxAgents} onChange={(e) => setTMaxAgents(e.target.value)} placeholder="Ej: 30"
+                className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-lime-500 focus:outline-none" />
             </label>
             {/* Modules */}
             <div>
