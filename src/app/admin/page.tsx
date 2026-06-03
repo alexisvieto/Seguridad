@@ -35,6 +35,7 @@ const ALL_MODULES = [
   { key: 'flota', label: 'Flota' },
   { key: 'rrhh', label: 'RRHH' },
   { key: 'capacitaciones', label: 'Capacitaciones' },
+  { key: 'planilla_operativa', label: 'Planilla Operativa' },
   { key: 'nomina', label: 'Nómina' },
   { key: 'cliente', label: 'Portal Cliente' },
 ];

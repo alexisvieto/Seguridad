@@ -1674,6 +1674,12 @@ export interface Database {
         Update: { event_type?: string; actual_agent_id?: string | null; narrative?: string; arrival_time?: string | null; waiting_agent_id?: string | null; updated_at?: string };
         Relationships: [{ foreignKeyName: 'shift_change_events_report_id_fkey'; columns: ['report_id']; isOneToOne: false; referencedRelation: 'shift_change_reports'; referencedColumns: ['id'] }];
       };
+      operative_paysheet: {
+        Row: { id: string; tenant_id: string; user_id: string; shift_date: string; entry_type: string; hours: number; bonus: number; penalty: number; notes: string; created_at: string; updated_at: string };
+        Insert: { id?: string; tenant_id: string; user_id: string; shift_date: string; entry_type?: string; hours?: number; bonus?: number; penalty?: number; notes?: string; created_at?: string; updated_at?: string };
+        Update: { entry_type?: string; hours?: number; bonus?: number; penalty?: number; notes?: string; updated_at?: string };
+        Relationships: [{ foreignKeyName: 'operative_paysheet_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
+      };
       report_sequences: {
         Row: { id: string; tenant_id: string; prefix: string; last_number: number };
         Insert: { id?: string; tenant_id: string; prefix: string; last_number?: number };
