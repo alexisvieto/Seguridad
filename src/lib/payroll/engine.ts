@@ -106,6 +106,22 @@ export async function processFortnightPayroll(
     const rateMap = await loadAgentRates(client, tenantId, agentIds);
     const existingAdjustments = await loadExistingAdjustments(client, periodId, agentIds);
 
+    // Load paysheet bonuses/penalties
+    const paysheetBonuses = new Map<string, { bonus: number; penalty: number }>();
+    const { data: paysheetAgg } = await client
+      .from('operative_paysheet')
+      .select('user_id, bonus, penalty')
+      .eq('tenant_id', tenantId)
+      .gte('shift_date', period.startDate)
+      .lte('shift_date', period.endDate);
+
+    for (const entry of paysheetAgg ?? []) {
+      const existing = paysheetBonuses.get(entry.user_id) ?? { bonus: 0, penalty: 0 };
+      existing.bonus += Number(entry.bonus);
+      existing.penalty += Number(entry.penalty);
+      paysheetBonuses.set(entry.user_id, existing);
+    }
+
     // ------------------------------------------------------------------
     // 5. CALCULATE FINANCIALS
     // ------------------------------------------------------------------
@@ -115,8 +131,9 @@ export async function processFortnightPayroll(
     for (const [userId, hours] of distributed) {
       const rate = rateMap.get(userId) ?? 3.04;
       const adjustments = existingAdjustments.get(userId);
-      const addition = adjustments?.addition ?? 0;
-      const deduction = adjustments?.deduction ?? 0;
+      const psBonus = paysheetBonuses.get(userId);
+      const addition = (adjustments?.addition ?? 0) + (psBonus?.bonus ?? 0);
+      const deduction = (adjustments?.deduction ?? 0) + (psBonus?.penalty ?? 0);
 
       const financials = calculateFinancials(
         hours.regularHours,
@@ -224,6 +241,41 @@ async function extractShiftHours(
   tenantId: string,
   period: PeriodDates,
 ): Promise<Map<string, AgentHourBucket>> {
+  // Try operative paysheet first (manual Excel-style entries)
+  const { data: paysheetEntries } = await client
+    .from('operative_paysheet')
+    .select('user_id, hours, bonus, penalty, entry_type')
+    .eq('tenant_id', tenantId)
+    .gte('shift_date', period.startDate)
+    .lte('shift_date', period.endDate);
+
+  if (paysheetEntries && paysheetEntries.length > 0) {
+    console.info(`[Payroll] Using operative paysheet: ${paysheetEntries.length} entries`);
+
+    const buckets = new Map<string, AgentHourBucket & { bonusTotal: number; penaltyTotal: number }>();
+
+    for (const entry of paysheetEntries) {
+      const bucket = buckets.get(entry.user_id) ?? {
+        regularHours: 0, overtimeHours: 0, holidayHours: 0, shiftCount: 0,
+        bonusTotal: 0, penaltyTotal: 0,
+      };
+
+      bucket.regularHours += Number(entry.hours);
+      if (entry.entry_type !== 'dia_libre') bucket.shiftCount += 1;
+      bucket.bonusTotal += Number(entry.bonus);
+      bucket.penaltyTotal += Number(entry.penalty);
+
+      buckets.set(entry.user_id, bucket);
+    }
+
+    // Store bonus/penalty in holidayHours field temporarily (will be added as adjustments)
+    // Actually, we'll handle it through the adjustments system
+    return buckets;
+  }
+
+  // Fallback: use QR clock-in/clock-out data
+  console.info('[Payroll] No paysheet data, falling back to agent_shifts');
+
   const periodStartISO = `${period.startDate}T00:00:00.000Z`;
   const periodEndISO = `${period.endDate}T23:59:59.999Z`;
 
@@ -248,18 +300,12 @@ async function extractShiftHours(
     const clockOut = new Date(shift.clock_out);
 
     const diffMs = clockOut.getTime() - clockIn.getTime();
-    if (diffMs <= 0) {
-      console.warn(`[Payroll] Skipping invalid shift: clock_out <= clock_in for user=${shift.user_id}`);
-      continue;
-    }
+    if (diffMs <= 0) continue;
 
     const hoursWorked = round2(diffMs / 3_600_000);
 
     const bucket = buckets.get(shift.user_id) ?? {
-      regularHours: 0,
-      overtimeHours: 0,
-      holidayHours: 0,
-      shiftCount: 0,
+      regularHours: 0, overtimeHours: 0, holidayHours: 0, shiftCount: 0,
     };
 
     bucket.regularHours += hoursWorked;
