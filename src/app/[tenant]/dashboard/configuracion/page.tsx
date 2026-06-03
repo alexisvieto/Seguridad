@@ -32,6 +32,20 @@ interface FirearmsConfig {
   default_permit_months: string;
 }
 
+const countryDefaults: Record<string, { currency_symbol: string; currency_code: string; timezone: string }> = {
+  PA: { currency_symbol: 'B/.', currency_code: 'USD', timezone: 'America/Panama' },
+  CO: { currency_symbol: '$', currency_code: 'COP', timezone: 'America/Bogota' },
+  CR: { currency_symbol: '₡', currency_code: 'CRC', timezone: 'America/Costa_Rica' },
+  GT: { currency_symbol: 'Q', currency_code: 'GTQ', timezone: 'America/Guatemala' },
+  HN: { currency_symbol: 'L', currency_code: 'HNL', timezone: 'America/Tegucigalpa' },
+  SV: { currency_symbol: '$', currency_code: 'USD', timezone: 'America/El_Salvador' },
+  NI: { currency_symbol: 'C$', currency_code: 'NIO', timezone: 'America/Managua' },
+  DO: { currency_symbol: 'RD$', currency_code: 'DOP', timezone: 'America/Santo_Domingo' },
+  EC: { currency_symbol: '$', currency_code: 'USD', timezone: 'America/Guayaquil' },
+  PE: { currency_symbol: 'S/', currency_code: 'PEN', timezone: 'America/Lima' },
+  MX: { currency_symbol: '$', currency_code: 'MXN', timezone: 'America/Mexico_City' },
+};
+
 export default function ConfiguracionPage() {
   const params = useParams<{ tenant: string }>();
   const tenantSlug = params.tenant;
@@ -173,7 +187,15 @@ export default function ConfiguracionPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="text-xs font-medium text-zinc-400">País</span>
-              <select value={regional.country} onChange={(e) => updateRegional('country', e.target.value)}
+              <select value={regional.country} onChange={(e) => {
+                  const code = e.target.value;
+                  const defaults = countryDefaults[code];
+                  if (defaults) {
+                    setRegional({ country: code, ...defaults });
+                  } else {
+                    updateRegional('country', code);
+                  }
+                }}
                 className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 focus:border-lime-500 focus:outline-none cursor-pointer">
                 <option value="PA">Panamá</option>
                 <option value="CO">Colombia</option>
