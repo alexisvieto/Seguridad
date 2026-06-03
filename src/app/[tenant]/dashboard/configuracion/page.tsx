@@ -105,6 +105,7 @@ export default function ConfiguracionPage() {
             { name: String(p['deduction2_name'] ?? 'SE'), pct: String(p['deduction2_pct'] ?? '1.25') },
           ],
           max_regular_hours: String(p['max_regular_hours'] ?? '96'),
+          overtime_enabled: true,
         });
       }
     }
