@@ -12,6 +12,11 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new AppError('UNAUTHORIZED', 'No autenticado');
 
+    const { data: membership } = await supabase
+      .from('memberships').select('role')
+      .eq('tenant_id', tenantId).eq('user_id', user.id).maybeSingle();
+    if (!membership) throw new AppError('FORBIDDEN', 'Sin acceso a este tenant');
+
     const { data: tenant } = await supabase.from('tenants').select('id, name, settings, logo_url').eq('id', tenantId).maybeSingle();
     if (!tenant) throw new AppError('NOT_FOUND', 'Tenant no encontrado');
 
@@ -33,8 +38,8 @@ export async function PATCH(request: NextRequest) {
 
     const { data: membership } = await supabase
       .from('memberships').select('role').eq('tenant_id', tenantId).eq('user_id', user.id).maybeSingle();
-    if (!membership || membership.role !== 'owner') {
-      throw new AppError('FORBIDDEN', 'Solo el gerente puede modificar la configuración');
+    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+      throw new AppError('FORBIDDEN', 'Solo el gerente o administrador puede modificar la configuración');
     }
 
     const { data: tenant } = await supabase.from('tenants').select('settings').eq('id', tenantId).maybeSingle();

@@ -132,7 +132,7 @@ export default function ConfiguracionPage() {
         logoUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/hr-documents/${path}`;
       }
 
-      await fetch('/api/tenant-config', {
+      const res = await fetch('/api/tenant-config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -145,6 +145,8 @@ export default function ConfiguracionPage() {
           firearms,
         }),
       });
+
+      if (!res.ok) { setToast('Error al guardar configuración'); setSaving(false); return; }
 
       setToast('Configuración guardada');
       setLogoFile(null);
@@ -194,7 +196,7 @@ export default function ConfiguracionPage() {
                 )}
                 <input type="file" accept="image/*" onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) { setLogoFile(file); setLogoPreview(URL.createObjectURL(file)); }
+                  if (file) { if (logoPreview) URL.revokeObjectURL(logoPreview); setLogoFile(file); setLogoPreview(URL.createObjectURL(file)); }
                 }} className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-700 file:px-3 file:py-1 file:text-xs file:text-zinc-300 file:cursor-pointer cursor-pointer" />
               </div>
               <p className="mt-1 text-[10px] text-zinc-600">Este logo aparecerá en todos los reportes PDF generados por su empresa.</p>

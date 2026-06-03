@@ -111,7 +111,7 @@ export default function PayrollPeriodPage() {
     const supabase = getSupabaseBrowserClient();
 
     const { data: tenant } = await supabase
-      .from('tenants').select('id').eq('slug', tenantSlug).single();
+      .from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
     if (!tenant) return;
 
     const { data: periodData } = await supabase

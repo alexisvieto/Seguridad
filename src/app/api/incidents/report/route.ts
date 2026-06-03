@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         action_taken: input.action_taken ?? null,
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (insertError || !incident) {
       throw new AppError('INTERNAL_ERROR', 'Error al registrar la novedad');

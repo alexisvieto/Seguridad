@@ -38,18 +38,19 @@ export async function GET(request: NextRequest) {
   let totalAlerts = 0;
 
   for (const tenant of tenants ?? []) {
-    // Get programmed assignments for this shift
+    // Get programmed assignments for this shift, filtered by start_time
+    const shiftStartTime = shiftType === 'diurno' ? '06:00' : '18:00';
     const { data: assignments } = await admin
       .from('shift_assignments')
-      .select('user_id, work_station_id')
+      .select('user_id, work_station_id, start_time')
       .eq('tenant_id', tenant.id)
+      .eq('start_time', shiftStartTime)
       .lte('start_date', today)
       .or(`end_date.gte.${today},end_date.is.null`);
 
     if (!assignments || assignments.length === 0) continue;
 
-    // Filter by time overlap
-    const relevantAssignments = assignments; // simplified — all assignments for the day
+    const relevantAssignments = assignments;
 
     // Get actual clock-ins in the first 30 min window
     const { data: clockIns } = await admin

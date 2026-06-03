@@ -130,7 +130,7 @@ export default function FlotaPage() {
 
   const loadData = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
-    const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).single();
+    const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
     if (!tenant) return;
     setTenantId(tenant.id);
 
@@ -226,7 +226,7 @@ export default function FlotaPage() {
           next_maintenance_odometer: parseInt(vNextMaint) || 5000,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         setToast({ type: 'error', msg: error.code === '23505' ? 'Placa o GPS ya registrado' : 'Error al registrar vehiculo' });

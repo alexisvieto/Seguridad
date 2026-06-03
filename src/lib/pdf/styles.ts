@@ -19,6 +19,10 @@ export const pdfFonts = {
   mono: 'Courier',
 } as const;
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 export function generatePdfHtml({
   title,
   subtitle,
@@ -46,15 +50,25 @@ export function generatePdfHtml({
   warning?: string;
   footer?: string;
 }): string {
+  const eName = escapeHtml(tenantName);
+  const eTitle = escapeHtml(title);
+  const eSubtitle = subtitle ? escapeHtml(subtitle) : '';
+  const eDate = escapeHtml(date);
+  const eReportNumber = reportNumber ? escapeHtml(reportNumber) : '';
+  const ePhone = brandingPhone ? escapeHtml(brandingPhone) : '';
+  const eEmail = brandingEmail ? escapeHtml(brandingEmail) : '';
+  const eWebsite = brandingWebsite ? escapeHtml(brandingWebsite) : '';
+  const eLogoUrl = tenantLogoUrl ? escapeHtml(tenantLogoUrl) : '';
+
   const logoHtml = tenantLogoUrl
-    ? `<img src="${tenantLogoUrl}" alt="${tenantName}" style="height:56px;max-width:260px;object-fit:contain;" />`
-    : `<div style="font-family:Helvetica-Bold,Helvetica,sans-serif;font-size:16px;font-weight:800;color:${pdfColors.primary};letter-spacing:0.5px;">${tenantName}</div>`;
+    ? `<img src="${eLogoUrl}" alt="${eName}" style="height:56px;max-width:260px;object-fit:contain;" />`
+    : `<div style="font-family:Helvetica-Bold,Helvetica,sans-serif;font-size:16px;font-weight:800;color:${pdfColors.primary};letter-spacing:0.5px;">${eName}</div>`;
 
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>${title} — ${tenantName}</title>
+<title>${eTitle} — ${eName}</title>
 <style>
   @page { size: letter; margin: 22mm 20mm 20mm 20mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -146,19 +160,19 @@ export function generatePdfHtml({
 <div class="header">
   <div class="header-left">
     ${logoHtml}
-    ${brandingPhone || brandingEmail ? `<div style="margin-top:4px;font-size:8.5px;color:${pdfColors.muted};">${brandingPhone ? brandingPhone + (brandingEmail ? ' · ' : '') : ''}${brandingEmail ?? ''}</div>` : ''}
+    ${ePhone || eEmail ? `<div style="margin-top:4px;font-size:8.5px;color:${pdfColors.muted};">${ePhone ? ePhone + (eEmail ? ' · ' : '') : ''}${eEmail}</div>` : ''}
   </div>
   <div class="header-right">
-    ${reportNumber ? `<div style="font-size:12px;font-weight:800;letter-spacing:1px;color:${pdfColors.primary};font-family:Courier,monospace;">${reportNumber}</div>` : ''}
+    ${eReportNumber ? `<div style="font-size:12px;font-weight:800;letter-spacing:1px;color:${pdfColors.primary};font-family:Courier,monospace;">${eReportNumber}</div>` : ''}
     <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;color:${pdfColors.muted};text-transform:uppercase;">DOCUMENTO OFICIAL</div>
-    <div class="meta">${date}</div>
-    ${brandingWebsite ? `<div class="meta">${brandingWebsite}</div>` : ''}
+    <div class="meta">${eDate}</div>
+    ${eWebsite ? `<div class="meta">${eWebsite}</div>` : ''}
   </div>
 </div>
 
 <div class="title-block">
-  <h1>${title}</h1>
-  ${subtitle ? `<div class="sub">${subtitle}</div>` : ''}
+  <h1>${eTitle}</h1>
+  ${eSubtitle ? `<div class="sub">${eSubtitle}</div>` : ''}
 </div>
 
 ${warning ? `<div class="warning-box">${warning}</div>` : ''}
@@ -166,7 +180,7 @@ ${warning ? `<div class="warning-box">${warning}</div>` : ''}
 ${body}
 
 <div class="footer">
-  <div class="footer-left">${footer ?? `Generado por NexGuard360 · ${tenantName}`}</div>
+  <div class="footer-left">${footer ?? `Generado por NexGuard360 · ${eName}`}</div>
   <div class="footer-right">www.nexguard360.com</div>
 </div>
 

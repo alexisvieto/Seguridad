@@ -36,7 +36,7 @@ export async function PATCH(request: NextRequest) {
     let oldStatus = '';
 
     if (input.source_type === 'incident') {
-      const { data: row } = await supabase.from('incidents_log').select('status').eq('id', input.source_id).maybeSingle();
+      const { data: row } = await supabase.from('incidents_log').select('status').eq('id', input.source_id).eq('tenant_id', input.tenant_id).maybeSingle();
       if (!row) throw new AppError('NOT_FOUND', 'Incidencia no encontrada');
       oldStatus = row.status;
 
@@ -44,29 +44,29 @@ export async function PATCH(request: NextRequest) {
         status: input.new_status as 'open' | 'in_progress' | 'resolved' | 'justified' | 'closed',
         action_taken: input.notes,
         updated_at: new Date().toISOString(),
-      }).eq('id', input.source_id);
+      }).eq('id', input.source_id).eq('tenant_id', input.tenant_id);
     }
 
     if (input.source_type === 'ticket') {
-      const { data: row } = await supabase.from('client_tickets').select('status').eq('id', input.source_id).maybeSingle();
+      const { data: row } = await supabase.from('client_tickets').select('status').eq('id', input.source_id).eq('tenant_id', input.tenant_id).maybeSingle();
       if (!row) throw new AppError('NOT_FOUND', 'Ticket no encontrado');
       oldStatus = row.status;
 
       await supabase.from('client_tickets').update({
         status: input.new_status as 'abierto' | 'en_proceso' | 'resuelto' | 'cerrado',
         updated_at: new Date().toISOString(),
-      }).eq('id', input.source_id);
+      }).eq('id', input.source_id).eq('tenant_id', input.tenant_id);
     }
 
     if (input.source_type === 'damage') {
-      const { data: row } = await supabase.from('client_damage_reports').select('status').eq('id', input.source_id).maybeSingle();
+      const { data: row } = await supabase.from('client_damage_reports').select('status').eq('id', input.source_id).eq('tenant_id', input.tenant_id).maybeSingle();
       if (!row) throw new AppError('NOT_FOUND', 'Reporte de daño no encontrado');
       oldStatus = row.status;
 
       await supabase.from('client_damage_reports').update({
         status: input.new_status as 'bajo_investigacion' | 'aceptado_empresa' | 'rechazado_con_pruebas' | 'reparado',
         updated_at: new Date().toISOString(),
-      }).eq('id', input.source_id);
+      }).eq('id', input.source_id).eq('tenant_id', input.tenant_id);
     }
 
     // Log the audit trail
@@ -92,18 +92,27 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const sourceType = searchParams.get('source_type');
     const sourceId = searchParams.get('source_id');
+    const tenantId = searchParams.get('tenant_id');
 
-    if (!sourceType || !sourceId) {
-      throw new AppError('VALIDATION_ERROR', 'source_type y source_id requeridos');
+    if (!sourceType || !sourceId || !tenantId) {
+      throw new AppError('VALIDATION_ERROR', 'source_type, source_id y tenant_id requeridos');
     }
 
     const supabase = await getSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new AppError('UNAUTHORIZED', 'No autenticado');
 
+    const { data: membership } = await supabase
+      .from('memberships').select('role')
+      .eq('tenant_id', tenantId).eq('user_id', user.id).maybeSingle();
+    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+      throw new AppError('FORBIDDEN', 'Sin acceso');
+    }
+
     const { data: logs } = await supabase
       .from('alert_audit_log')
       .select('id, old_status, new_status, notes, action_by, created_at')
+      .eq('tenant_id', tenantId)
       .eq('source_type', sourceType)
       .eq('source_id', sourceId)
       .order('created_at', { ascending: true });

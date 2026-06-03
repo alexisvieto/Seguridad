@@ -104,9 +104,8 @@ export async function processFortnightPayroll(
     // ------------------------------------------------------------------
 
     const rateMap = await loadAgentRates(client, tenantId, agentIds);
-    const existingAdjustments = await loadExistingAdjustments(client, periodId, agentIds);
 
-    // Load paysheet bonuses/penalties
+    // Load paysheet bonuses/penalties (fresh from source — not from consolidated)
     const paysheetBonuses = new Map<string, { bonus: number; penalty: number }>();
     const { data: paysheetAgg } = await client
       .from('operative_paysheet')
@@ -130,10 +129,9 @@ export async function processFortnightPayroll(
 
     for (const [userId, hours] of distributed) {
       const rate = rateMap.get(userId) ?? 3.04;
-      const adjustments = existingAdjustments.get(userId);
       const psBonus = paysheetBonuses.get(userId);
-      const addition = (adjustments?.addition ?? 0) + (psBonus?.bonus ?? 0);
-      const deduction = (adjustments?.deduction ?? 0) + (psBonus?.penalty ?? 0);
+      const addition = psBonus?.bonus ?? 0;
+      const deduction = psBonus?.penalty ?? 0;
 
       const financials = calculateFinancials(
         hours.regularHours,
@@ -241,40 +239,13 @@ async function extractShiftHours(
   tenantId: string,
   period: PeriodDates,
 ): Promise<Map<string, AgentHourBucket>> {
-  // Try operative paysheet first (manual Excel-style entries)
+  // Load both sources: operative paysheet (manual) AND QR clock-in data
   const { data: paysheetEntries } = await client
     .from('operative_paysheet')
     .select('user_id, hours, bonus, penalty, entry_type')
     .eq('tenant_id', tenantId)
     .gte('shift_date', period.startDate)
     .lte('shift_date', period.endDate);
-
-  if (paysheetEntries && paysheetEntries.length > 0) {
-    console.info(`[Payroll] Using operative paysheet: ${paysheetEntries.length} entries`);
-
-    const buckets = new Map<string, AgentHourBucket & { bonusTotal: number; penaltyTotal: number }>();
-
-    for (const entry of paysheetEntries) {
-      const bucket = buckets.get(entry.user_id) ?? {
-        regularHours: 0, overtimeHours: 0, holidayHours: 0, shiftCount: 0,
-        bonusTotal: 0, penaltyTotal: 0,
-      };
-
-      bucket.regularHours += Number(entry.hours);
-      if (entry.entry_type !== 'dia_libre') bucket.shiftCount += 1;
-      bucket.bonusTotal += Number(entry.bonus);
-      bucket.penaltyTotal += Number(entry.penalty);
-
-      buckets.set(entry.user_id, bucket);
-    }
-
-    // Store bonus/penalty in holidayHours field temporarily (will be added as adjustments)
-    // Actually, we'll handle it through the adjustments system
-    return buckets;
-  }
-
-  // Fallback: use QR clock-in/clock-out data
-  console.info('[Payroll] No paysheet data, falling back to agent_shifts');
 
   const periodStartISO = `${period.startDate}T00:00:00.000Z`;
   const periodEndISO = `${period.endDate}T23:59:59.999Z`;
@@ -291,28 +262,46 @@ async function extractShiftHours(
     throw new AppError('INTERNAL_ERROR', 'Error al consultar turnos del periodo');
   }
 
+  // Agents with paysheet entries use paysheet; others fall back to QR
+  const paysheetAgents = new Set<string>();
   const buckets = new Map<string, AgentHourBucket>();
 
+  if (paysheetEntries && paysheetEntries.length > 0) {
+    console.info(`[Payroll] Operative paysheet: ${paysheetEntries.length} entries`);
+
+    for (const entry of paysheetEntries) {
+      paysheetAgents.add(entry.user_id);
+      const bucket = buckets.get(entry.user_id) ?? {
+        regularHours: 0, overtimeHours: 0, holidayHours: 0, shiftCount: 0,
+      };
+
+      bucket.regularHours += Number(entry.hours);
+      if (entry.entry_type !== 'dia_libre') bucket.shiftCount += 1;
+      buckets.set(entry.user_id, bucket);
+    }
+  }
+
+  // QR fallback for agents NOT in the paysheet
+  let qrCount = 0;
   for (const shift of shifts ?? []) {
     if (!shift.clock_out) continue;
+    if (paysheetAgents.has(shift.user_id)) continue;
 
-    const clockIn = new Date(shift.clock_in);
-    const clockOut = new Date(shift.clock_out);
-
-    const diffMs = clockOut.getTime() - clockIn.getTime();
+    const diffMs = new Date(shift.clock_out).getTime() - new Date(shift.clock_in).getTime();
     if (diffMs <= 0) continue;
 
     const hoursWorked = round2(diffMs / 3_600_000);
-
     const bucket = buckets.get(shift.user_id) ?? {
       regularHours: 0, overtimeHours: 0, holidayHours: 0, shiftCount: 0,
     };
 
     bucket.regularHours += hoursWorked;
     bucket.shiftCount += 1;
-
     buckets.set(shift.user_id, bucket);
+    qrCount++;
   }
+
+  console.info(`[Payroll] Sources: ${paysheetAgents.size} agents from paysheet, ${qrCount} shifts from QR`);
 
   return buckets;
 }
@@ -389,33 +378,6 @@ async function loadAgentRates(
 }
 
 // ---------------------------------------------------------------------------
-// Step 4b: Load existing adjustments (preserve manual AD/DESC entries)
-// ---------------------------------------------------------------------------
-
-async function loadExistingAdjustments(
-  client: Client,
-  periodId: string,
-  agentIds: string[],
-): Promise<Map<string, { addition: number; deduction: number }>> {
-  const { data } = await client
-    .from('payroll_agent_consolidated')
-    .select('user_id, adjustments_addition, adjustments_deduction')
-    .eq('payroll_period_id', periodId)
-    .in('user_id', agentIds);
-
-  const map = new Map<string, { addition: number; deduction: number }>();
-
-  for (const row of data ?? []) {
-    map.set(row.user_id, {
-      addition: Number(row.adjustments_addition),
-      deduction: Number(row.adjustments_deduction),
-    });
-  }
-
-  return map;
-}
-
-// ---------------------------------------------------------------------------
 // Step 5: Financial calculation
 // ---------------------------------------------------------------------------
 
@@ -458,6 +420,10 @@ function calculateFinancials(
   // Net = gross - retenciones legales - deducciones administrativas
   const gross = round2(grossBeforeDeductions);
   const net = round2(grossBeforeDeductions - ssDed - eiDed - adjustmentDeduction);
+
+  if (net < 0) {
+    console.warn(`[Payroll] Net salary negative: B/.${net.toFixed(2)} (gross=${gross.toFixed(2)}, deductions=${adjustmentDeduction.toFixed(2)}) — capping at 0`);
+  }
 
   return {
     gross: Math.max(0, gross),

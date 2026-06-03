@@ -124,7 +124,7 @@ export default function CapacitacionesPage() {
     const supabase = getSupabaseBrowserClient();
 
     const { data: tenant } = await supabase
-      .from('tenants').select('id').eq('slug', tenantSlug).single();
+      .from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
     if (!tenant) return;
     setTenantId(tenant.id);
 

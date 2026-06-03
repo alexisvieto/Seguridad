@@ -22,6 +22,11 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
     if (!assignment) throw new AppError('NOT_FOUND', 'Asignación no encontrada');
 
+    const { data: membership } = await supabase
+      .from('memberships').select('role')
+      .eq('tenant_id', assignment.tenant_id).eq('user_id', user.id).maybeSingle();
+    if (!membership) throw new AppError('FORBIDDEN', 'Sin acceso');
+
     const branding = await getTenantBranding(supabase, assignment.tenant_id);
 
     const agentId = assignment.user_id;

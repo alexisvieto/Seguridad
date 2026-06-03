@@ -9,6 +9,7 @@ import { MASTER_PROMPT } from './master_prompt';
 
 const chatSchema = z.object({
   question: z.string().min(3).max(500),
+  tenant_id: z.string().uuid().optional(),
 });
 
 // System prompt imported from master_prompt.ts
@@ -32,7 +33,7 @@ async function queryAttendance(
   intent: string,
   aiParams: Record<string, unknown>,
 ) {
-  const year = Number(aiParams['year'] ?? 2026);
+  const year = Number(aiParams['year'] ?? new Date().getFullYear());
   const yearStart = `${year}-01-01T00:00:00Z`;
   const yearEnd = `${year}-12-31T23:59:59Z`;
 
@@ -76,7 +77,7 @@ async function queryPunctuality(
   const { data: shifts } = await supabase
     .from('agent_shifts').select('user_id, clock_in')
     .eq('tenant_id', tenantId)
-    .gte('clock_in', '2026-01-01T00:00:00Z');
+    .gte('clock_in', `${new Date().getFullYear()}-01-01T00:00:00Z`);
 
   const lateByAgent = new Map<string, number>();
   const totalByAgent = new Map<string, number>();
@@ -258,8 +259,9 @@ async function queryPayroll(
       .sort((a, b) => b.otCost - a.otCost);
 
     // Overtime by property — trace shifts in the period range to properties
-    const periodStart = periods[periods.length - 1]?.start_date ?? '2026-01-01';
-    const periodEnd = periods[0]?.end_date ?? '2026-12-31';
+    const currentYear = new Date().getFullYear();
+    const periodStart = periods[periods.length - 1]?.start_date ?? `${currentYear}-01-01`;
+    const periodEnd = periods[0]?.end_date ?? `${currentYear}-12-31`;
 
     const { data: shifts } = await supabase
       .from('agent_shifts')
@@ -328,7 +330,7 @@ async function queryPayroll(
     const { data: shifts } = await supabase
       .from('agent_shifts').select('user_id, clock_in')
       .eq('tenant_id', tenantId)
-      .gte('clock_in', '2026-01-01T00:00:00Z')
+      .gte('clock_in', `${new Date().getFullYear()}-01-01T00:00:00Z`)
       .order('clock_in');
 
     const shiftDays = new Map<string, Set<string>>();
@@ -339,10 +341,9 @@ async function queryPayroll(
       shiftDays.set(s.user_id, set);
     }
 
-    // Generate all working days in 2026 so far
     const today = new Date();
     const allDays: string[] = [];
-    const d = new Date('2026-01-01');
+    const d = new Date(`${today.getFullYear()}-01-01`);
     while (d <= today) {
       allDays.push(d.toISOString().split('T')[0]!);
       d.setDate(d.getDate() + 1);
@@ -594,7 +595,7 @@ function classifyQuestion(question: string): AIResponse {
 
   // Bradford / ausentismo
   if (q.includes('bradford') || q.includes('ausentismo') || q.includes('ausencias')) {
-    return { category: 'payroll', intent: 'bradford_factor', params: { year: 2026 }, answer: 'Calculando Factor de Bradford para todos los agentes...' };
+    return { category: 'payroll', intent: 'bradford_factor', params: { year: new Date().getFullYear() }, answer: 'Calculando Factor de Bradford para todos los agentes...' };
   }
 
   // Overtime / horas extras / rentabilidad
@@ -619,7 +620,7 @@ function classifyQuestion(question: string): AIResponse {
 
   // Attendance / asistencia / falto
   if (q.includes('asistencia') || q.includes('falto') || q.includes('falta') || q.includes('no falto') || q.includes('record')) {
-    return { category: 'attendance', intent: 'perfect_attendance_2026', params: { year: 2026 }, answer: 'Buscando agentes con asistencia perfecta en 2026...' };
+    return { category: 'attendance', intent: 'perfect_attendance_2026', params: { year: new Date().getFullYear() }, answer: 'Buscando agentes con asistencia perfecta en 2026...' };
   }
 
   // Contracts / clientes / top / salarios altos
@@ -679,24 +680,32 @@ function classifyQuestion(question: string): AIResponse {
   }
 
   // Default
-  return { category: 'attendance', intent: 'general_stats', params: { year: 2026 }, answer: 'Consultando estadisticas operativas...' };
+  return { category: 'attendance', intent: 'general_stats', params: { year: new Date().getFullYear() }, answer: 'Consultando estadisticas operativas...' };
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: unknown = await request.json();
-    const { question } = validate(chatSchema, body);
+    const { question, tenant_id: requestedTenantId } = validate(chatSchema, body);
 
     const supabase = await getSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new AppError('UNAUTHORIZED', 'No autenticado');
 
-    const { data: membership } = await supabase.from('memberships')
-      .select('tenant_id, role').eq('user_id', user.id).maybeSingle();
-    if (!membership || (membership.role !== 'owner' && membership.role !== 'admin'))
-      throw new AppError('FORBIDDEN', 'Acceso restringido');
-
-    const tenantId = membership.tenant_id;
+    let tenantId: string;
+    if (requestedTenantId) {
+      const { data: membership } = await supabase.from('memberships')
+        .select('role').eq('tenant_id', requestedTenantId).eq('user_id', user.id).maybeSingle();
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin'))
+        throw new AppError('FORBIDDEN', 'Acceso restringido');
+      tenantId = requestedTenantId;
+    } else {
+      const { data: membership } = await supabase.from('memberships')
+        .select('tenant_id, role').eq('user_id', user.id).limit(1).maybeSingle();
+      if (!membership || (membership.role !== 'owner' && membership.role !== 'admin'))
+        throw new AppError('FORBIDDEN', 'Acceso restringido');
+      tenantId = membership.tenant_id;
+    }
 
     // Classify the question — keyword-based (instant) with optional AI upgrade
     const aiResponse = classifyQuestion(question);

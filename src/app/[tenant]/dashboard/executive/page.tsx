@@ -114,7 +114,7 @@ export default function CentroComandoPage() {
 
   const loadAudit = useCallback(async (type: string, id: string) => {
     try {
-      const res = await fetch(`/api/command-center?source_type=${type}&source_id=${id}`);
+      const res = await fetch(`/api/command-center?source_type=${type}&source_id=${id}&tenant_id=${tenantId}`);
       if (res.ok) { const { data } = await res.json() as { data: AuditEntry[] }; setAuditTrail(data); }
     } catch { /* silent */ }
   }, []);

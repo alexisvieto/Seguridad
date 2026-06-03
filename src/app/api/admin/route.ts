@@ -104,7 +104,10 @@ export async function POST(request: NextRequest) {
       const password = String(body['password'] ?? '');
       const fullName = String(body['full_name'] ?? '').trim();
       const tenantId = String(body['tenant_id'] ?? '');
-      const role = String(body['role'] ?? 'admin');
+      const rawRole = String(body['role'] ?? 'admin');
+      const validRoles = ['owner', 'admin', 'editor', 'viewer'] as const;
+      if (!validRoles.includes(rawRole as typeof validRoles[number])) throw new AppError('VALIDATION_ERROR', 'Rol inválido');
+      const role = rawRole;
       const employeeType = String(body['employee_type'] ?? '');
       const cedula = String(body['cedula'] ?? '').trim();
       const salary = String(body['salary'] ?? '');

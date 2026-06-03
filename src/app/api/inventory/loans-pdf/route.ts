@@ -19,6 +19,11 @@ export async function GET(request: NextRequest) {
     const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
     if (!tenant) throw new AppError('NOT_FOUND', 'Tenant no encontrado');
 
+    const { data: membership } = await supabase
+      .from('memberships').select('role')
+      .eq('tenant_id', tenant.id).eq('user_id', user.id).maybeSingle();
+    if (!membership) throw new AppError('FORBIDDEN', 'Sin acceso');
+
     const branding = await getTenantBranding(supabase, tenant.id);
     const today = new Date().toLocaleDateString('es-PA', { day: '2-digit', month: 'long', year: 'numeric' });
 

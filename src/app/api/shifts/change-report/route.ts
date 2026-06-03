@@ -61,6 +61,7 @@ const eventSchema = z.object({
 const fieldsSchema = z.object({
   action: z.literal('update_fields'),
   report_id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   general_observations: z.string().max(2000).optional(),
   free_personnel: z.string().max(2000).optional(),
 });
@@ -111,6 +112,14 @@ export async function PATCH(request: NextRequest) {
 
     if (action === 'update_fields') {
       const input = validate(fieldsSchema, body);
+
+      const { data: fieldsMembership } = await supabase
+        .from('memberships').select('role')
+        .eq('tenant_id', input.tenant_id).eq('user_id', user.id).maybeSingle();
+      if (!fieldsMembership || !['owner', 'admin'].includes(fieldsMembership.role)) {
+        throw new AppError('FORBIDDEN', 'Solo administradores pueden actualizar campos');
+      }
+
       await updateReportFields(supabase, input.report_id, {
         general_observations: input.general_observations,
         free_personnel: input.free_personnel,

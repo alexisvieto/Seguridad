@@ -155,7 +155,7 @@ export default function InventarioPage() {
       .from('tenants')
       .select('id')
       .eq('slug', tenantSlug)
-      .single();
+      .maybeSingle();
 
     if (!tenant) return;
     setTenantId(tenant.id);
@@ -302,7 +302,7 @@ export default function InventarioPage() {
           min_stock_alert: parseInt(newMinAlert) || 5,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         setToast({ type: 'error', msg: 'Error al registrar el articulo' });
@@ -375,7 +375,7 @@ export default function InventarioPage() {
           imei_or_serial: assetImei.trim() || null,
         })
         .select('*, work_stations(name, properties_ph(name))')
-        .single();
+        .maybeSingle();
 
       if (error) {
         if (error.code === '23505') {

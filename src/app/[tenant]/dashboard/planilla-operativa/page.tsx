@@ -121,20 +121,20 @@ export default function PlanillaOperativaPage() {
       name: nameMap.get(uid) ?? 'Agente',
       entries: new Map(days.map((d) => {
         const key = `${uid}_${d}`;
-        return [d, entryMap.get(key) ?? { id: null, type: 'completo' as EntryType, hours: 12, bonus: 0, penalty: 0 }];
+        return [d, entryMap.get(key) ?? { id: null, type: 'dia_libre' as EntryType, hours: 0, bonus: 0, penalty: 0 }];
       })),
     })).sort((a, b) => a.name.localeCompare(b.name)));
 
     setIsLoading(false);
-  }, [tenantSlug, startDate, endDate, days]);
+  }, [tenantSlug, startDate, endDate]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   const openEdit = useCallback((agent: AgentRow, date: string) => {
     const cell = agent.entries.get(date);
     setEditAgent({ userId: agent.userId, name: agent.name, date });
-    setEditType(cell?.type ?? 'completo');
-    setEditHours(String(cell?.hours ?? 12));
+    setEditType(cell?.type ?? 'dia_libre');
+    setEditHours(String(cell?.hours ?? 0));
     setEditBonus(String(cell?.bonus ?? 0));
     setEditPenalty(String(cell?.penalty ?? 0));
     setEditNotes('');

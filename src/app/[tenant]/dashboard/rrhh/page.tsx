@@ -9,7 +9,22 @@ import { FileUpload } from '@/lib/upload/file-upload';
 // Types
 // ---------------------------------------------------------------------------
 
-type DetailTab = 'ficha' | 'contrato' | 'poligrafia' | 'activos' | 'incapacidades' | 'disciplina';
+type DetailTab = 'ficha' | 'contrato' | 'poligrafia' | 'activos' | 'incapacidades' | 'disciplina' | 'liquidaciones';
+
+type LiquidationType = 'decimo' | 'renuncia' | 'despido_justificado' | 'despido_injustificado';
+
+interface LiquidationResult {
+  type: LiquidationType;
+  salariosPeriodo: number;
+  decimoProporcional: number;
+  vacacionesProporcionales: number;
+  primaAntiguedad: number;
+  indemnizacion: number;
+  subtotal: number;
+  seguroSocial: number;
+  totalPagar: number;
+  detalles: string[];
+}
 
 interface MedicalLeave {
   id: string;
@@ -127,6 +142,12 @@ export default function RRHHPage() {
   const [amonDate, setAmonDate] = useState('');
   const [amonLoading, setAmonLoading] = useState(false);
 
+  // Liquidations
+  const [liqType, setLiqType] = useState<LiquidationType | null>(null);
+  const [liqExitDate, setLiqExitDate] = useState('');
+  const [liqResult, setLiqResult] = useState<LiquidationResult | null>(null);
+  const [liqLoading, setLiqLoading] = useState(false);
+
   // Create employee
   const [showNewEmployee, setShowNewEmployee] = useState(false);
   const [empName, setEmpName] = useState('');
@@ -149,7 +170,7 @@ export default function RRHHPage() {
 
   const loadData = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
-    const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).single();
+    const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
     if (!tenant) return;
     setTenantId(tenant.id);
 
@@ -204,6 +225,158 @@ export default function RRHHPage() {
   useEffect(() => { loadData(); }, [loadData]);
 
   // -------------------------------------------------------------------
+  // Calculate liquidation
+  // -------------------------------------------------------------------
+
+  const calculateLiquidation = useCallback(async () => {
+    if (!tenantId || !selected || !liqType) return;
+    setLiqLoading(true);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const exitDate = liqExitDate || new Date().toISOString().split('T')[0]!;
+      const hireDate = selected.hireDate ?? selected.contractStart ?? exitDate;
+
+      // Load all payroll consolidated records for this agent
+      const { data: payrollRecords } = await supabase
+        .from('payroll_agent_consolidated')
+        .select('gross_salary, payroll_period_id')
+        .eq('user_id', selected.userId)
+        .eq('tenant_id', tenantId);
+
+      // Also load from operative_paysheet
+      const { data: paysheetRecords } = await supabase
+        .from('operative_paysheet')
+        .select('hours, bonus, penalty, shift_date')
+        .eq('tenant_id', tenantId)
+        .eq('user_id', selected.userId);
+
+      // Calculate total salaries from payroll history
+      const totalSalariesPayroll = (payrollRecords ?? []).reduce((s, r) => s + Number(r.gross_salary), 0);
+
+      // Calculate from paysheet if no payroll
+      const hourlyRate = selected.baseSalary ? selected.baseSalary / 240 : 3.04;
+      const totalPaysheetHours = (paysheetRecords ?? []).reduce((s, r) => s + Number(r.hours), 0);
+      const totalPaysheetBonus = (paysheetRecords ?? []).reduce((s, r) => s + Number(r.bonus), 0);
+      const totalPaysheetPenalty = (paysheetRecords ?? []).reduce((s, r) => s + Number(r.penalty), 0);
+      const totalSalariesPaysheet = (totalPaysheetHours * hourlyRate) + totalPaysheetBonus - totalPaysheetPenalty;
+
+      const totalSalariesAllTime = Math.max(totalSalariesPayroll, totalSalariesPaysheet) || (selected.baseSalary ?? 0) * 4;
+
+      // Years of service
+      const startMs = new Date(hireDate).getTime();
+      const endMs = new Date(exitDate).getTime();
+      const yearsOfService = Math.max(0, (endMs - startMs) / (365.25 * 86400000));
+      const weeksOfService = yearsOfService * 52;
+
+      // Determine current décimo period
+      const exitMonth = new Date(exitDate).getMonth() + 1;
+      let decimoPeriodStart: string;
+      if (exitMonth >= 1 && exitMonth <= 4) decimoPeriodStart = `${new Date(exitDate).getFullYear()}-01-01`;
+      else if (exitMonth >= 5 && exitMonth <= 8) decimoPeriodStart = `${new Date(exitDate).getFullYear()}-05-01`;
+      else decimoPeriodStart = `${new Date(exitDate).getFullYear()}-09-01`;
+
+      // Salaries in current décimo period (approximation: monthly salary * months in period)
+      const monthsInPeriod = Math.max(1, Math.min(4, exitMonth % 4 || 4));
+      const salariosPeriodo = (selected.baseSalary ?? 0) * monthsInPeriod;
+
+      const r2 = (n: number) => Math.round(n * 100) / 100;
+      const detalles: string[] = [];
+
+      let decimoProporcional = 0;
+      let vacacionesProporcionales = 0;
+      let primaAntiguedad = 0;
+      let indemnizacion = 0;
+
+      if (liqType === 'decimo') {
+        decimoProporcional = r2(salariosPeriodo / 12);
+        const ss = r2(decimoProporcional * 0.0725);
+        detalles.push(`Período: ${monthsInPeriod} meses desde ${decimoPeriodStart}`);
+        detalles.push(`Salarios del período: B/.${salariosPeriodo.toFixed(2)}`);
+        detalles.push(`Décimo bruto: B/.${decimoProporcional.toFixed(2)}`);
+        detalles.push(`Seguro Social (7.25%): -B/.${ss.toFixed(2)}`);
+
+        setLiqResult({
+          type: liqType, salariosPeriodo, decimoProporcional,
+          vacacionesProporcionales: 0, primaAntiguedad: 0, indemnizacion: 0,
+          subtotal: decimoProporcional, seguroSocial: ss,
+          totalPagar: r2(decimoProporcional - ss), detalles,
+        });
+      } else if (liqType === 'renuncia') {
+        vacacionesProporcionales = r2(salariosPeriodo / 11);
+        decimoProporcional = r2(salariosPeriodo / 12);
+        primaAntiguedad = selected.contractType === 'indefinido' ? r2(totalSalariesAllTime * 0.01923) : 0;
+
+        const subtotal = r2(vacacionesProporcionales + decimoProporcional + primaAntiguedad);
+        const ss = r2(subtotal * 0.0725);
+
+        detalles.push(`Años de servicio: ${yearsOfService.toFixed(2)}`);
+        detalles.push(`Salarios del período: B/.${salariosPeriodo.toFixed(2)}`);
+        detalles.push(`Vacaciones (salarios ÷ 11): B/.${vacacionesProporcionales.toFixed(2)}`);
+        detalles.push(`Décimo (salarios ÷ 12): B/.${decimoProporcional.toFixed(2)}`);
+        if (primaAntiguedad > 0) detalles.push(`Prima antigüedad (1.923% de B/.${totalSalariesAllTime.toFixed(2)}): B/.${primaAntiguedad.toFixed(2)}`);
+
+        setLiqResult({
+          type: liqType, salariosPeriodo, decimoProporcional,
+          vacacionesProporcionales, primaAntiguedad, indemnizacion: 0,
+          subtotal, seguroSocial: ss, totalPagar: r2(subtotal - ss), detalles,
+        });
+      } else if (liqType === 'despido_justificado') {
+        vacacionesProporcionales = r2(salariosPeriodo / 11);
+        decimoProporcional = r2(salariosPeriodo / 12);
+        primaAntiguedad = r2(totalSalariesAllTime * 0.01923);
+
+        const subtotal = r2(vacacionesProporcionales + decimoProporcional + primaAntiguedad);
+        const ss = r2(subtotal * 0.0725);
+
+        detalles.push(`Años de servicio: ${yearsOfService.toFixed(2)}`);
+        detalles.push(`Conserva derechos adquiridos + prima de antigüedad`);
+        detalles.push(`Vacaciones: B/.${vacacionesProporcionales.toFixed(2)}`);
+        detalles.push(`Décimo: B/.${decimoProporcional.toFixed(2)}`);
+        detalles.push(`Prima antigüedad (1.923%): B/.${primaAntiguedad.toFixed(2)}`);
+
+        setLiqResult({
+          type: liqType, salariosPeriodo, decimoProporcional,
+          vacacionesProporcionales, primaAntiguedad, indemnizacion: 0,
+          subtotal, seguroSocial: ss, totalPagar: r2(subtotal - ss), detalles,
+        });
+      } else if (liqType === 'despido_injustificado') {
+        vacacionesProporcionales = r2(salariosPeriodo / 11);
+        decimoProporcional = r2(salariosPeriodo / 12);
+        primaAntiguedad = r2(totalSalariesAllTime * 0.01923);
+
+        const weeklySalary = (selected.baseSalary ?? 0) / 4;
+        if (yearsOfService <= 10) {
+          indemnizacion = r2(3.4 * weeklySalary * yearsOfService);
+        } else {
+          indemnizacion = r2((3.4 * weeklySalary * 10) + (weeklySalary * (yearsOfService - 10)));
+        }
+
+        const subtotal = r2(vacacionesProporcionales + decimoProporcional + primaAntiguedad + indemnizacion);
+        const ss = r2((vacacionesProporcionales + decimoProporcional) * 0.0725);
+
+        detalles.push(`Años de servicio: ${yearsOfService.toFixed(2)}`);
+        detalles.push(`Liquidación completa: derechos + prima + indemnización`);
+        detalles.push(`Vacaciones: B/.${vacacionesProporcionales.toFixed(2)}`);
+        detalles.push(`Décimo: B/.${decimoProporcional.toFixed(2)}`);
+        detalles.push(`Prima antigüedad (1.923%): B/.${primaAntiguedad.toFixed(2)}`);
+        detalles.push(`Indemnización (${yearsOfService <= 10 ? '3.4 sem/año' : 'escala >10 años'}): B/.${indemnizacion.toFixed(2)}`);
+        detalles.push(`Salario semanal base: B/.${weeklySalary.toFixed(2)}`);
+
+        setLiqResult({
+          type: liqType, salariosPeriodo, decimoProporcional,
+          vacacionesProporcionales, primaAntiguedad, indemnizacion,
+          subtotal, seguroSocial: ss, totalPagar: r2(subtotal - ss), detalles,
+        });
+      }
+    } catch {
+      setToast({ type: 'error', msg: 'Error al calcular liquidación' });
+    } finally {
+      setLiqLoading(false);
+    }
+  }, [tenantId, selected, liqType, liqExitDate]);
+
+  // -------------------------------------------------------------------
   // Select agent → load disciplinary
   // -------------------------------------------------------------------
 
@@ -216,19 +389,20 @@ export default function RRHHPage() {
 
     const supabase = getSupabaseBrowserClient();
 
+    const tid = tenantId!;
     const [discRes, leavesRes, firearmsRes, loansRes] = await Promise.all([
       supabase.from('hr_disciplinary_records')
         .select('id, record_type, description, start_date, end_date, registered_by, legal_validity_flag, created_at')
-        .eq('user_id', agent.userId).order('start_date', { ascending: false }),
+        .eq('user_id', agent.userId).eq('tenant_id', tid).order('start_date', { ascending: false }),
       supabase.from('hr_medical_leaves')
         .select('id, start_date, days, reason, clinic, doctor, certificate_url')
-        .eq('user_id', agent.userId).order('start_date', { ascending: false }),
+        .eq('user_id', agent.userId).eq('tenant_id', tid).order('start_date', { ascending: false }),
       supabase.from('firearms_assignments')
         .select('firearms_inventory(serial_number, brand, model, type, permit_number)')
-        .eq('user_id', agent.userId).is('returned_at', null),
+        .eq('user_id', agent.userId).eq('tenant_id', tid).is('returned_at', null),
       supabase.from('agent_equipment_loans')
         .select('quantity, inventory_items(item_name, category, size_or_model)')
-        .eq('user_id', agent.userId).eq('status', 'entregado'),
+        .eq('user_id', agent.userId).eq('tenant_id', tid).eq('status', 'entregado'),
     ]);
 
     setDisciplinary((discRes.data ?? []).map((d) => ({
@@ -427,6 +601,7 @@ export default function RRHHPage() {
                   { key: 'activos' as DetailTab, label: `Activos (${assignedAssets.length})` },
                   { key: 'incapacidades' as DetailTab, label: `Incapac. (${medicalLeaves.length})` },
                   { key: 'disciplina' as DetailTab, label: `Discip. (${disciplinary.length})` },
+                  ...(selected.baseSalary ? [{ key: 'liquidaciones' as DetailTab, label: 'Liquidaciones' }] : []),
                 ]).map((t) => (
                   <button key={t.key} onClick={() => setDetailTab(t.key)}
                     className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors cursor-pointer min-h-[40px] ${
@@ -484,11 +659,12 @@ export default function RRHHPage() {
                                 const reasonEl = document.getElementById('termReason') as HTMLTextAreaElement;
                                 if (!dateEl.value || !reasonEl.value.trim()) { setToast({ type: 'error', msg: 'Fecha y motivo son requeridos' }); return; }
                                 const supabase = getSupabaseBrowserClient();
-                                await supabase.from('hr_agent_profiles').update({
+                                const { error } = await supabase.from('hr_agent_profiles').update({
                                   agent_status: 'baja',
                                   termination_date: dateEl.value,
                                   termination_reason: reasonEl.value.trim(),
                                 }).eq('user_id', selected.userId).eq('tenant_id', tenantId!);
+                                if (error) { setToast({ type: 'error', msg: 'Error al dar de baja' }); return; }
                                 setToast({ type: 'success', msg: 'Agente dado de baja' });
                                 loadData();
                               }}
@@ -546,10 +722,11 @@ export default function RRHHPage() {
                         const dateEl = document.getElementById('polyDate') as HTMLInputElement;
                         const resultEl = document.getElementById('polyResult') as HTMLSelectElement;
                         const supabase = getSupabaseBrowserClient();
-                        await supabase.from('hr_agent_profiles').update({
+                        const { error } = await supabase.from('hr_agent_profiles').update({
                           polygraph_date: dateEl.value || null,
                           polygraph_result: resultEl.value || null,
                         }).eq('user_id', selected.userId).eq('tenant_id', tenantId!);
+                        if (error) { setToast({ type: 'error', msg: 'Error al actualizar poligrafía' }); return; }
                         setToast({ type: 'success', msg: 'Poligrafía actualizada' });
                         loadData();
                       }} className="rounded-xl bg-lime-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lime-500 cursor-pointer">
@@ -612,7 +789,13 @@ export default function RRHHPage() {
                         basePath={`${tenantId}/${selected.userId}/contrato`}
                         label="Adjuntar contrato sellado MITRADEL (PDF)"
                         accept=".pdf"
-                        onUploaded={() => setToast({ type: 'success', msg: 'Contrato adjuntado' })}
+                        onUploaded={(url) => {
+                          const supabase = getSupabaseBrowserClient();
+                          supabase.from('hr_contracts').update({ mitradel_sealed_pdf_url: url }).eq('user_id', selected.userId).eq('tenant_id', tenantId!).then(() => {
+                            setToast({ type: 'success', msg: 'Contrato adjuntado' });
+                            loadData();
+                          });
+                        }}
                       />
                     </div>
                   </div>
@@ -827,6 +1010,89 @@ export default function RRHHPage() {
                     )}
                   </div>
                 )}
+
+                {/* LIQUIDACIONES */}
+                {detailTab === 'liquidaciones' && selected.baseSalary && (
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-4">Seleccione el tipo de cálculo según el Código de Trabajo de Panamá.</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {([
+                          { key: 'decimo' as LiquidationType, label: 'Décimo Tercer Mes', desc: 'Bono obligatorio — 3 partidas al año', color: '#84CC16' },
+                          { key: 'renuncia' as LiquidationType, label: 'Renuncia Voluntaria', desc: 'Derechos adquiridos', color: '#3B82F6' },
+                          { key: 'despido_justificado' as LiquidationType, label: 'Despido Justificado', desc: 'Derechos + prima antigüedad', color: '#F59E0B' },
+                          { key: 'despido_injustificado' as LiquidationType, label: 'Despido Injustificado', desc: 'Liquidación completa + indemnización', color: '#DC2626' },
+                        ]).map((opt) => (
+                          <button key={opt.key} onClick={() => { setLiqType(opt.key); setLiqResult(null); setLiqExitDate(''); }}
+                            className={`rounded-xl border px-4 py-3 text-left cursor-pointer transition-all ${liqType === opt.key ? 'ring-2' : 'opacity-60 hover:opacity-80'}`}
+                            style={{ borderColor: liqType === opt.key ? opt.color : 'rgba(255,255,255,0.06)', background: opt.color + '10' }}>
+                            <p className="text-sm font-semibold" style={{ color: opt.color }}>{opt.label}</p>
+                            <p className="text-[10px] text-zinc-500 mt-0.5">{opt.desc}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {liqType && liqType !== 'decimo' && (
+                      <label className="block max-w-xs">
+                        <span className="text-xs font-medium text-zinc-400">Fecha de Salida</span>
+                        <input type="date" value={liqExitDate} onChange={(e) => setLiqExitDate(e.target.value)}
+                          className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 focus:border-lime-500 focus:outline-none" />
+                      </label>
+                    )}
+
+                    {liqType && (
+                      <button onClick={calculateLiquidation} disabled={liqLoading || (liqType !== 'decimo' && !liqExitDate)}
+                        className="rounded-xl bg-lime-600 px-6 py-3 text-sm font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer">
+                        {liqLoading ? 'Calculando...' : 'Calcular'}
+                      </button>
+                    )}
+
+                    {liqResult && (
+                      <div className="rounded-xl border border-zinc-800/40 bg-zinc-800/10 overflow-hidden">
+                        <div className="px-5 py-3 border-b border-zinc-800/30">
+                          <p className="text-xs font-semibold tracking-widest text-lime-400 uppercase">Resultado del Cálculo</p>
+                        </div>
+                        <div className="px-5 py-4 space-y-3">
+                          {/* Detail lines */}
+                          <div className="space-y-1">
+                            {liqResult.detalles.map((d, i) => (
+                              <p key={i} className="text-xs text-zinc-400">{d}</p>
+                            ))}
+                          </div>
+
+                          <hr className="border-zinc-800/30" />
+
+                          {/* Summary */}
+                          <div className="space-y-2">
+                            {liqResult.vacacionesProporcionales > 0 && (
+                              <div className="flex justify-between text-sm"><span className="text-zinc-400">Vacaciones proporcionales</span><span className="text-zinc-200">B/.{liqResult.vacacionesProporcionales.toFixed(2)}</span></div>
+                            )}
+                            {liqResult.decimoProporcional > 0 && (
+                              <div className="flex justify-between text-sm"><span className="text-zinc-400">Décimo tercer mes</span><span className="text-zinc-200">B/.{liqResult.decimoProporcional.toFixed(2)}</span></div>
+                            )}
+                            {liqResult.primaAntiguedad > 0 && (
+                              <div className="flex justify-between text-sm"><span className="text-zinc-400">Prima de antigüedad (1.923%)</span><span className="text-zinc-200">B/.{liqResult.primaAntiguedad.toFixed(2)}</span></div>
+                            )}
+                            {liqResult.indemnizacion > 0 && (
+                              <div className="flex justify-between text-sm"><span className="text-zinc-400">Indemnización (Art. 225)</span><span className="text-zinc-200">B/.{liqResult.indemnizacion.toFixed(2)}</span></div>
+                            )}
+
+                            <hr className="border-zinc-800/30" />
+
+                            <div className="flex justify-between text-sm"><span className="text-zinc-400">Subtotal</span><span className="text-zinc-200 font-semibold">B/.{liqResult.subtotal.toFixed(2)}</span></div>
+                            <div className="flex justify-between text-sm"><span className="text-zinc-400">Seguro Social (7.25%)</span><span className="text-red-400">-B/.{liqResult.seguroSocial.toFixed(2)}</span></div>
+
+                            <hr className="border-zinc-800/30" />
+
+                            <div className="flex justify-between text-lg"><span className="text-zinc-200 font-bold">TOTAL A PAGAR</span><span className="text-lime-400 font-bold">B/.{liqResult.totalPagar.toFixed(2)}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
             </div>
           )}
@@ -869,7 +1135,7 @@ export default function RRHHPage() {
               </label>
               <label className="block">
                 <span className="text-xs font-medium text-zinc-400">Contraseña</span>
-                <input type="text" value={empPassword} onChange={(e) => setEmpPassword(e.target.value)} placeholder="Mínimo 6 caracteres"
+                <input type="password" value={empPassword} onChange={(e) => setEmpPassword(e.target.value)} placeholder="Mínimo 6 caracteres"
                   className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 font-mono focus:border-lime-500 focus:outline-none" />
               </label>
               <label className="block">

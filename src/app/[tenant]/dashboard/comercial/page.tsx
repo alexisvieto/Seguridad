@@ -117,7 +117,7 @@ export default function ComercialPage() {
 
   const loadData = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
-    const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).single();
+    const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
     if (!tenant) return;
     setTenantId(tenant.id);
 

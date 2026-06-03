@@ -155,7 +155,7 @@ export default function ClientePortalPage() {
 
     // Find the property linked to this user via memberships + tenant
     const { data: tenant } = await supabase
-      .from('tenants').select('id').eq('slug', tenantSlug).single();
+      .from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
     if (!tenant) return;
 
     // Get properties in this tenant (client sees the first one they manage)

@@ -193,7 +193,7 @@ export default function ArmamentoPage() {
       .from('tenants')
       .select('id')
       .eq('slug', tenantSlug)
-      .single();
+      .maybeSingle();
 
     if (!tenant) return;
     setTenantId(tenant.id);
@@ -452,7 +452,7 @@ export default function ArmamentoPage() {
           location_id: newLocationId || null,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         if (error.code === '23505') {

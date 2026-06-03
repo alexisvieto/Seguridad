@@ -188,6 +188,7 @@ export default function CambioTurnoPage() {
       body: JSON.stringify({
         action: 'update_fields',
         report_id: data.reportId,
+        tenant_id: tenantId,
         general_observations: observations,
         free_personnel: freePersonnel,
       }),
