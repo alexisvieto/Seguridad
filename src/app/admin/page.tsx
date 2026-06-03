@@ -213,7 +213,7 @@ export default function AdminPage() {
                               m.role === 'admin' ? 'bg-blue-500/15 text-blue-400' :
                               m.role === 'editor' ? 'bg-amber-500/15 text-amber-400' :
                               'bg-zinc-500/15 text-zinc-400'
-                            }`}>{m.role}</span>
+                            }`}>{m.role === 'owner' ? 'Gerente' : m.role === 'admin' ? 'Operador' : m.role === 'editor' ? 'Agente' : 'Cliente'}</span>
                           </div>
                         ))}
                       </div>
@@ -297,10 +297,10 @@ export default function AdminPage() {
               <span className="text-xs font-medium text-zinc-400">Rol</span>
               <select value={uRole} onChange={(e) => setURole(e.target.value)}
                 className="mt-1 block w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 focus:border-lime-500 focus:outline-none cursor-pointer">
-                <option value="owner">Owner (dueño de la agencia)</option>
-                <option value="admin">Admin (operador/supervisor)</option>
-                <option value="editor">Editor (agente de campo)</option>
-                <option value="viewer">Viewer (cliente del PH)</option>
+                <option value="owner">Gerente / Dueño — acceso total al ERP</option>
+                <option value="admin">Operador — gestión operativa sin comercial ni nómina</option>
+                <option value="editor">Agente de Campo — solo Mi Puesto y reporte de novedades</option>
+                <option value="viewer">Cliente / Auditor — solo lectura, portal del cliente</option>
               </select>
             </label>
             <div className="flex gap-3">
