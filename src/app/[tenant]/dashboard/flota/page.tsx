@@ -116,6 +116,7 @@ export default function FlotaPage() {
   const [inspNotes, setInspNotes] = useState('');
   const [inspFiles, setInspFiles] = useState<File[]>([]);
   const [inspLoading, setInspLoading] = useState(false);
+  const [expandedInsp, setExpandedInsp] = useState<string | null>(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -598,33 +599,81 @@ export default function FlotaPage() {
             {inspections.length === 0 ? (
               <div className="flex h-48 items-center justify-center text-sm text-zinc-600">Sin inspecciones registradas</div>
             ) : (
-              <div className="space-y-3">
-                {inspections.map((insp) => (
-                  <div key={insp.id} className="rounded-xl border border-zinc-800/40 bg-zinc-800/20 overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-3.5">
-                      <div>
-                        <p className="text-sm font-semibold text-zinc-200">{insp.vehiclePlate} — {insp.vehicleModel}</p>
-                        <p className="text-xs text-zinc-500">{new Date(insp.inspectionDate).toLocaleDateString('es-PA', { day: '2-digit', month: 'short', year: 'numeric' })} · {insp.mileage.toLocaleString()} km</p>
+              <div className="space-y-4">
+                {(() => {
+                  const now = new Date();
+                  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                  const currentYear = String(now.getFullYear());
+
+                  const groups = new Map<string, { label: string; items: typeof inspections }>();
+                  for (const insp of inspections) {
+                    const d = new Date(insp.inspectionDate);
+                    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    const yr = String(d.getFullYear());
+
+                    let key: string;
+                    let label: string;
+                    if (ym === currentMonth) {
+                      key = ym;
+                      label = 'Mes Actual';
+                    } else if (yr === currentYear) {
+                      key = ym;
+                      label = d.toLocaleDateString('es-PA', { month: 'long', year: 'numeric' });
+                    } else {
+                      key = yr;
+                      label = yr;
+                    }
+
+                    if (!groups.has(key)) groups.set(key, { label, items: [] });
+                    groups.get(key)!.items.push(insp);
+                  }
+
+                  return [...groups.entries()].map(([key, group]) => (
+                    <div key={key} className="rounded-xl border border-zinc-800/40 bg-zinc-800/10 overflow-hidden">
+                      <div className="px-5 py-2.5 border-b border-zinc-800/30">
+                        <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">{group.label} <span className="text-zinc-600">({group.items.length})</span></p>
+                      </div>
+                      <div className="divide-y divide-zinc-800/20">
+                        {group.items.map((insp) => {
+                          const isExpanded = expandedInsp === insp.id;
+                          return (
+                            <div key={insp.id}>
+                              <div className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-zinc-800/20 transition-colors"
+                                onClick={() => setExpandedInsp(isExpanded ? null : insp.id)}>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs font-mono text-zinc-600">{new Date(insp.inspectionDate).toLocaleDateString('es-PA', { day: '2-digit', month: 'short' })}</span>
+                                  <p className="text-sm font-medium text-zinc-200">{insp.vehiclePlate} — {insp.vehicleModel}</p>
+                                  <span className="text-xs text-zinc-500">{insp.mileage.toLocaleString()} km</span>
+                                </div>
+                                <svg className={`h-4 w-4 text-zinc-600 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                </svg>
+                              </div>
+                              {isExpanded && (
+                                <div className="px-5 py-3 bg-zinc-800/10 border-t border-zinc-800/20 space-y-2">
+                                  {insp.chassisPaint && (<div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Chasis y Pintura:</span><p className="text-xs text-zinc-300">{insp.chassisPaint}</p></div>)}
+                                  {insp.rimsTires && (<div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Rines y Llantas:</span><p className="text-xs text-zinc-300">{insp.rimsTires}</p></div>)}
+                                  {insp.notes && (<div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Notas:</span><p className="text-xs text-zinc-400 italic">{insp.notes}</p></div>)}
+                                  {insp.imageUrls.length > 0 && (
+                                    <div>
+                                      <span className="text-[10px] text-zinc-500 uppercase tracking-wide">Evidencia ({insp.imageUrls.length}):</span>
+                                      <div className="mt-1 flex gap-2 flex-wrap">
+                                        {insp.imageUrls.map((url, i) => (
+                                          <a key={i} href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/hr-documents/${url}`} target="_blank" rel="noopener noreferrer"
+                                            className="rounded-lg bg-zinc-800 px-3 py-1.5 text-[10px] text-lime-400 hover:bg-zinc-700 cursor-pointer">Imagen {i + 1}</a>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                    <div className="border-t border-zinc-800/30 px-5 py-3 space-y-2">
-                      {insp.chassisPaint && (<div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Chasis y Pintura:</span><p className="text-xs text-zinc-300">{insp.chassisPaint}</p></div>)}
-                      {insp.rimsTires && (<div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Rines y Llantas:</span><p className="text-xs text-zinc-300">{insp.rimsTires}</p></div>)}
-                      {insp.notes && (<div><span className="text-[10px] text-zinc-500 uppercase tracking-wide">Notas:</span><p className="text-xs text-zinc-400 italic">{insp.notes}</p></div>)}
-                      {insp.imageUrls.length > 0 && (
-                        <div>
-                          <span className="text-[10px] text-zinc-500 uppercase tracking-wide">Evidencia ({insp.imageUrls.length}):</span>
-                          <div className="mt-1 flex gap-2 flex-wrap">
-                            {insp.imageUrls.map((url, i) => (
-                              <a key={i} href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/hr-documents/${url}`} target="_blank" rel="noopener noreferrer"
-                                className="rounded-lg bg-zinc-800 px-3 py-1.5 text-[10px] text-lime-400 hover:bg-zinc-700 cursor-pointer">Imagen {i + 1}</a>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             )}
           </div>
