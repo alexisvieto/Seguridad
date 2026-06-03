@@ -4,6 +4,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { handleApiError } from '@/lib/errors/error-handler';
 import { generatePdfHtml } from '@/lib/pdf/styles';
 import { getTenantBranding } from '@/lib/pdf/tenant-branding';
+import { getOrCreateReportNumber } from '@/lib/pdf/report-number';
 
 export async function GET(request: NextRequest) {
   try {
@@ -73,6 +74,8 @@ export async function GET(request: NextRequest) {
           <div class="sig-block"><div class="sig-line">Operaciones</div><div class="sig-sub">${branding.name}</div></div>
         </div>`;
 
+      const reportNumber = await getOrCreateReportNumber(supabase, tenant.id, 'ENT', 'agent_equipment_loans', loanId);
+
       const html = generatePdfHtml({
         title: 'Acta de Entrega de Equipo',
         subtitle: `${branding.name} — ${loanDate}`,
@@ -81,6 +84,7 @@ export async function GET(request: NextRequest) {
         brandingPhone: branding.phone,
         brandingEmail: branding.email,
         brandingWebsite: branding.website,
+        reportNumber,
         date: loanDate,
         body,
       });

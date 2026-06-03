@@ -4,6 +4,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { handleApiError } from '@/lib/errors/error-handler';
 import { generatePdfHtml } from '@/lib/pdf/styles';
 import { getTenantBranding } from '@/lib/pdf/tenant-branding';
+import { getOrCreateReportNumber } from '@/lib/pdf/report-number';
 
 export async function GET(request: NextRequest) {
   try {
@@ -107,6 +108,9 @@ export async function GET(request: NextRequest) {
         <div class="sig-block"><div class="sig-line">Responsable de Armería</div><div class="sig-sub">${branding.name}</div></div>
       </div>`;
 
+    const prefix = isStation ? 'ARM-P' : 'ARM-A';
+    const reportNumber = await getOrCreateReportNumber(supabase, assignment.tenant_id, prefix, 'firearms_assignments', assignmentId!);
+
     const html = generatePdfHtml({
       title: 'Acta de Entrega de Arma de Fuego',
       subtitle: `${branding.name} — ${assignDate}`,
@@ -115,6 +119,7 @@ export async function GET(request: NextRequest) {
       brandingPhone: branding.phone,
       brandingEmail: branding.email,
       brandingWebsite: branding.website,
+      reportNumber,
       date: assignDate,
       warning: `DOCUMENTO CONFIDENCIAL — Control de armamento regulado por ${branding.regulatoryEntity}. La posesión y porte de armas está sujeta a la legislación vigente.`,
       body: `${recipientSection}${weaponSection}${agreement}`,

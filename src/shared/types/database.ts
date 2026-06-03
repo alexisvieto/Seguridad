@@ -529,6 +529,7 @@ export interface Database {
           notes: string | null;
           return_location_id: string | null;
           signature_data: string | null;
+          report_number: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -543,6 +544,7 @@ export interface Database {
           notes?: string | null;
           return_location_id?: string | null;
           signature_data?: string | null;
+          report_number?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -554,6 +556,7 @@ export interface Database {
           notes?: string | null;
           return_location_id?: string | null;
           signature_data?: string | null;
+          report_number?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -680,6 +683,7 @@ export interface Database {
           quantity: number;
           loan_date: string;
           status: LoanStatus;
+          report_number: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -691,12 +695,14 @@ export interface Database {
           quantity?: number;
           loan_date?: string;
           status?: LoanStatus;
+          report_number?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           quantity?: number;
           status?: LoanStatus;
+          report_number?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -1657,9 +1663,9 @@ export interface Database {
         Relationships: [{ foreignKeyName: 'shift_assignments_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }, { foreignKeyName: 'shift_assignments_work_station_id_fkey'; columns: ['work_station_id']; isOneToOne: false; referencedRelation: 'work_stations'; referencedColumns: ['id'] }];
       };
       shift_change_reports: {
-        Row: { id: string; tenant_id: string; shift_type: string; report_date: string; general_observations: string; free_personnel: string; status: string; created_by: string; sent_at: string | null; sent_to: string | null; created_at: string; updated_at: string };
-        Insert: { id?: string; tenant_id: string; shift_type: string; report_date: string; general_observations?: string; free_personnel?: string; status?: string; created_by: string; sent_at?: string | null; sent_to?: string | null; created_at?: string; updated_at?: string };
-        Update: { general_observations?: string; free_personnel?: string; status?: string; sent_at?: string | null; sent_to?: string | null; updated_at?: string };
+        Row: { id: string; tenant_id: string; shift_type: string; report_date: string; general_observations: string; free_personnel: string; status: string; created_by: string; sent_at: string | null; sent_to: string | null; report_number: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; tenant_id: string; shift_type: string; report_date: string; general_observations?: string; free_personnel?: string; status?: string; created_by: string; sent_at?: string | null; sent_to?: string | null; report_number?: string | null; created_at?: string; updated_at?: string };
+        Update: { general_observations?: string; free_personnel?: string; status?: string; sent_at?: string | null; sent_to?: string | null; report_number?: string | null; updated_at?: string };
         Relationships: [{ foreignKeyName: 'shift_change_reports_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
       };
       shift_change_events: {
@@ -1667,6 +1673,12 @@ export interface Database {
         Insert: { id?: string; report_id: string; tenant_id: string; work_station_id: string; event_type: string; programmed_agent_id?: string | null; actual_agent_id?: string | null; narrative?: string; arrival_time?: string | null; waiting_agent_id?: string | null; created_at?: string; updated_at?: string };
         Update: { event_type?: string; actual_agent_id?: string | null; narrative?: string; arrival_time?: string | null; waiting_agent_id?: string | null; updated_at?: string };
         Relationships: [{ foreignKeyName: 'shift_change_events_report_id_fkey'; columns: ['report_id']; isOneToOne: false; referencedRelation: 'shift_change_reports'; referencedColumns: ['id'] }];
+      };
+      report_sequences: {
+        Row: { id: string; tenant_id: string; prefix: string; last_number: number };
+        Insert: { id?: string; tenant_id: string; prefix: string; last_number?: number };
+        Update: { last_number?: number };
+        Relationships: [{ foreignKeyName: 'report_sequences_tenant_id_fkey'; columns: ['tenant_id']; isOneToOne: false; referencedRelation: 'tenants'; referencedColumns: ['id'] }];
       };
       fleet_inspections: {
         Row: { id: string; tenant_id: string; vehicle_id: string; inspection_date: string; mileage: number; chassis_paint: string; rims_tires: string; image_urls: string[]; notes: string; created_by: string; created_at: string };
@@ -1710,6 +1722,10 @@ export interface Database {
       increment_stock: {
         Args: { p_item_id: string; p_quantity: number };
         Returns: number;
+      };
+      next_report_number: {
+        Args: { p_tenant_id: string; p_prefix: string };
+        Returns: string;
       };
     };
     Enums: {

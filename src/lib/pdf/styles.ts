@@ -27,6 +27,7 @@ export function generatePdfHtml({
   brandingPhone,
   brandingEmail,
   brandingWebsite,
+  reportNumber,
   date,
   body,
   warning,
@@ -39,6 +40,7 @@ export function generatePdfHtml({
   brandingPhone?: string;
   brandingEmail?: string;
   brandingWebsite?: string;
+  reportNumber?: string;
   date: string;
   body: string;
   warning?: string;
@@ -101,7 +103,7 @@ export function generatePdfHtml({
   .agreement strong { color: ${pdfColors.primary}; }
 
   /* Signatures */
-  .signatures { display: flex; justify-content: space-between; margin-top: 44px; padding-top: 0; }
+  .signatures { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 0; }
   .sig-block { width: 42%; text-align: center; }
   .sig-line { border-top: 1px solid ${pdfColors.primary}; padding-top: 8px; font-size: 12px; font-weight: 700; color: ${pdfColors.primary}; }
   .sig-sub { font-size: 10px; color: ${pdfColors.muted}; margin-top: 2px; letter-spacing: 0.3px; }
@@ -147,7 +149,8 @@ export function generatePdfHtml({
     ${brandingPhone || brandingEmail ? `<div style="margin-top:4px;font-size:8.5px;color:${pdfColors.muted};">${brandingPhone ? brandingPhone + (brandingEmail ? ' · ' : '') : ''}${brandingEmail ?? ''}</div>` : ''}
   </div>
   <div class="header-right">
-    <div style="font-size:8px;font-weight:700;letter-spacing:1.5px;color:${pdfColors.muted};text-transform:uppercase;">DOCUMENTO OFICIAL</div>
+    ${reportNumber ? `<div style="font-size:12px;font-weight:800;letter-spacing:1px;color:${pdfColors.primary};font-family:Courier,monospace;">${reportNumber}</div>` : ''}
+    <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;color:${pdfColors.muted};text-transform:uppercase;">DOCUMENTO OFICIAL</div>
     <div class="meta">${date}</div>
     ${brandingWebsite ? `<div class="meta">${brandingWebsite}</div>` : ''}
   </div>

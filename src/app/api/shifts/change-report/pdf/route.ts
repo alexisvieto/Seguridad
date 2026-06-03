@@ -4,6 +4,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { handleApiError } from '@/lib/errors/error-handler';
 import { generatePdfHtml } from '@/lib/pdf/styles';
 import { getTenantBranding } from '@/lib/pdf/tenant-branding';
+import { getOrCreateReportNumber } from '@/lib/pdf/report-number';
 
 export async function GET(request: NextRequest) {
   try {
@@ -111,6 +112,8 @@ export async function GET(request: NextRequest) {
       </div>
       ${sectionsHtml}`;
 
+    const reportNumber = await getOrCreateReportNumber(supabase, report.tenant_id, 'CDT', 'shift_change_reports', reportId!);
+
     const html = generatePdfHtml({
       title: `INFORME DEL ${shiftLabel}`,
       subtitle: 'Asistencias y Novedades',
@@ -119,6 +122,7 @@ export async function GET(request: NextRequest) {
       brandingPhone: branding.phone,
       brandingEmail: branding.email,
       brandingWebsite: branding.website,
+      reportNumber,
       date: dateStr,
       body,
     });
