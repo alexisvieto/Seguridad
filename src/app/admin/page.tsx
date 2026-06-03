@@ -17,7 +17,26 @@ interface TenantRow {
   plan: string;
   created_at: string;
   members: TenantMember[];
+  enabledModules: string[];
 }
+
+const ALL_MODULES = [
+  { key: 'comercial', label: 'Clientes y Contratos' },
+  { key: 'gerencial', label: 'Dashboard Gerencial' },
+  { key: 'noc', label: 'NOC Monitor' },
+  { key: 'comando', label: 'Centro de Comando' },
+  { key: 'cambio_turno', label: 'Cambio de Turno' },
+  { key: 'turnos', label: 'Programación de Turnos' },
+  { key: 'consignas', label: 'Consignas' },
+  { key: 'puesto', label: 'Mi Puesto' },
+  { key: 'armamento', label: 'Armamento' },
+  { key: 'inventario', label: 'Inventario' },
+  { key: 'flota', label: 'Flota' },
+  { key: 'rrhh', label: 'RRHH' },
+  { key: 'capacitaciones', label: 'Capacitaciones' },
+  { key: 'nomina', label: 'Nómina' },
+  { key: 'cliente', label: 'Portal Cliente' },
+];
 
 export default function AdminPage() {
   const [isAuthed, setIsAuthed] = useState(false);
@@ -30,8 +49,14 @@ export default function AdminPage() {
   const [tName, setTName] = useState('');
   const [tSlug, setTSlug] = useState('');
   const [tPlan, setTPlan] = useState('pro');
+  const [tModules, setTModules] = useState<string[]>(ALL_MODULES.map((m) => m.key));
   const [tLoading, setTLoading] = useState(false);
   const [tMsg, setTMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  // Edit tenant modules
+  const [editingModules, setEditingModules] = useState<string | null>(null);
+  const [editModules, setEditModules] = useState<string[]>([]);
+  const [editModLoading, setEditModLoading] = useState(false);
 
   // Create user
   const [showUserForm, setShowUserForm] = useState(false);
@@ -77,7 +102,7 @@ export default function AdminPage() {
       const res = await fetch('/api/admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create_tenant', name: tName.trim(), slug: tSlug.trim(), plan: tPlan }),
+        body: JSON.stringify({ action: 'create_tenant', name: tName.trim(), slug: tSlug.trim(), plan: tPlan, enabled_modules: tModules }),
       });
 
       if (res.ok) {
@@ -197,27 +222,83 @@ export default function AdminPage() {
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t border-zinc-800/30 px-5 py-3">
-                    {t.members.length === 0 ? (
-                      <p className="text-xs text-zinc-600 italic">Sin usuarios</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {t.members.map((m) => (
-                          <div key={m.userId} className="flex items-center justify-between text-xs">
-                            <div>
-                              <span className="text-zinc-200 font-medium">{m.name}</span>
-                              <span className="text-zinc-500 ml-2">{m.email}</span>
+                  <div className="border-t border-zinc-800/30">
+                    {/* Users */}
+                    <div className="px-5 py-3">
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-wide mb-2">Usuarios</p>
+                      {t.members.length === 0 ? (
+                        <p className="text-xs text-zinc-600 italic">Sin usuarios</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {t.members.map((m) => (
+                            <div key={m.userId} className="flex items-center justify-between text-xs">
+                              <div>
+                                <span className="text-zinc-200 font-medium">{m.name}</span>
+                                <span className="text-zinc-500 ml-2">{m.email}</span>
+                              </div>
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                m.role === 'owner' ? 'bg-lime-500/15 text-lime-400' :
+                                m.role === 'admin' ? 'bg-blue-500/15 text-blue-400' :
+                                m.role === 'editor' ? 'bg-amber-500/15 text-amber-400' :
+                                'bg-zinc-500/15 text-zinc-400'
+                              }`}>{m.role === 'owner' ? 'Gerente' : m.role === 'admin' ? 'Operador' : m.role === 'editor' ? 'Agente' : 'Cliente'}</span>
                             </div>
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                              m.role === 'owner' ? 'bg-lime-500/15 text-lime-400' :
-                              m.role === 'admin' ? 'bg-blue-500/15 text-blue-400' :
-                              m.role === 'editor' ? 'bg-amber-500/15 text-amber-400' :
-                              'bg-zinc-500/15 text-zinc-400'
-                            }`}>{m.role === 'owner' ? 'Gerente' : m.role === 'admin' ? 'Operador' : m.role === 'editor' ? 'Agente' : 'Cliente'}</span>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Modules */}
+                    <div className="px-5 py-3 border-t border-zinc-800/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Módulos ({t.enabledModules.length}/{ALL_MODULES.length})</p>
+                        <button onClick={(e) => { e.stopPropagation(); setEditingModules(t.id); setEditModules(t.enabledModules.length > 0 ? t.enabledModules : ALL_MODULES.map((m) => m.key)); }}
+                          className="text-[10px] font-medium text-lime-400 hover:text-lime-300 cursor-pointer">Editar</button>
                       </div>
-                    )}
+                      {editingModules === t.id ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-1">
+                            {ALL_MODULES.map((m) => (
+                              <label key={m.key} className="flex items-center gap-2 rounded px-1.5 py-1 hover:bg-zinc-800/50 cursor-pointer">
+                                <input type="checkbox" checked={editModules.includes(m.key)}
+                                  onChange={(e) => setEditModules((prev) => e.target.checked ? [...prev, m.key] : prev.filter((k) => k !== m.key))}
+                                  className="h-3 w-3 rounded border-zinc-600 text-lime-600 focus:ring-lime-500 cursor-pointer" />
+                                <span className="text-[10px] text-zinc-300">{m.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <button onClick={() => setEditingModules(null)} className="px-3 py-1.5 text-[10px] text-zinc-500 cursor-pointer">Cancelar</button>
+                            <button disabled={editModLoading} onClick={async () => {
+                              setEditModLoading(true);
+                              await fetch('/api/admin', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'update_modules', tenant_id: t.id, enabled_modules: editModules }),
+                              });
+                              setEditingModules(null); setEditModLoading(false);
+                              setTMsg({ type: 'ok', text: `Módulos actualizados para ${t.name}` });
+                              loadTenants();
+                            }} className="rounded-lg bg-lime-600 px-3 py-1.5 text-[10px] font-semibold text-white hover:bg-lime-500 disabled:opacity-40 cursor-pointer">
+                              {editModLoading ? '...' : 'Guardar'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {t.enabledModules.length === 0 ? (
+                            <span className="text-[10px] text-amber-400">Todos los módulos (sin restricción)</span>
+                          ) : (
+                            t.enabledModules.map((key) => {
+                              const mod = ALL_MODULES.find((m) => m.key === key);
+                              return mod ? (
+                                <span key={key} className="rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] text-zinc-400">{mod.label}</span>
+                              ) : null;
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -252,6 +333,21 @@ export default function AdminPage() {
                 <option value="enterprise">Enterprise</option>
               </select>
             </label>
+            {/* Modules */}
+            <div>
+              <span className="text-xs font-medium text-zinc-400">Módulos habilitados</span>
+              <div className="mt-2 grid grid-cols-2 gap-1.5 max-h-[200px] overflow-y-auto">
+                {ALL_MODULES.map((m) => (
+                  <label key={m.key} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-zinc-800/50 cursor-pointer">
+                    <input type="checkbox" checked={tModules.includes(m.key)}
+                      onChange={(e) => setTModules((prev) => e.target.checked ? [...prev, m.key] : prev.filter((k) => k !== m.key))}
+                      className="h-3.5 w-3.5 rounded border-zinc-600 text-lime-600 focus:ring-lime-500 cursor-pointer" />
+                    <span className="text-xs text-zinc-300">{m.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div className="flex gap-3">
               <button onClick={() => setShowTenantForm(false)}
                 className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-700 cursor-pointer">Cancelar</button>

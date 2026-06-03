@@ -48,7 +48,7 @@ export default async function TenantLayout({
 
   return (
     <div className="flex h-dvh bg-[#0A0E1A]" data-tenant-id={tenant.id} data-tenant-slug={tenant.slug}>
-      <TenantSidebar tenantSlug={slug} tenantName={tenant.name} role={role} />
+      <TenantSidebar tenantSlug={slug} tenantName={tenant.name} role={role} enabledModules={((tenant.settings as Record<string, unknown>)?.['enabled_modules'] as string[] | undefined) ?? []} />
       <main className="relative flex-1 overflow-hidden">
         {(role === 'owner' || role === 'admin') && (
           <RealtimeAlerts tenantId={tenant.id} tenantSlug={slug} />

@@ -9,6 +9,7 @@ interface SidebarProps {
   tenantSlug: string;
   tenantName: string;
   role: string;
+  enabledModules: string[];
 }
 
 interface NavItem {
@@ -17,6 +18,7 @@ interface NavItem {
   icon: React.ReactNode;
   roles: string[];
   section: 'commercial' | 'operations' | 'resources' | 'hr' | 'finance' | 'client';
+  moduleKey: string;
   badgeCount?: number;
 }
 
@@ -29,7 +31,7 @@ const sectionLabels: Record<string, string> = {
   client: 'Clientes',
 };
 
-export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
+export function TenantSidebar({ tenantSlug, tenantName, role, enabledModules }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const base = `/${tenantSlug}`;
@@ -41,6 +43,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <BriefcaseIcon />,
       roles: ['owner'],
       section: 'commercial',
+      moduleKey: 'comercial',
     },
     {
       href: `${base}/dashboard`,
@@ -48,6 +51,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <DashboardIcon />,
       roles: ['owner', 'admin'],
       section: 'operations',
+      moduleKey: 'gerencial',
     },
     {
       href: `${base}/dashboard/live-monitor`,
@@ -55,6 +59,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <MonitorIcon />,
       roles: ['owner', 'admin'],
       section: 'operations',
+      moduleKey: 'noc',
     },
     {
       href: `${base}/dashboard/executive`,
@@ -62,6 +67,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <ChartIcon />,
       roles: ['owner', 'admin'],
       section: 'operations',
+      moduleKey: 'comando',
     },
     {
       href: `${base}/dashboard/cambio-turno`,
@@ -69,6 +75,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <SwapIcon />,
       roles: ['owner', 'admin'],
       section: 'operations',
+      moduleKey: 'cambio_turno',
     },
     {
       href: `${base}/dashboard/turnos`,
@@ -76,6 +83,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <CalendarIcon />,
       roles: ['owner', 'admin'],
       section: 'operations',
+      moduleKey: 'turnos',
     },
     {
       href: `${base}/dashboard/consignas`,
@@ -83,6 +91,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <ConsignaIcon />,
       roles: ['owner', 'admin'],
       section: 'operations',
+      moduleKey: 'consignas',
     },
     {
       href: `${base}/puesto`,
@@ -90,6 +99,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <QrIcon />,
       roles: ['owner', 'admin', 'editor'],
       section: 'operations',
+      moduleKey: 'puesto',
     },
     {
       href: `${base}/dashboard/armamento`,
@@ -97,6 +107,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <ShieldIcon />,
       roles: ['owner', 'admin'],
       section: 'resources',
+      moduleKey: 'armamento',
     },
     {
       href: `${base}/dashboard/inventario`,
@@ -104,6 +115,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <BoxIcon />,
       roles: ['owner', 'admin'],
       section: 'resources',
+      moduleKey: 'inventario',
     },
     {
       href: `${base}/dashboard/flota`,
@@ -111,6 +123,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <TruckIcon />,
       roles: ['owner', 'admin'],
       section: 'resources',
+      moduleKey: 'flota',
     },
     {
       href: `${base}/dashboard/rrhh`,
@@ -118,6 +131,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <UserFileIcon />,
       roles: ['owner', 'admin'],
       section: 'hr',
+      moduleKey: 'rrhh',
     },
     {
       href: `${base}/dashboard/capacitaciones`,
@@ -125,6 +139,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <CertIcon />,
       roles: ['owner', 'admin'],
       section: 'hr',
+      moduleKey: 'capacitaciones',
     },
     {
       href: `${base}/dashboard/nomina`,
@@ -132,6 +147,7 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <WalletIcon />,
       roles: ['owner'],
       section: 'finance',
+      moduleKey: 'nomina',
     },
     {
       href: `${base}/cliente`,
@@ -139,10 +155,15 @@ export function TenantSidebar({ tenantSlug, tenantName, role }: SidebarProps) {
       icon: <BuildingIcon />,
       roles: ['viewer'],
       section: 'client',
+      moduleKey: 'cliente',
     },
   ];
 
-  const visibleItems = navItems.filter((item) => item.roles.includes(role));
+  const visibleItems = navItems.filter((item) => {
+    if (!item.roles.includes(role)) return false;
+    if (enabledModules.length === 0) return true; // no restriction = all modules
+    return enabledModules.includes(item.moduleKey);
+  });
 
   const sections = [...new Set(visibleItems.map((i) => i.section))];
 

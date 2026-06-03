@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     const { data: tenants } = await admin
       .from('tenants')
-      .select('id, name, slug, plan, created_at')
+      .select('id, name, slug, plan, settings, created_at')
       .order('created_at', { ascending: false });
 
     const { data: memberships } = await admin
@@ -52,7 +52,9 @@ export async function GET(request: NextRequest) {
           role: m.role,
         }));
 
-      return { ...t, members };
+      const settings = (t.settings ?? {}) as Record<string, unknown>;
+      const enabledModules = (settings['enabled_modules'] as string[] | undefined) ?? [];
+      return { ...t, members, enabledModules };
     });
 
     return NextResponse.json({ data: tenantsWithUsers });
@@ -73,15 +75,18 @@ export async function POST(request: NextRequest) {
       const name = String(body['name'] ?? '').trim();
       const slug = String(body['slug'] ?? '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
       const plan = String(body['plan'] ?? 'pro');
+      const enabledModules = (body['enabled_modules'] as string[] | undefined) ?? [];
 
       if (!name || !slug) throw new AppError('VALIDATION_ERROR', 'Nombre y slug son requeridos');
 
       const { data: existing } = await admin.from('tenants').select('id').eq('slug', slug).maybeSingle();
       if (existing) throw new AppError('CONFLICT', `El slug "${slug}" ya existe`);
 
+      const settings = enabledModules.length > 0 ? { enabled_modules: enabledModules } : {};
+
       const { data: tenant, error } = await admin
         .from('tenants')
-        .insert({ name, slug, plan })
+        .insert({ name, slug, plan, settings })
         .select()
         .single();
 
@@ -138,6 +143,24 @@ export async function POST(request: NextRequest) {
           tenant_id: tenantId,
         },
       }, { status: 201 });
+    }
+
+    if (action === 'update_modules') {
+      const tenantId = String(body['tenant_id'] ?? '');
+      const enabledModules = (body['enabled_modules'] as string[] | undefined) ?? [];
+
+      if (!tenantId) throw new AppError('VALIDATION_ERROR', 'tenant_id requerido');
+
+      const { data: tenant } = await admin.from('tenants').select('settings').eq('id', tenantId).maybeSingle();
+      const currentSettings = (tenant?.settings ?? {}) as Record<string, unknown>;
+
+      const { error } = await admin.from('tenants').update({
+        settings: { ...currentSettings, enabled_modules: enabledModules },
+      }).eq('id', tenantId);
+
+      if (error) throw new AppError('INTERNAL_ERROR', 'Error al actualizar módulos');
+
+      return NextResponse.json({ success: true });
     }
 
     throw new AppError('VALIDATION_ERROR', 'Acción no reconocida');
